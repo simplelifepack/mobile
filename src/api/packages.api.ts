@@ -1,3 +1,4 @@
+import { publicDocumentLabels } from "./public-document-labels";
 import { request } from './client';
 import type {
   PackageListResponse,
@@ -39,7 +40,7 @@ export const packagesApi = {
   searchOrGenerate: (packageType: string, documentLabels: string[]) =>
     request<PackageSearchResponse>('/api/packages/search-or-generate', {
       method: 'POST',
-      body: { packageType, documentLabels },
+      body: { packageType, documentLabels: publicDocumentLabels(documentLabels) },
       requiresAuth: true,
     }),
 };

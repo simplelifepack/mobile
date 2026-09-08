@@ -85,7 +85,7 @@ export function ReadinessScreen() {
       packageType: submittedQuery,
       documentLabels: documents.map(
         document =>
-          document.displayName ?? document.title ?? document.documentType,
+          document.normalizedType ?? document.documentType,
       ),
     }).unwrap();
     setGenerated(result.package);

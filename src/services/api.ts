@@ -1,3 +1,4 @@
+import { publicDocumentLabels } from "../api/public-document-labels";
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { packagesApi, type PackageQuery } from '../api/packages.api';
 import { userApi } from '../api/user.api';
@@ -74,7 +75,7 @@ export const api = createApi({
           return {
             data: await packagesApi.searchOrGenerate(
               packageType,
-              documentLabels,
+              publicDocumentLabels(documentLabels),
             ),
           };
         } catch (error) {

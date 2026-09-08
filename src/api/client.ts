@@ -83,7 +83,7 @@ async function performRequest<T>(
   }
   if (!response.ok)
     throw new ApiError(
-      data.message ?? 'Something went wrong.',
+      (data.code === 'STORAGE_LIMIT_EXCEEDED' ? 'Cloud storage full. Delete documents to free space or upgrade for unlimited cloud storage.' : data.code === 'AI_MONTHLY_LIMIT_EXCEEDED' ? 'You have used your 3 AI actions this month. Your allowance resets next month (UTC).' : data.message) ?? 'Something went wrong.',
       response.status,
       data.code,
     );
