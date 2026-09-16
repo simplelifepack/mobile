@@ -16,6 +16,9 @@ export function RootNavigator() {
   const onboardingComplete = useAppSelector(
     state => state.onboarding.completed,
   );
+  const onboardingRestoring = useAppSelector(
+    state => state.onboarding.restoring,
+  );
   const authStatus = useAppSelector(state => state.auth.status);
   useBootstrapQuery(undefined, { skip: authStatus !== 'authenticated' });
   const isLocked = useAppSelector(state => state.appLock.locked);
@@ -40,7 +43,7 @@ export function RootNavigator() {
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {authStatus === 'restoring' ? (
+        {authStatus === 'restoring' || onboardingRestoring ? (
           <Stack.Screen
             name="AppLock"
             children={() => (

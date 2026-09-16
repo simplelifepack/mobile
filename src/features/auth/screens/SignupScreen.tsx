@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 import { useAppDispatch, useAppSelector } from '../../../app/store/hooks';
 import { googleLogin, signup } from '../authSlice';
+import { validateSignupInput } from '../auth.validators';
 import { Screen } from '../../../components/primitives/Screen';
 import { Stack } from '../../../components/primitives/Stack';
 import { AppText } from '../../../components/primitives/AppText';
@@ -18,13 +19,29 @@ export function SignupScreen({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState('');
+
   const submit = () => {
     setLocalError('');
-    if (password.length < 8)
-      return setLocalError('Password must be at least 8 characters.');
-    if (password !== confirmPassword)
-      return setLocalError('Passwords do not match.');
-    dispatch(signup({ name: name.trim(), email: email.trim(), password }));
+
+    try {
+      const safeInput = validateSignupInput({
+        name,
+        email,
+        password,
+      });
+
+      if (password !== confirmPassword) {
+        return setLocalError('Passwords do not match.');
+      }
+
+      dispatch(signup(safeInput));
+    } catch (validationError) {
+      setLocalError(
+        validationError instanceof Error
+          ? validationError.message
+          : 'Unable to create account.',
+      );
+    }
   };
   return (
     <Screen scroll>

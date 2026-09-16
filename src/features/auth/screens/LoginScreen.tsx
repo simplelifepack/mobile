@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 import { useAppDispatch, useAppSelector } from '../../../app/store/hooks';
 import { googleLogin, login } from '../authSlice';
+import { validateLoginInput } from '../auth.validators';
 import { Screen } from '../../../components/primitives/Screen';
 import { Stack } from '../../../components/primitives/Stack';
 import { AppText } from '../../../components/primitives/AppText';
@@ -15,6 +16,22 @@ export function LoginScreen({
   const { submitting, error } = useAppSelector(state => state.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [localError, setLocalError] = useState('');
+
+  const submitLogin = () => {
+    try {
+      const safeInput = validateLoginInput({ email, password });
+      setLocalError('');
+      dispatch(login(safeInput));
+    } catch (validationError) {
+      setLocalError(
+        validationError instanceof Error
+          ? validationError.message
+          : 'Unable to sign in.',
+      );
+    }
+  };
+
   return (
     <Screen scroll>
       <Stack gap="lg" style={{ paddingVertical: 32 }}>
@@ -37,11 +54,13 @@ export function LoginScreen({
           secureTextEntry
           editable={!submitting}
         />
-        {error ? <AppText color="danger">{error}</AppText> : null}
+        {(localError || error) ? (
+          <AppText color="danger">{localError || error}</AppText>
+        ) : null}
         <Button
           title={submitting ? 'Signing in…' : 'Sign in'}
           disabled={submitting || !email.trim() || !password}
-          onPress={() => dispatch(login({ email: email.trim(), password }))}
+          onPress={submitLogin}
         />
         <Button
           title="Continue with Google"

@@ -29,8 +29,8 @@ function normalize(value?: string | null) {
 }
 function usable(document: DocumentRecord, now: number) {
   if (
-    document.classificationStatus === 'rejected' ||
-    document.ownershipStatus === 'mismatch'
+    document.classificationStatus !== 'verified' ||
+    document.ownershipStatus !== 'verified'
   )
     return false;
   if (

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Camera, FilePlus2, Bell } from 'lucide-react-native';
-import { homeOverview } from './homeData';
+import { useBootstrapQuery } from '../../services/api';
+import { parseHomeOverview } from './homeSelectors';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
@@ -9,8 +10,36 @@ import { AppText } from '../../components/primitives/AppText';
 import { Card } from '../../components/primitives/Card';
 import { Badge } from '../../components/primitives/Badge';
 import { Button } from '../../components/primitives/Button';
+import { LoadingState } from '../../components/feedback/LoadingState';
+import { ErrorState } from '../../components/feedback/ErrorState';
+
 export function HomeScreen() {
   const { theme } = useAppTheme();
+  const bootstrap = useBootstrapQuery();
+
+  if (bootstrap.isLoading) {
+    return (
+      <Screen>
+        <Stack align="center" style={{ paddingVertical: theme.spacing.xl }}>
+          <LoadingState label="Loading your readiness overview…" />
+        </Stack>
+      </Screen>
+    );
+  }
+
+  if (bootstrap.error || !bootstrap.data) {
+    return (
+      <Screen>
+        <Stack gap="md" style={{ paddingVertical: theme.spacing.xl }}>
+          <ErrorState message="Unable to load your readiness overview." />
+          <Button title="Retry" onPress={() => bootstrap.refetch()} />
+        </Stack>
+      </Screen>
+    );
+  }
+
+  const homeOverview = parseHomeOverview(bootstrap.data);
+
   return (
     <Screen scroll>
       <Stack gap="lg" style={{ paddingVertical: theme.spacing.lg }}>
@@ -33,7 +62,11 @@ export function HomeScreen() {
               {homeOverview.readiness.complete}%
             </AppText>
             <AppText color="secondary">
-              You’re making good progress. Two items need attention.
+              {homeOverview.documents.needsAttention
+                ? `${homeOverview.documents.needsAttention} item${
+                    homeOverview.documents.needsAttention === 1 ? '' : 's'
+                  } need attention.`
+                : 'Everything in your archive is currently up to date.'}
             </AppText>
           </Stack>
         </Card>
@@ -86,6 +119,9 @@ export function HomeScreen() {
               </Row>
             </Card>
           ))}
+          {!homeOverview.recent.length ? (
+            <AppText color="muted">Your recent documents will appear here.</AppText>
+          ) : null}
         </Stack>
       </Stack>
     </Screen>

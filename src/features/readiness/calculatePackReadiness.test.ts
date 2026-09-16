@@ -56,4 +56,14 @@ describe('calculatePackReadiness', () => {
       percentage: 0,
     });
   });
+
+  it('does not count documents awaiting verification', () => {
+    const result = calculatePackReadiness(
+      [requirement(['passport'])],
+      [document({ classificationStatus: 'pending' })],
+    );
+
+    expect(result.satisfiedRequired).toBe(0);
+    expect(result.requirements[0].status).toBe('missing');
+  });
 });

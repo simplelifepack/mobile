@@ -1,5 +1,28 @@
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
+## Google authentication
+
+Copy `.env.example` to `.env` and set the API URL plus the OAuth client IDs from
+the same Google Cloud project:
+
+- `GOOGLE_WEB_CLIENT_ID` must be the Web application client ID. The backend uses
+	it to validate the ID token, and Android uses it as the server client ID.
+- `GOOGLE_IOS_CLIENT_ID` must be the iOS application client ID.
+- `GOOGLE_IOS_REVERSED_CLIENT_ID` must be the reversed iOS client ID used by the
+	iOS callback URL scheme.
+
+For iOS, the checked-in `ios/Config.Debug.xcconfig` and
+`ios/Config.Release.xcconfig` files read the values generated from `.env` and
+preserve the CocoaPods settings. Add this as an Xcode scheme Build Pre-action:
+
+```sh
+"${SRCROOT}/../node_modules/react-native-config/ios/ReactNativeConfig/BuildXCConfig.rb" "${SRCROOT}/.." "${SRCROOT}/tmp.xcconfig"
+```
+
+For Android, add the package name `com.readinessmobile` and each debug/release
+SHA-1 certificate fingerprint to the Google OAuth configuration. No
+`google-services.json` file is needed for this ID-token flow.
+
 # Getting Started
 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
