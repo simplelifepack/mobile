@@ -2,6 +2,11 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
   Main: undefined;
+  Profile: undefined;
+  Family: undefined;
+  Trust: undefined;
+  Integrations: undefined;
+  Invitation: { token: string };
   AppLock: undefined;
 };
 export type OnboardingStackParamList = {
@@ -17,7 +22,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   Documents: undefined;
-  Readiness: undefined;
-  Trust: undefined;
-  Profile: undefined;
+  Packages: undefined;
+  Health: undefined;
+  Wealth: undefined;
 };

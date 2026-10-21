@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 import { useAppDispatch, useAppSelector } from '../../../app/store/hooks';
-import { googleLogin, signup } from '../authSlice';
+import { googleLogin, requestSignupOtp, signup } from '../authSlice';
 import { validateSignupInput } from '../auth.validators';
 import { Screen } from '../../../components/primitives/Screen';
 import { Stack } from '../../../components/primitives/Stack';
@@ -18,9 +18,11 @@ export function SignupScreen({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [awaitingOtp, setAwaitingOtp] = useState(false);
   const [localError, setLocalError] = useState('');
 
-  const submit = () => {
+  const requestCode = async () => {
     setLocalError('');
 
     try {
@@ -34,12 +36,41 @@ export function SignupScreen({
         return setLocalError('Passwords do not match.');
       }
 
-      dispatch(signup(safeInput));
+      await dispatch(requestSignupOtp(safeInput)).unwrap();
+      setOtp('');
+      setAwaitingOtp(true);
     } catch (validationError) {
+      const message = validationError instanceof Error
+        ? validationError.message
+        : 'Unable to create account.';
       setLocalError(
-        validationError instanceof Error
-          ? validationError.message
-          : 'Unable to create account.',
+        /already exists/i.test(message) ? 'User already exists. Log in.' : message,
+      );
+    }
+  };
+
+  const submit = async () => {
+    if (!awaitingOtp) {
+      await requestCode();
+      return;
+    }
+
+    setLocalError('');
+    try {
+      const safeInput = validateSignupInput({ name, email, password });
+      if (password !== confirmPassword) {
+        throw new Error('Passwords do not match.');
+      }
+      if (!/^\d{6}$/.test(otp.trim())) {
+        throw new Error('Enter the 6-digit code from your email.');
+      }
+      await dispatch(signup({ ...safeInput, otp: otp.trim() })).unwrap();
+    } catch (validationError) {
+      const message = validationError instanceof Error
+        ? validationError.message
+        : 'Unable to create account.';
+      setLocalError(
+        /already exists/i.test(message) ? 'User already exists. Log in.' : message,
       );
     }
   };
@@ -50,13 +81,13 @@ export function SignupScreen({
         <TextInput
           label="Name"
           value={name}
-          onChangeText={setName}
+          onChangeText={value => { setName(value); setLocalError(''); }}
           editable={!submitting}
         />
         <TextInput
           label="Email"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={value => { setEmail(value); setLocalError(''); }}
           autoCapitalize="none"
           keyboardType="email-address"
           editable={!submitting}
@@ -64,25 +95,62 @@ export function SignupScreen({
         <TextInput
           label="Password"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={value => { setPassword(value); setLocalError(''); }}
           secureTextEntry
           editable={!submitting}
         />
         <TextInput
           label="Confirm password"
           value={confirmPassword}
-          onChangeText={setConfirmPassword}
+          onChangeText={value => { setConfirmPassword(value); setLocalError(''); }}
           secureTextEntry
           editable={!submitting}
         />
+        {awaitingOtp ? (
+          <>
+            <TextInput
+              label="Signup code"
+              value={otp}
+              onChangeText={value => {
+                setOtp(value.replace(/\D/g, '').slice(0, 6));
+                setLocalError('');
+              }}
+              keyboardType="number-pad"
+              maxLength={6}
+              editable={!submitting}
+              placeholder="6-digit code"
+            />
+            <AppText variant="caption" color="secondary">
+              We sent a code to {email}.
+            </AppText>
+          </>
+        ) : null}
         {localError || error ? (
           <AppText color="danger">{localError || error}</AppText>
         ) : null}
         <Button
-          title={submitting ? 'Creating account…' : 'Create account'}
-          disabled={submitting || !name.trim() || !email.trim() || !password}
+          title={submitting
+            ? 'Working…'
+            : awaitingOtp
+              ? 'Verify and create account'
+              : 'Send signup code'}
+          disabled={
+            submitting ||
+            !name.trim() ||
+            !email.trim() ||
+            !password ||
+            (awaitingOtp && otp.length !== 6)
+          }
           onPress={submit}
         />
+        {awaitingOtp ? (
+          <Button
+            title="Resend signup code"
+            variant="ghost"
+            disabled={submitting}
+            onPress={requestCode}
+          />
+        ) : null}
         <Button
           title="Continue with Google"
           variant="secondary"

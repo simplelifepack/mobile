@@ -1,9 +1,24 @@
+export const space = {
+  0: 0,
+  2: 2,
+  4: 4,
+  6: 6,
+  8: 8,
+  12: 12,
+  16: 16,
+  20: 20,
+  24: 24,
+  32: 32,
+  40: 40,
+  48: 48,
+} as const;
+
 export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
+  xs: space[4],
+  sm: space[8],
+  md: space[16],
+  lg: space[24],
+  xl: space[32],
+  xxl: space[48],
 } as const;
 export type SpacingToken = keyof typeof spacing;

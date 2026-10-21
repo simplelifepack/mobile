@@ -11,6 +11,42 @@ jest.mock('react-native-config', () => ({
   GOOGLE_WEB_CLIENT_ID: 'test-client-id',
 }));
 
+jest.mock('react-native-file-access', () => ({
+  Dirs: {
+    CacheDir: '/tmp/readiness-cache',
+    DocumentDir: '/tmp/readiness-documents',
+  },
+  FileSystem: {
+    cp: jest.fn().mockResolvedValue(undefined),
+    cpExternal: jest.fn().mockResolvedValue(undefined),
+    exists: jest.fn().mockResolvedValue(false),
+    fetch: jest.fn(),
+    mkdir: jest.fn().mockResolvedValue(undefined),
+    readFile: jest.fn().mockResolvedValue(''),
+    unlink: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
+jest.mock('react-native-pdf', () => 'Pdf');
+
+jest.mock('@react-native-documents/picker', () => ({
+  pick: jest.fn(),
+  keepLocalCopy: jest.fn(),
+  types: { pdf: 'application/pdf', images: 'image/*' },
+  errorCodes: { OPERATION_CANCELED: 'OPERATION_CANCELED' },
+  isErrorWithCode: error => Boolean(error?.code),
+}));
+
+jest.mock('react-native-image-picker', () => ({
+  launchCamera: jest.fn(),
+  launchImageLibrary: jest.fn(),
+}));
+
+jest.mock('react-native-quick-crypto', () => ({
+  __esModule: true,
+  default: { Buffer: require('buffer').Buffer },
+}));
+
 jest.mock('@react-native-google-signin/google-signin', () => ({
   GoogleSignin: {
     configure: jest.fn(),

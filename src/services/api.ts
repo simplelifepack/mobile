@@ -1,8 +1,11 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { packagesApi, type PackageQuery } from '../api/packages.api';
+import { documentsApi } from '../api/documents.api';
 import { userApi } from '../api/user.api';
 import type {
   BootstrapResponse,
+  CustomPackPayload,
+  DocumentRecord,
   PackageListResponse,
   PackageSearchResponse,
   PackageSummary,
@@ -19,7 +22,7 @@ function errorValue(error: unknown) {
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fakeBaseQuery<{ message: string }>(),
-  tagTypes: ['Bootstrap', 'Packages'],
+  tagTypes: ['Bootstrap', 'Documents', 'Packages', 'PackageDetail'],
   endpoints: builder => ({
     bootstrap: builder.query<BootstrapResponse, void>({
       async queryFn() {
@@ -30,6 +33,17 @@ export const api = createApi({
         }
       },
       providesTags: ['Bootstrap'],
+      keepUnusedDataFor: 300,
+    }),
+    documents: builder.query<DocumentRecord[], void>({
+      async queryFn() {
+        try {
+          return { data: await documentsApi.list() };
+        } catch (error) {
+          return errorValue(error);
+        }
+      },
+      providesTags: ['Documents'],
       keepUnusedDataFor: 300,
     }),
     packages: builder.query<PackageListResponse, PackageQuery>({
@@ -63,7 +77,21 @@ export const api = createApi({
           return errorValue(error);
         }
       },
+      providesTags: (_result, _error, slug) => [
+        { type: 'PackageDetail', id: slug },
+      ],
       keepUnusedDataFor: 300,
+    }),
+    createCustomPackage: builder.mutation<PackageSummary, CustomPackPayload>({
+      async queryFn(payload) {
+        try {
+          const result = await packagesApi.createCustom(payload);
+          return { data: result.package };
+        } catch (error) {
+          return errorValue(error);
+        }
+      },
+      invalidatesTags: ['Packages'],
     }),
     generatePackage: builder.mutation<
       PackageSearchResponse,
@@ -82,12 +110,66 @@ export const api = createApi({
         }
       },
     }),
+    assignRequirementDocument: builder.mutation<
+      PackageSummary,
+      {
+        assignmentSource: Exclude<
+          import('../api/types').RequirementAssignmentSource,
+          'AUTO'
+        >;
+        documentId: string;
+        requirementId: string;
+        slug: string;
+      }
+    >({
+      async queryFn({ assignmentSource, documentId, requirementId, slug }) {
+        try {
+          const result = await packagesApi.assignRequirementDocument(
+            slug,
+            requirementId,
+            documentId,
+            assignmentSource,
+          );
+          return { data: result.package };
+        } catch (error) {
+          return errorValue(error);
+        }
+      },
+      invalidatesTags: (_result, _error, { slug }) => [
+        'Packages',
+        { type: 'PackageDetail', id: slug },
+      ],
+    }),
+    clearRequirementDocument: builder.mutation<
+      PackageSummary,
+      { requirementId: string; slug: string }
+    >({
+      async queryFn({ requirementId, slug }) {
+        try {
+          const result = await packagesApi.clearRequirementDocument(
+            slug,
+            requirementId,
+          );
+          return { data: result.package };
+        } catch (error) {
+          return errorValue(error);
+        }
+      },
+      invalidatesTags: (_result, _error, { slug }) => [
+        'Packages',
+        { type: 'PackageDetail', id: slug },
+      ],
+    }),
   }),
 });
 
 export const {
   useBootstrapQuery,
+  useDocumentsQuery,
   usePackagesQuery,
   usePackageDetailQuery,
+  useCreateCustomPackageMutation,
   useGeneratePackageMutation,
+  useAssignRequirementDocumentMutation,
+  useClearRequirementDocumentMutation,
 } = api;

@@ -1,5 +1,6 @@
 import type { DocumentRecord, PackageRequirement } from '../../api/types';
 export type DerivedRequirement = PackageRequirement & {
+  assignmentSource: 'AUTO' | 'USER_SELECTED' | 'USER_OVERRIDE' | null;
   status: 'ready' | 'missing';
   matchedDocument?: DocumentRecord;
 };
@@ -10,7 +11,7 @@ export type PackReadiness = {
   percentage: number;
   requirements: DerivedRequirement[];
 };
-function normalize(value?: string | null) {
+export function normalizeRequirementValue(value?: string | null) {
   const key = (value ?? '')
     .trim()
     .toLowerCase()
@@ -18,6 +19,8 @@ function normalize(value?: string | null) {
     .replace(/^_+|_+$/g, '');
   const aliases: Record<string, string> = {
     driving_license: 'driving_licence',
+    aadhar: 'aadhaar',
+    aadhaar_card: 'aadhaar',
     photograph: 'photo',
     recent_photograph: 'photo',
     profile_photo: 'photo',
@@ -27,10 +30,44 @@ function normalize(value?: string | null) {
   };
   return aliases[key] ?? key;
 }
+function documentType(document: DocumentRecord) {
+  return normalizeRequirementValue(
+    document.normalizedType ?? document.documentType,
+  );
+}
+function documentRequirementTypes(document: DocumentRecord) {
+  const type = documentType(document);
+  const implied: Record<string, string[]> = {
+    aadhaar: ['identity_proof', 'address_proof', 'date_of_birth_proof'],
+    pan: ['identity_proof', 'tax_identifier', 'financial_identity'],
+    passport: [
+      'identity_proof',
+      'nationality_proof',
+      'travel_document',
+      'photo_id',
+      'date_of_birth_proof',
+      'address_proof',
+    ],
+    driving_licence: [
+      'identity_proof',
+      'address_proof',
+      'photo_id',
+      'age_proof',
+      'driving_authorization',
+    ],
+    voter_id: ['identity_proof', 'address_proof', 'photo_id'],
+    birth_certificate: ['date_of_birth_proof', 'identity_proof'],
+  };
+  return [
+    type,
+    ...(implied[type] ?? []),
+    ...(document.capabilities ?? []).map(normalizeRequirementValue),
+  ];
+}
 function usable(document: DocumentRecord, now: number) {
   if (
-    document.classificationStatus !== 'verified' ||
-    document.ownershipStatus !== 'verified'
+    document.classificationStatus === 'rejected' ||
+    document.ownershipStatus === 'mismatch'
   )
     return false;
   if (
@@ -39,9 +76,8 @@ function usable(document: DocumentRecord, now: number) {
     Date.parse(document.expiryDate) < now
   )
     return false;
-  return Boolean(
-    document.normalizedType && document.normalizedType !== 'unknown',
-  );
+  const type = documentType(document);
+  return Boolean(type && type !== 'unknown');
 }
 function metadataMatches(
   requirement: PackageRequirement,
@@ -55,6 +91,22 @@ function metadataMatches(
     Number.isNaN(timestamp) || (now - timestamp) / 86_400_000 <= maxAgeDays
   );
 }
+export function documentMatchesRequirement(
+  requirement: PackageRequirement,
+  document: DocumentRecord,
+  now = Date.now(),
+) {
+  if (!usable(document, now)) return false;
+  const accepted = new Set(
+    requirement.acceptedDocumentTypes.map(normalizeRequirementValue),
+  );
+  return (
+    normalizeRequirementValue(requirement.owner ?? 'self') ===
+      normalizeRequirementValue(document.owner ?? 'self') &&
+    documentRequirementTypes(document).some(type => accepted.has(type)) &&
+    metadataMatches(requirement, document, now)
+  );
+}
 export function calculatePackReadiness(
   requirements: PackageRequirement[],
   documents: DocumentRecord[],
@@ -62,23 +114,34 @@ export function calculatePackReadiness(
 ): PackReadiness {
   const available = documents.filter(document => usable(document, now));
   const derived = requirements.map((requirement): DerivedRequirement => {
-    const accepted = new Set(requirement.acceptedDocumentTypes.map(normalize));
+    const assigned = requirement.assignment
+      ? available.find(document => document.id === requirement.assignment?.documentId)
+      : undefined;
+    if (assigned) {
+      return {
+        ...requirement,
+        assignmentSource: requirement.assignment!.assignmentSource,
+        status: 'ready',
+        matchedDocument: assigned,
+      };
+    }
+    const accepted = new Set(
+      requirement.acceptedDocumentTypes.map(normalizeRequirementValue),
+    );
     const matched = available
       .filter(
         document =>
-          normalize(requirement.owner ?? 'self') ===
-          normalize(document.owner ?? 'self'),
+          normalizeRequirementValue(requirement.owner ?? 'self') ===
+          normalizeRequirementValue(document.owner ?? 'self'),
       )
       .filter(document =>
-        [
-          normalize(document.normalizedType),
-          ...(document.capabilities ?? []).map(normalize),
-        ].some(type => accepted.has(type)),
+        documentRequirementTypes(document).some(type => accepted.has(type)),
       )
       .filter(document => metadataMatches(requirement, document, now))
       .sort((left, right) => right.confidence - left.confidence)[0];
     return {
       ...requirement,
+      assignmentSource: matched ? 'AUTO' : null,
       status: matched ? 'ready' : 'missing',
       ...(matched ? { matchedDocument: matched } : {}),
     };

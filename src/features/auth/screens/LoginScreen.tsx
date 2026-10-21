@@ -1,86 +1,491 @@
 import React, { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { AuthStackParamList } from '../../../app/navigation/types';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
+import { ArrowRight, Eye, EyeOff } from 'lucide-react-native';
+
+import type {
+  AuthStackParamList,
+  RootStackParamList,
+} from '../../../app/navigation/types';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAppDispatch, useAppSelector } from '../../../app/store/hooks';
-import { googleLogin, login } from '../authSlice';
-import { validateLoginInput } from '../auth.validators';
 import { Screen } from '../../../components/primitives/Screen';
-import { Stack } from '../../../components/primitives/Stack';
 import { AppText } from '../../../components/primitives/AppText';
-import { TextInput } from '../../../components/primitives/TextInput';
-import { Button } from '../../../components/primitives/Button';
+import { BrandMark } from '../../../components/BrandMark';
+import { useAppTheme } from '../../../design/theme/ThemeProvider';
+import {
+  clearAuthError,
+  googleLogin,
+  login,
+  loginWithPin,
+} from '../authSlice';
+import { cleanPin, validateLoginInput } from '../auth.validators';
+
 export function LoginScreen({
   navigation,
 }: NativeStackScreenProps<AuthStackParamList, 'Login'>) {
+  const { theme } = useAppTheme();
   const dispatch = useAppDispatch();
-  const { submitting, error } = useAppSelector(state => state.auth);
+  const { submitting, error: authError } = useAppSelector(state => state.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
+  const [mode, setMode] = useState<'password' | 'pin'>('password');
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const [localError, setLocalError] = useState('');
 
-  const submitLogin = () => {
+  const submitLogin = async () => {
+    setLocalError('');
+    dispatch(clearAuthError());
     try {
-      const safeInput = validateLoginInput({ email, password });
-      setLocalError('');
-      dispatch(login(safeInput));
-    } catch (validationError) {
+      if (mode === 'pin') {
+        await dispatch(loginWithPin({ email, pin })).unwrap();
+      } else {
+        await dispatch(login(validateLoginInput({ email, password }))).unwrap();
+      }
+    } catch (submitError) {
       setLocalError(
-        validationError instanceof Error
-          ? validationError.message
+        submitError instanceof Error
+          ? submitError.message
           : 'Unable to sign in.',
       );
     }
   };
 
+  const skipSignIn = () => {
+    navigation
+      .getParent<NativeStackNavigationProp<RootStackParamList>>()
+      ?.navigate('Main');
+  };
+
+  const displayedError = localError || authError;
+
   return (
-    <Screen scroll>
-      <Stack gap="lg" style={{ paddingVertical: 32 }}>
-        <Stack gap="sm">
-          <AppText variant="title">Welcome back</AppText>
-          <AppText color="secondary">Sign in to continue to Readiness.</AppText>
-        </Stack>
-        <TextInput
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          editable={!submitting}
-        />
-        <TextInput
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!submitting}
-        />
-        {(localError || error) ? (
-          <AppText color="danger">{localError || error}</AppText>
-        ) : null}
-        <Button
-          title={submitting ? 'Signing in…' : 'Sign in'}
-          disabled={submitting || !email.trim() || !password}
-          onPress={submitLogin}
-        />
-        <Button
-          title="Continue with Google"
-          variant="secondary"
-          disabled={submitting}
-          onPress={() => dispatch(googleLogin())}
-        />
-        <Button
-          title="Forgot password?"
-          variant="ghost"
-          disabled={submitting}
-          onPress={() => navigation.navigate('ForgotPassword')}
-        />
-        <Button
-          title="Create account"
-          variant="ghost"
-          disabled={submitting}
-          onPress={() => navigation.navigate('Signup')}
-        />
-      </Stack>
+    <Screen padded={false}>
+      <KeyboardAvoidingView
+        style={styles.keyboard}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.container}>
+            <View style={styles.brandSection}>
+              <View style={styles.logoMark}>
+                <BrandMark size={70} color={theme.colors.textPrimary} />
+              </View>
+              <AppText variant="title" style={styles.brandName}>
+                ReadiNes
+              </AppText>
+              <AppText
+                variant="body"
+                color="secondary"
+                align="center"
+                style={styles.tagline}
+              >
+                Be ready for life&apos;s important moments.
+              </AppText>
+            </View>
+
+            <View
+              style={[
+                styles.modeContainer,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.modeButton,
+                  { backgroundColor: theme.colors.surfaceElevated },
+                ]}
+              >
+                <AppText variant="heading" color="primary" style={styles.modeText}>
+                  Sign in
+                </AppText>
+              </View>
+              <View style={[styles.modeDivider, { backgroundColor: theme.colors.border }]} />
+              <Pressable
+                accessibilityRole="button"
+                disabled={submitting}
+                onPress={() => navigation.navigate('Signup')}
+                style={styles.modeButton}
+              >
+                <AppText variant="heading" color="secondary" style={styles.modeText}>
+                  Create account
+                </AppText>
+              </Pressable>
+            </View>
+
+            <View style={styles.form}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: theme.colors.surfaceElevated,
+                    borderColor: emailFocused ? theme.colors.primary : theme.colors.border,
+                  },
+                ]}
+              >
+                <TextInput
+                  value={email}
+                  onChangeText={value => {
+                    setEmail(value);
+                    setLocalError('');
+                    if (authError) dispatch(clearAuthError());
+                  }}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  placeholder="Email"
+                  placeholderTextColor={theme.colors.textMuted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="emailAddress"
+                  editable={!submitting}
+                  returnKeyType="next"
+                  style={[styles.input, { color: theme.colors.textPrimary }]}
+                />
+              </View>
+
+              {mode === 'pin' ? (
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: theme.colors.surfaceElevated,
+                    borderColor: passwordFocused ? theme.colors.primary : theme.colors.border,
+                  },
+                ]}
+              >
+                <TextInput
+                  value={pin}
+                  onChangeText={value => {
+                    setPin(cleanPin(value));
+                    setLocalError('');
+                    if (authError) dispatch(clearAuthError());
+                  }}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  placeholder="6-digit R-pin"
+                  placeholderTextColor={theme.colors.textMuted}
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  maxLength={6}
+                  editable={!submitting}
+                  returnKeyType="done"
+                  onSubmitEditing={submitLogin}
+                  style={[styles.input, { color: theme.colors.textPrimary }]}
+                />
+              </View>
+              ) : (
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: theme.colors.surfaceElevated,
+                    borderColor: passwordFocused ? theme.colors.primary : theme.colors.border,
+                  },
+                ]}
+              >
+                <TextInput
+                  value={password}
+                  onChangeText={value => {
+                    setPassword(value);
+                    setLocalError('');
+                    if (authError) dispatch(clearAuthError());
+                  }}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  placeholder="Password"
+                  placeholderTextColor={theme.colors.textMuted}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="password"
+                  editable={!submitting}
+                  returnKeyType="done"
+                  onSubmitEditing={submitLogin}
+                  style={[styles.input, styles.passwordInput, { color: theme.colors.textPrimary }]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  onPress={() => setShowPassword(value => !value)}
+                  hitSlop={8}
+                  style={styles.passwordToggle}
+                >
+                  {showPassword ? (
+                    <EyeOff size={20} color={theme.colors.textSecondary} />
+                  ) : (
+                    <Eye size={20} color={theme.colors.textSecondary} />
+                  )}
+                </Pressable>
+              </View>
+              )}
+
+              {displayedError ? (
+                <AppText variant="caption" color="danger" style={styles.error}>
+                  {displayedError}
+                </AppText>
+              ) : null}
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={mode === 'pin' ? 'Sign in with R-pin' : 'Sign in'}
+                disabled={submitting}
+                onPress={submitLogin}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  { backgroundColor: theme.colors.primary },
+                  pressed && styles.pressed,
+                  submitting && styles.disabled,
+                ]}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+                ) : (
+                  <>
+                    <AppText variant="heading" color="onPrimary" style={styles.primaryButtonText}>
+                      Sign in
+                    </AppText>
+                    <ArrowRight size={21} color={theme.colors.onPrimary} strokeWidth={2} />
+                  </>
+                )}
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={submitting}
+                onPress={() => dispatch(googleLogin())}
+                style={[
+                  styles.secondaryButton,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.border,
+                  },
+                ]}
+              >
+                <AppText variant="label">Continue with Google</AppText>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={submitting}
+                onPress={() => {
+                  setMode(value => (value === 'pin' ? 'password' : 'pin'));
+                  setLocalError('');
+                  dispatch(clearAuthError());
+                }}
+                style={styles.textAction}
+              >
+                <AppText variant="label" color="primary">
+                  {mode === 'pin' ? 'Use password instead' : 'Sign in with R-pin'}
+                </AppText>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={submitting}
+                onPress={() => navigation.navigate('ForgotPassword')}
+                style={styles.textAction}
+              >
+                <AppText variant="label" color="primary">Forgot password?</AppText>
+              </Pressable>
+
+              {__DEV__ ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Skip sign-in testing"
+                  onPress={skipSignIn}
+                  style={({ pressed }) => [
+                    styles.testingButton,
+                    {
+                      borderColor: theme.colors.warning,
+                      backgroundColor: theme.colors.surface,
+                    },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <AppText
+                    variant="label"
+                    style={[styles.testingText, { color: theme.colors.warning }]}
+                  >
+                    Skip sign-in (testing)
+                  </AppText>
+                  <ArrowRight size={20} color={theme.colors.warning} strokeWidth={2} />
+                </Pressable>
+              ) : null}
+
+              <AppText
+                variant="caption"
+                color="secondary"
+                align="center"
+                style={styles.securityText}
+              >
+                Your documents stay encrypted on your device.
+              </AppText>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  keyboard: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+  },
+  container: {
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+  },
+  brandSection: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logoMark: {
+    width: 58,
+    height: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  brandName: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '700',
+  },
+  tagline: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  modeContainer: {
+    minHeight: 54,
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 12,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  modeButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  modeDivider: {
+    width: 1,
+  },
+  modeText: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  form: {
+    width: '100%',
+  },
+  inputContainer: {
+    minHeight: 54,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  input: {
+    flex: 1,
+    minHeight: 52,
+    fontSize: 15,
+    lineHeight: 20,
+    paddingVertical: 0,
+  },
+  passwordInput: {
+    paddingRight: 8,
+  },
+  passwordToggle: {
+    width: 36,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  error: {
+    marginTop: -4,
+    marginBottom: 12,
+  },
+  primaryButton: {
+    minHeight: 54,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 4,
+  },
+  primaryButtonText: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    minHeight: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  textAction: {
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  testingButton: {
+    minHeight: 46,
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  testingText: {
+    fontWeight: '600',
+  },
+  securityText: {
+    marginTop: 20,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  pressed: {
+    opacity: 0.78,
+  },
+  disabled: {
+    opacity: 0.65,
+  },
+});

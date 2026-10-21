@@ -13,6 +13,7 @@ import { environment } from '../../config/environment';
 import {
   validateLoginInput,
   validatePasswordResetInput,
+  validatePinLoginInput,
   validateSignupInput,
 } from './auth.validators';
 
@@ -46,7 +47,20 @@ function configureGoogleSignIn() {
 }
 
 function googleSignInError(error: unknown) {
-  if (error instanceof ApiError) return error.message;
+  if (error instanceof ApiError) {
+    if (error.status === 400)
+      return 'Google did not return a valid sign-in token. Please try again.';
+    if (error.status === 401)
+      return 'Google rejected the sign-in token. Verify GOOGLE_CLIENT_ID matches the app Web ID and configure GOOGLE_IOS_CLIENT_ID for iOS.';
+    if (error.status === 429)
+      return 'Too many Google sign-in attempts. Please wait and try again.';
+    if (error.status === 503)
+      return 'Google sign-in is not configured on the backend.';
+    if (error.status >= 500) {
+      return `Google sign-in service failed (HTTP ${error.status}).${error.errorId ? ` Reference: ${error.errorId}` : ' Please try again later.'}`;
+    }
+    return error.message;
+  }
   if (isErrorWithCode(error)) {
     if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE)
       return 'Google Play Services are required to continue.';
@@ -85,10 +99,24 @@ export const login = createAsyncThunk(
 );
 export const signup = createAsyncThunk(
   'auth/signup',
-  async (input: { name: string; email: string; password: string }) => {
+  async (input: { name: string; email: string; password: string; otp: string }) => {
     const safeInput = validateSignupInput(input);
-    return persist(await authApi.signup(safeInput));
+    const otp = input.otp.trim();
+    if (!/^\d{6}$/.test(otp)) throw new Error('Enter the 6-digit code from your email.');
+    return persist(await authApi.signup({ ...safeInput, otp }));
   },
+);
+export const requestSignupOtp = createAsyncThunk(
+  'auth/requestSignupOtp',
+  async (input: { name: string; email: string; password: string }) => {
+    return authApi.requestSignupOtp(validateSignupInput(input));
+  },
+);
+
+export const loginWithPin = createAsyncThunk(
+  'auth/loginWithPin',
+  async (input: { email: string; pin: string }) =>
+    persist(await authApi.loginWithPin(validatePinLoginInput(input))),
 );
 
 export const requestPasswordReset = createAsyncThunk(
@@ -96,7 +124,7 @@ export const requestPasswordReset = createAsyncThunk(
   async (email: string, { rejectWithValue }) => {
     try {
       const safeEmail = validatePasswordResetInput(email);
-      return await authApi.forgotPassword(safeEmail);
+      return await authApi.forgotPasswordOtp(safeEmail);
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : 'Unable to request a reset.',
@@ -127,12 +155,21 @@ export const logout = createAsyncThunk('auth/logout', async () => {
   await sessionStorage.clear().catch(() => undefined);
 });
 
+export const logoutAll = createAsyncThunk('auth/logoutAll', async () => {
+  await authApi.logoutAll();
+  setAccessToken(null);
+  await sessionStorage.clear().catch(() => undefined);
+});
+
 const slice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
     clearAuthError: state => {
       state.error = null;
+    },
+    updateCurrentUser: (state, action: { payload: AuthUser }) => {
+      state.user = action.payload;
     },
   },
   extraReducers: builder => {
@@ -171,9 +208,20 @@ const slice = createSlice({
       .addCase(login.pending, pending)
       .addCase(login.fulfilled, fulfilled)
       .addCase(login.rejected, rejected)
+      .addCase(loginWithPin.pending, pending)
+      .addCase(loginWithPin.fulfilled, fulfilled)
+      .addCase(loginWithPin.rejected, rejected)
       .addCase(signup.pending, pending)
       .addCase(signup.fulfilled, fulfilled)
       .addCase(signup.rejected, rejected)
+      .addCase(requestSignupOtp.pending, pending)
+      .addCase(requestSignupOtp.fulfilled, state => {
+        state.submitting = false;
+      })
+      .addCase(requestSignupOtp.rejected, (state, action) => {
+        state.submitting = false;
+        state.error = action.error.message ?? 'Unable to send signup code.';
+      })
       .addCase(requestPasswordReset.pending, state => {
         state.submitting = true;
         state.error = null;
@@ -198,8 +246,19 @@ const slice = createSlice({
         state.user = null;
         state.submitting = false;
         state.error = null;
+      })
+      .addCase(logoutAll.pending, pending)
+      .addCase(logoutAll.fulfilled, state => {
+        state.status = 'unauthenticated';
+        state.user = null;
+        state.submitting = false;
+        state.error = null;
+      })
+      .addCase(logoutAll.rejected, (state, action) => {
+        state.submitting = false;
+        state.error = action.error.message ?? 'Unable to sign out everywhere.';
       });
   },
 });
-export const { clearAuthError } = slice.actions;
+export const { clearAuthError, updateCurrentUser } = slice.actions;
 export const authReducer = slice.reducer;

@@ -39,6 +39,16 @@ describe('calculatePackReadiness', () => {
     expect(result.requirements[0].status).toBe('ready');
   });
 
+  it('matches implied document capabilities from the web readiness rules', () => {
+    const result = calculatePackReadiness(
+      [requirement(['identity_proof'])],
+      [document({ normalizedType: 'passport', capabilities: undefined })],
+    );
+
+    expect(result.requirements[0].assignmentSource).toBe('AUTO');
+    expect(result.requirements[0].status).toBe('ready');
+  });
+
   it('rejects expired, mismatched-owner, and stale documents', () => {
     const requirements = [requirement(['passport'], { maxAgeDays: 30 })];
     const result = calculatePackReadiness(
@@ -57,13 +67,43 @@ describe('calculatePackReadiness', () => {
     });
   });
 
-  it('does not count documents awaiting verification', () => {
+  it('uses pending documents but excludes rejected documents', () => {
     const result = calculatePackReadiness(
       [requirement(['passport'])],
-      [document({ classificationStatus: 'pending' })],
+      [
+        document({ classificationStatus: 'pending' }),
+        document({
+          id: 'rejected',
+          classificationStatus: 'rejected',
+        }),
+      ],
     );
 
-    expect(result.satisfiedRequired).toBe(0);
-    expect(result.requirements[0].status).toBe('missing');
+    expect(result.satisfiedRequired).toBe(1);
+    expect(result.requirements[0].matchedDocument?.id).toBe('document');
+  });
+
+  it('uses a saved requirement assignment before automatic matching', () => {
+    const assigned = document({
+      id: 'assigned',
+      normalizedType: 'birth_certificate',
+    });
+    const requirementWithAssignment: PackageRequirement = {
+      ...requirement(['passport']),
+      assignment: {
+        documentId: 'assigned',
+        assignmentSource: 'USER_SELECTED',
+      },
+    };
+    const result = calculatePackReadiness(
+      [requirementWithAssignment],
+      [assigned],
+    );
+
+    expect(result.requirements[0]).toMatchObject({
+      assignmentSource: 'USER_SELECTED',
+      status: 'ready',
+      matchedDocument: { id: 'assigned' },
+    });
   });
 });

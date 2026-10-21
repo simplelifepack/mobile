@@ -57,3 +57,23 @@ export function validatePasswordResetInput(email: string) {
   if (emailError) throw new Error(emailError);
   return normalized;
 }
+
+export function cleanPin(value: string) {
+  return value.replace(/\D/g, '').slice(0, 6);
+}
+
+export function validatePinLoginInput(input: { email: string; pin: string }) {
+  const email = normalizeEmail(input.email);
+  const emailError = validateEmail(email);
+  if (emailError) throw new Error(emailError);
+  if (!/^\d{6}$/.test(input.pin)) throw new Error('Enter your 6-digit R-pin.');
+  return { email, pin: input.pin };
+}
+
+export function validateNewPassword(password: string, confirm: string) {
+  if (password.trim().length < 8) {
+    throw new Error('Password must be at least 8 characters.');
+  }
+  if (password !== confirm) throw new Error('Passwords do not match.');
+  return password.trim();
+}
