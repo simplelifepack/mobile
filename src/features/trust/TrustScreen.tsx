@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TextInput,
   View,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { KeyRound, UserRound, Users, X } from 'lucide-react-native';
 import { trustApi } from '../../api/trust.api';
@@ -17,6 +18,7 @@ import type {
 } from '../../api/types';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
+import { DatePickerInput } from '../../components/primitives/DatePickerInput';
 import { AppText } from '../../components/primitives/AppText';
 import { Button } from '../../components/primitives/Button';
 import { FloatingActionButton } from '../../components/primitives/FloatingActionButton';
@@ -122,7 +124,7 @@ export function TrustScreen({ familyOnly = false }: { familyOnly?: boolean }) {
   if (loading && !data) {
     return (
       <Screen>
-        <LoadingState label="Loading family access…" />
+        <LoadingState fill label="Loading family access…" />
       </Screen>
     );
   }
@@ -141,6 +143,7 @@ export function TrustScreen({ familyOnly = false }: { familyOnly?: boolean }) {
   return (
     <Screen
       scroll
+      onRefresh={load}
       floatingAction={
         <FloatingActionButton
           accessibilityLabel="Add family member"
@@ -502,7 +505,7 @@ function MemberForm({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-      <View style={styles.modalBackdrop}>
+      <KeyboardAvoidingView behavior="padding" style={styles.modalBackdrop}>
         <View style={[styles.modalPanel, { backgroundColor: theme.colors.background }]}>
           <Row align="center" justify="space-between">
             <AppText variant="heading">Add family member</AppText>
@@ -513,7 +516,7 @@ function MemberForm({
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.formContent}>
             <FormInput label="Name" value={name} onChangeText={setName} placeholder="Full name" />
             <FormInput label="Email" value={email} onChangeText={setEmail} placeholder="name@example.com" keyboardType="email-address" autoCapitalize="none" />
-            <FormInput label="Date of birth" value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="YYYY-MM-DD" />
+            <FormDateInput label="Date of birth" value={dateOfBirth} onChangeText={setDateOfBirth} />
             <FormInput label="Relation" value={relation} onChangeText={value => setRelation(value.toUpperCase() as TrustMemberPayload['relation'])} placeholder="PARENT" />
             <FormInput label="Blood group" value={bloodGroup} onChangeText={value => setBloodGroup(value.toUpperCase() as TrustMemberPayload['bloodGroup'])} placeholder="O+" />
             {!familyOnly ? (
@@ -547,7 +550,7 @@ function MemberForm({
             />
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -629,6 +632,33 @@ function PinResetModal({
         </View>
       </View>
     </Modal>
+  );
+}
+
+function FormDateInput({
+  label,
+  value,
+  onChangeText,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+}) {
+  const { theme } = useAppTheme();
+  return (
+    <Stack gap="xs">
+      <AppText variant="caption" color="secondary">{label}</AppText>
+      <DatePickerInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder="YYYY-MM-DD"
+        maximumDate={new Date()}
+        style={[
+          styles.input,
+          { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+        ]}
+      />
+    </Stack>
   );
 }
 

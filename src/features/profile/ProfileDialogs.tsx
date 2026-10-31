@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, TextInput, View, KeyboardAvoidingView } from 'react-native';
 
 import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
@@ -24,7 +24,7 @@ export function CurrencyPickerModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
         <View style={[styles.currencyPanel, { backgroundColor: theme.colors.background }]}>
           <View style={styles.header}>
             <AppText style={styles.title}>Home currency</AppText>
@@ -64,7 +64,7 @@ export function CurrencyPickerModal({
             );
           })}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -91,7 +91,7 @@ export function DeleteAccountModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
         <View style={[styles.deletePanel, { backgroundColor: theme.colors.background }]}>
           <AppText style={styles.title}>Schedule account deletion</AppText>
           <AppText style={styles.description} color="secondary">
@@ -146,7 +146,7 @@ export function DeleteAccountModal({
             </Pressable>
           </Row>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

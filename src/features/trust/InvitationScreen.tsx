@@ -78,7 +78,7 @@ export function InvitationScreen() {
     ],
   );
 
-  if (loading) return <Screen><LoadingState label="Loading invitation…" /></Screen>;
+  if (loading) return <Screen><LoadingState fill label="Loading invitation…" /></Screen>;
 
   return (
     <Screen scroll>

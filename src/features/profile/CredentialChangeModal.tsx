@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, TextInput, View, KeyboardAvoidingView } from 'react-native';
 
 import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
@@ -116,7 +116,7 @@ export function CredentialChangeModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
         <View style={[styles.panel, { backgroundColor: theme.colors.background }]}>
           <AppText style={styles.title}>
             {step === 'otp'
@@ -214,7 +214,7 @@ export function CredentialChangeModal({
             </Pressable>
           </Row>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

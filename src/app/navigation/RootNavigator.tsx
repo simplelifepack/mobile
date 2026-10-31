@@ -11,11 +11,16 @@ import { AppLockScreen } from '../../components/security/AppLockScreen';
 import { ProfileScreen } from '../../features/profile/ProfileScreen';
 import { FamilyScreen } from '../../features/trust/FamilyScreen';
 import { TrustScreen } from '../../features/trust/TrustScreen';
+import { DigiLockerScreen } from '../../features/integrations/digilocker/DigiLockerScreen';
 import { IntegrationsScreen } from '../../features/profile/IntegrationsScreen';
 import { InvitationScreen } from '../../features/trust/InvitationScreen';
 import { PinSetupScreen } from '../../features/auth/screens/PinSetupScreen';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { View } from 'react-native';
+import { ErrorState } from '../../components/feedback/ErrorState';
+import { Button } from '../../components/primitives/Button';
+import { useAppDispatch } from '../store/hooks';
+import { restoreSession } from '../../features/auth/authSlice';
 import { useBootstrapQuery } from '../../services/api';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const linking: LinkingOptions<RootStackParamList> = {
@@ -29,6 +34,7 @@ export function RootNavigator() {
   const onboardingRestoring = useAppSelector(
     state => state.onboarding.restoring,
   );
+  const dispatch = useAppDispatch();
   const authStatus = useAppSelector(state => state.auth.status);
   const authUser = useAppSelector(state => state.auth.user);
   const guestPreview = __DEV__ && authStatus === 'unauthenticated';
@@ -60,7 +66,20 @@ export function RootNavigator() {
             name="AppLock"
             children={() => (
               <View style={{ flex: 1, justifyContent: 'center' }}>
-                <LoadingState label="Restoring your session…" />
+                <LoadingState fill label="Restoring your session…" />
+              </View>
+            )}
+          />
+        ) : authStatus === 'restoreFailed' ? (
+          <Stack.Screen
+            name="AppLock"
+            children={() => (
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <ErrorState message="We couldn't reach the server to restore your session." />
+                <Button
+                  title="Retry"
+                  onPress={() => dispatch(restoreSession())}
+                />
               </View>
             )}
           />
@@ -78,6 +97,7 @@ export function RootNavigator() {
               <Stack.Screen name="Family" component={FamilyScreen} />
               <Stack.Screen name="Trust" component={TrustScreen} />
               <Stack.Screen name="Integrations" component={IntegrationsScreen} />
+              <Stack.Screen name="DigiLocker" component={DigiLockerScreen} />
             </>
           )
         ) : guestPreview ? (

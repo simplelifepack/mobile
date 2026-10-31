@@ -18,7 +18,6 @@ export type MultipartFile = {
 };
 
 let accessToken: string | null = null;
-let refreshInFlight: Promise<boolean> | null = null;
 const requests = new Map<string, Promise<unknown>>();
 
 export class ApiError extends Error {
@@ -36,29 +35,73 @@ export function setAccessToken(token: string | null) {
   accessToken = token;
 }
 
-async function refreshSession() {
-  refreshInFlight ??= (async () => {
-    const response = await fetch(`${environment.apiUrl}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
+let sessionExpiredHandler: (() => void) | null = null;
+
+export function setSessionExpiredHandler(handler: (() => void) | null) {
+  sessionExpiredHandler = handler;
+}
+
+type RefreshOutcome =
+  | { kind: 'ok'; user: AuthResponse['user'] }
+  | { kind: 'expired' }
+  | { kind: 'unavailable'; status: number };
+
+let refreshOutcome: Promise<RefreshOutcome> | null = null;
+
+// Single-flight refresh. Only an explicit 401/403 ends the session; network
+// errors (thrown) and 5xx responses keep the stored session so it can retry.
+const REQUEST_TIMEOUT_MS = 20000;
+
+function fetchWithTimeout(url: string, init: RequestInit) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() =>
+    clearTimeout(timer),
+  );
+}
+
+function runRefresh() {
+  refreshOutcome ??= (async (): Promise<RefreshOutcome> => {
+    const response = await fetchWithTimeout(
+      `${environment.apiUrl}/auth/refresh`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      },
+    );
     const data = (await response
       .json()
       .catch(() => ({}))) as Partial<AuthResponse>;
     const token = data.accessToken ?? data.token;
-    if (!response.ok || !data.user || !token) {
+    if (response.ok && data.user && token) {
+      setAccessToken(token);
+      await sessionStorage.writeAccessToken(token);
+      return { kind: 'ok', user: data.user };
+    }
+    if (response.status === 401 || response.status === 403) {
       setAccessToken(null);
       await sessionStorage.clear();
-      return false;
+      return { kind: 'expired' };
     }
-    setAccessToken(token);
-    await sessionStorage.writeAccessToken(token);
-    return true;
+    return { kind: 'unavailable', status: response.status };
   })().finally(() => {
-    refreshInFlight = null;
+    refreshOutcome = null;
   });
-  return refreshInFlight;
+  return refreshOutcome;
+}
+
+async function refreshSession() {
+  const outcome = await runRefresh();
+  if (outcome.kind === 'expired') sessionExpiredHandler?.();
+  return outcome.kind === 'ok';
+}
+
+export async function refreshUser() {
+  const outcome = await runRefresh();
+  if (outcome.kind === 'ok') return outcome.user;
+  if (outcome.kind === 'expired') throw new ApiError('Session expired.', 401);
+  throw new ApiError('Unable to restore your session.', outcome.status);
 }
 
 async function performRequest<T>(
@@ -71,7 +114,7 @@ async function performRequest<T>(
   if (options.requiresAuth && accessToken)
     headers.Authorization = `Bearer ${accessToken}`;
   if (__DEV__) console.debug(`[API] ${options.method ?? 'GET'} ${path}`);
-  const response = await fetch(`${environment.apiUrl}${path}`, {
+  const response = await fetchWithTimeout(`${environment.apiUrl}${path}`, {
     method: options.method ?? 'GET',
     headers,
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
@@ -124,14 +167,11 @@ export async function uploadMultipart<T>(
       formData.append(name, value);
     });
     files.forEach(file => {
-      formData.append(
-        file.fieldName,
-        {
-          uri: file.uri,
-          name: file.name,
-          type: file.mimeType,
-        } as unknown as Blob,
-      );
+      formData.append(file.fieldName, {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType,
+      } as unknown as Blob);
     });
 
     const headers: Record<string, string> = {};
@@ -143,6 +183,14 @@ export async function uploadMultipart<T>(
       headers,
       body: formData,
       credentials: 'include',
+    }).catch(error => {
+      console.warn(
+        '[API] multipart failed',
+        path,
+        files.map(f => f.uri),
+        String(error),
+      );
+      throw error;
     });
     const data = (await response.json().catch(() => ({}))) as {
       message?: string;
@@ -150,10 +198,20 @@ export async function uploadMultipart<T>(
       errorId?: string;
     };
 
-    if (response.status === 401 && retryOnUnauthorized && (await refreshSession())) {
+    if (
+      response.status === 401 &&
+      retryOnUnauthorized &&
+      (await refreshSession())
+    ) {
       return upload(false);
     }
     if (!response.ok) {
+      console.warn(
+        '[API] multipart status',
+        path,
+        response.status,
+        JSON.stringify(data),
+      );
       throw new ApiError(
         data.message ?? 'Something went wrong.',
         response.status,
@@ -168,7 +226,9 @@ export async function uploadMultipart<T>(
 }
 
 export async function downloadToFile(path: string, destination: string) {
-  const download = async (retryOnUnauthorized: boolean): Promise<{
+  const download = async (
+    retryOnUnauthorized: boolean,
+  ): Promise<{
     path: string;
     fileName: string;
   }> => {
@@ -180,10 +240,11 @@ export async function downloadToFile(path: string, destination: string) {
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
     let response;
     try {
-      response = await FileSystem.fetch(
-        `${environment.apiUrl}${path}`,
-        { method: 'GET', headers, path: destination },
-      );
+      response = await FileSystem.fetch(`${environment.apiUrl}${path}`, {
+        method: 'GET',
+        headers,
+        path: destination,
+      });
     } catch (error) {
       await FileSystem.unlink(destination).catch(() => undefined);
       throw error;

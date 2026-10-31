@@ -18,7 +18,7 @@ surfaces backend error codes and request IDs.
 | Trust and family | Members, invitations, permissions, revoke/leave, PIN and resend actions | `src/features/trust` |
 | Wealth | Records, dynamic forms, and handoff summary/send | `src/features/wealth/WealthScreen.tsx` |
 | Global search | `/api/search` grouped results from the Home search button | `src/features/home/GlobalSearchModal.tsx` |
-| Gmail and Drive | Connect, status, scan, review/import, disconnect | `src/features/profile/IntegrationsScreen.tsx` |
+| Gmail, Drive and DigiLocker | Connect, status, scan, review/import, disconnect; DigiLocker session, selection, consented import and progress polling in `src/features/integrations/digilocker` | `src/features/profile/IntegrationsScreen.tsx` |
 
 ## Remaining platform work
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
   Pressable,
   ScrollView,
@@ -7,21 +8,26 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { FileText, HandCoins, PenLine } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronUp, FileText, HandCoins, Paperclip, PenLine, X } from 'lucide-react-native';
 
-import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { ActionSheet } from '../../components/primitives/ActionSheet';
+import { DatePickerInput } from '../../components/primitives/DatePickerInput';
 import { AppText } from '../../components/primitives/AppText';
-import { Button } from '../../components/primitives/Button';
 import { Row } from '../../components/primitives/Row';
-import { Stack } from '../../components/primitives/Stack';
+import { useAppTheme } from '../../design/theme/ThemeProvider';
 import {
   wealthApi,
   type WealthRecord,
   type WealthRecordPayload,
 } from '../../api/wealth.api';
+import {
+  documentAmount,
+  pickAndSaveDocument,
+  type SavedWealthDocument,
+} from './wealthDocumentImport';
 
-const currencies = ['INR', 'USD', 'EUR', 'GBP', 'AED'];
+const currencies = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD'];
+const isoDate = /^\d{4}-\d{2}-\d{2}$/;
 
 export function WealthAddSheet({
   visible,
@@ -65,13 +71,23 @@ export function LentBorrowedForm({
   const [direction, setDirection] = useState<'LENT' | 'BORROWED'>('LENT');
   const [whatFor, setWhatFor] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState(currencies[0]);
+  const [currency, setCurrency] = useState('INR');
   const [date, setDate] = useState(today());
   const [who, setWho] = useState('');
   const [followUpOn, setFollowUpOn] = useState('');
   const [followUpNote, setFollowUpNote] = useState('');
+  const [more, setMore] = useState(true);
+  const [proof, setProof] = useState<SavedWealthDocument>();
+  const [picker, setPicker] = useState<'direction' | 'currency' | 'proof' | null>(null);
+  const [working, setWorking] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
+
+  const attach = (document: SavedWealthDocument) => {
+    setProof(document);
+    setWhatFor(current => current || document.title);
+    setAmount(current => current || documentAmount(document.analysis));
+  };
 
   const save = async () => {
     const value = Number(amount);
@@ -79,7 +95,7 @@ export function LentBorrowedForm({
       setError('Enter what for, amount, currency, which way, and date.');
       return;
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || (followUpOn && !/^\d{4}-\d{2}-\d{2}$/.test(followUpOn))) {
+    if (!isoDate.test(date) || (followUpOn && !isoDate.test(followUpOn))) {
       setError('Use the YYYY-MM-DD date format.');
       return;
     }
@@ -102,15 +118,15 @@ export function LentBorrowedForm({
         paidTo: direction === 'LENT' ? person : '',
         receivedFrom: direction === 'BORROWED' ? person : '',
         followUpOn,
-        proofStatus: 'cash_no_record',
-        sourceDocumentId: '',
-        sourceDocumentCategory: '',
-        sourceDocumentType: '',
+        proofStatus: proof ? 'attached' : 'cash_no_record',
+        sourceDocumentId: proof?.id ?? '',
+        sourceDocumentCategory: proof?.analysis.category ?? '',
+        sourceDocumentType: proof?.analysis.documentType ?? '',
       },
       notes: followUpNote,
       followUpDate: followUpOn || null,
       followUpNote,
-      attachmentDocumentIds: [],
+      attachmentDocumentIds: proof ? [proof.id] : [],
     };
     setSaving(true);
     setError(undefined);
@@ -125,99 +141,154 @@ export function LentBorrowedForm({
 
   const inputStyle = [
     styles.input,
-    {
-      backgroundColor: theme.colors.surface,
-      borderColor: theme.colors.border,
-      color: theme.colors.textPrimary,
-    },
+    { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border, color: theme.colors.textPrimary },
   ];
-  const chip = (active: boolean) => [
-    styles.chip,
-    { borderColor: active ? theme.colors.primary : theme.colors.border },
-  ];
+  const input = (value: string, onChangeText: (value: string) => void, placeholder: string, extra: object = {}) => (
+    <TextInput
+      value={value}
+      onChangeText={text => { onChangeText(text); setError(undefined); }}
+      placeholder={placeholder}
+      placeholderTextColor={theme.colors.textMuted}
+      style={inputStyle}
+      {...extra}
+    />
+  );
+  const dateInput = (value: string, onChangeText: (value: string) => void) => (
+    <DatePickerInput
+      value={value}
+      onChangeText={next => { onChangeText(next); setError(undefined); }}
+      placeholder="YYYY-MM-DD"
+      style={inputStyle}
+    />
+  );
+  const select = (text: string, onPress: () => void) => (
+    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.select, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}>
+      <AppText variant="body" style={styles.selectText} numberOfLines={1}>{text}</AppText>
+      <ChevronDown size={18} color={theme.colors.textPrimary} />
+    </Pressable>
+  );
+  const field = (label: string, child: React.ReactNode, flex = false) => (
+    <View style={[styles.field, flex && styles.flex]}>
+      <AppText variant="body" style={styles.label}>{label}</AppText>
+      {child}
+    </View>
+  );
+
+  const pickerOptions = (() => {
+    switch (picker) {
+      case 'direction':
+        return [
+          { label: 'I lent', icon: Check, onPress: () => { setDirection('LENT'); setPicker(null); } },
+          { label: 'I borrowed', icon: Check, onPress: () => { setDirection('BORROWED'); setPicker(null); } },
+        ];
+      case 'currency':
+        return currencies.map(item => ({ label: item, icon: Check, onPress: () => { setCurrency(item); setPicker(null); } }));
+      case 'proof':
+        return pickAndSaveDocument(attach, () => setWorking(true), () => setWorking(false)).map(item => ({
+          label: item.label,
+          icon: FileText,
+          onPress: () => { setPicker(null); item.onPress(); },
+        }));
+      default:
+        return [];
+    }
+  })();
+  const pickerTitle = { direction: 'Which way', currency: 'Choose currency', proof: 'Add proof' }[picker ?? 'direction'];
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.formBackdrop}>
-        <View style={[styles.formPanel, { backgroundColor: theme.colors.background }]}>
+      <KeyboardAvoidingView behavior="padding" style={styles.formBackdrop}>
+        <View style={[styles.formPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
           <Row align="center" justify="space-between">
-            <AppText variant="heading">Record money lent or borrowed</AppText>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose}>
-              <AppText variant="label" color="secondary">Close</AppText>
+            <AppText variant="title" style={styles.title}>Record money lent or borrowed</AppText>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={[styles.close, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}>
+              <X size={22} color={theme.colors.textPrimary} strokeWidth={2} />
             </Pressable>
           </Row>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.formContent}>
-            <Row gap="xs">
-              <Pressable onPress={() => setDirection('LENT')} style={chip(direction === 'LENT')}>
-                <AppText variant="caption">I lent</AppText>
-              </Pressable>
-              <Pressable onPress={() => setDirection('BORROWED')} style={chip(direction === 'BORROWED')}>
-                <AppText variant="caption">I borrowed</AppText>
-              </Pressable>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.formContent}>
+            <AppText variant="caption" color="secondary">
+              Attach the UPI screenshot, chat, or statement line, confirm who and how much, done. Cash with no record is fine too.
+            </AppText>
+            <Pressable
+              accessibilityRole="button"
+              disabled={working}
+              onPress={() => setPicker('proof')}
+              style={[styles.proof, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}
+            >
+              <Paperclip size={20} color={theme.colors.primary} />
+              <View style={styles.flex}>
+                <AppText variant="label">Photo · screenshot · receipt · PDF</AppText>
+                <AppText variant="caption" color="secondary">
+                  {working
+                    ? 'Reading your document…'
+                    : proof
+                      ? `Attached: ${proof.title}`
+                      : 'The proof is the record; it files into Documents too'}
+                </AppText>
+              </View>
+            </Pressable>
+            {field('What for', input(whatFor, setWhatFor, 'e.g. car down payment, hospital bill, wedding advance'))}
+            <Row gap="md">
+              {field('Amount', input(amount, setAmount, '0', { keyboardType: 'decimal-pad' }), true)}
+              {field('Currency', select(currency, () => setPicker('currency')), true)}
             </Row>
-            <Field label="What for *">
-              <TextInput value={whatFor} onChangeText={setWhatFor} placeholder="e.g. Rent deposit" placeholderTextColor={theme.colors.textMuted} style={inputStyle} />
-            </Field>
-            <Field label="Amount *">
-              <TextInput value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="0" placeholderTextColor={theme.colors.textMuted} style={inputStyle} />
-            </Field>
-            <Field label="Currency">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <Row gap="xs">
-                  {currencies.map(code => (
-                    <Pressable key={code} onPress={() => setCurrency(code)} style={chip(currency === code)}>
-                      <AppText variant="caption">{code}</AppText>
-                    </Pressable>
-                  ))}
+            <Row gap="md">
+              {field('Which way', select(direction === 'LENT' ? 'I lent' : 'I borrowed', () => setPicker('direction')), true)}
+              {field('Date', dateInput(date, setDate), true)}
+            </Row>
+            <Pressable accessibilityRole="button" onPress={() => setMore(value => !value)} style={styles.moreToggle}>
+              {more ? <ChevronUp size={14} color={theme.colors.primary} /> : <ChevronDown size={14} color={theme.colors.primary} />}
+              <AppText variant="label" style={{ color: theme.colors.primary }}>{more ? 'Fewer details' : 'More details'}</AppText>
+            </Pressable>
+            {more ? (
+              <>
+                {field('Who', input(who, setWho, 'e.g. Rohan K (friend), Meera (sister)'))}
+                <Row gap="md">
+                  {field('Follow up on', dateInput(followUpOn, setFollowUpOn), true)}
+                  {field('Follow-up note', input(followUpNote, setFollowUpNote, 'e.g. check if cheque cleared'), true)}
                 </Row>
-              </ScrollView>
-            </Field>
-            <Field label="Date *">
-              <TextInput value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" placeholderTextColor={theme.colors.textMuted} style={inputStyle} />
-            </Field>
-            <Field label={direction === 'LENT' ? 'Lent to' : 'Borrowed from'}>
-              <TextInput value={who} onChangeText={setWho} placeholder="Name" placeholderTextColor={theme.colors.textMuted} style={inputStyle} />
-            </Field>
-            <Field label="Follow up on">
-              <TextInput value={followUpOn} onChangeText={setFollowUpOn} placeholder="YYYY-MM-DD" placeholderTextColor={theme.colors.textMuted} style={inputStyle} />
-            </Field>
-            <Field label="Follow-up note">
-              <TextInput value={followUpNote} onChangeText={setFollowUpNote} multiline placeholderTextColor={theme.colors.textMuted} style={inputStyle} />
-            </Field>
+              </>
+            ) : null}
             {error ? <AppText variant="caption" color="danger">{error}</AppText> : null}
-            <Button title={saving ? 'Saving…' : 'Save'} disabled={saving} onPress={() => { save(); }} />
+            <Pressable
+              accessibilityRole="button"
+              disabled={saving || working}
+              onPress={() => { save(); }}
+              style={[styles.submit, { backgroundColor: theme.colors.primary, opacity: saving || working ? 0.5 : 1 }]}
+            >
+              <AppText variant="heading" style={{ color: theme.colors.onPrimary }}>{saving ? 'Saving…' : 'Confirm'}</AppText>
+            </Pressable>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
+      <ActionSheet visible={picker !== null} title={pickerTitle} options={pickerOptions} onClose={() => setPicker(null)} />
     </Modal>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <Stack gap="xs">
-      <AppText variant="caption" color="secondary">{label}</AppText>
-      {children}
-    </Stack>
   );
 }
 
 const styles = StyleSheet.create({
   formBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.58)' },
   formPanel: {
+    width: '100%',
     maxHeight: '92%',
-    padding: 20,
+    borderTopWidth: 1,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
     gap: 12,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
   },
-  formContent: { gap: 12, paddingBottom: 24 },
-  input: {
-    minHeight: 46,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderRadius: 11,
-    fontSize: 15,
-  },
-  chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  title: { flex: 1, fontSize: 18, lineHeight: 24, fontWeight: '700' },
+  close: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  formContent: { gap: 14, paddingBottom: 8 },
+  proof: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderWidth: 1, borderRadius: 12 },
+  field: { gap: 6, minWidth: 0 },
+  flex: { flex: 1 },
+  label: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
+  input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 15 },
+  select: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  selectText: { flex: 1, fontSize: 15 },
+  moreToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
+  submit: { minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
 });

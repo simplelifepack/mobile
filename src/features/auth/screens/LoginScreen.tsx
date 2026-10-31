@@ -12,11 +12,7 @@ import {
 } from 'react-native';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react-native';
 
-import type {
-  AuthStackParamList,
-  RootStackParamList,
-} from '../../../app/navigation/types';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { AuthStackParamList } from '../../../app/navigation/types';
 import { useAppDispatch, useAppSelector } from '../../../app/store/hooks';
 import { Screen } from '../../../components/primitives/Screen';
 import { AppText } from '../../../components/primitives/AppText';
@@ -61,12 +57,6 @@ export function LoginScreen({
           : 'Unable to sign in.',
       );
     }
-  };
-
-  const skipSignIn = () => {
-    navigation
-      .getParent<NativeStackNavigationProp<RootStackParamList>>()
-      ?.navigate('Main');
   };
 
   const displayedError = localError || authError;
@@ -308,30 +298,6 @@ export function LoginScreen({
                 <AppText variant="label" color="primary">Forgot password?</AppText>
               </Pressable>
 
-              {__DEV__ ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Skip sign-in testing"
-                  onPress={skipSignIn}
-                  style={({ pressed }) => [
-                    styles.testingButton,
-                    {
-                      borderColor: theme.colors.warning,
-                      backgroundColor: theme.colors.surface,
-                    },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <AppText
-                    variant="label"
-                    style={[styles.testingText, { color: theme.colors.warning }]}
-                  >
-                    Skip sign-in (testing)
-                  </AppText>
-                  <ArrowRight size={20} color={theme.colors.warning} strokeWidth={2} />
-                </Pressable>
-              ) : null}
-
               <AppText
                 variant="caption"
                 color="secondary"
@@ -464,18 +430,6 @@ const styles = StyleSheet.create({
     minHeight: 42,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  testingButton: {
-    minHeight: 46,
-    borderRadius: 10,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  testingText: {
-    fontWeight: '600',
   },
   securityText: {
     marginTop: 20,

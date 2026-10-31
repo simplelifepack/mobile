@@ -1,10 +1,22 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  useFocusEffect,
+  useNavigation,
+  type CompositeNavigationProp,
+} from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {
+  packageSourceLinks,
+  sourceHostname,
+  sourceProviderName,
+} from './packageSource';
+import { ChangeDocumentSheet } from './ChangeDocumentSheet';
 import { CustomPackBottomSheet } from './CustomPackBottomSheet';
 import { packagesApi } from '../../api/packages.api';
 import {
+  ActivityIndicator,
+  Alert,
   Linking,
   Modal,
   Pressable,
@@ -21,20 +33,24 @@ import {
   Check,
   ChevronRight,
   Contact,
+  Download,
+  FolderOpen,
   HeartPulse,
   Package as PackageIcon,
   Plane,
   RefreshCw,
   Search,
   Shield,
+  Upload,
   WalletCards,
   X,
 } from 'lucide-react-native';
 
 import {
-  useBootstrapQuery,
+  useDocumentsQuery,
   useAssignRequirementDocumentMutation,
   useClearRequirementDocumentMutation,
+  useRefreshPackageMutation,
   useCreateCustomPackageMutation,
   useGeneratePackageMutation,
   usePackageDetailQuery,
@@ -42,6 +58,7 @@ import {
 } from '../../services/api';
 
 import { Screen } from '../../components/primitives/Screen';
+import { ActionSheet } from '../../components/primitives/ActionSheet';
 import { Stack } from '../../components/primitives/Stack';
 import { Row } from '../../components/primitives/Row';
 import { AppText } from '../../components/primitives/AppText';
@@ -55,12 +72,12 @@ import { EmptyState } from '../../components/feedback/EmptyState';
 
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { useAppSelector } from '../../app/store/hooks';
-import type { MainTabParamList, RootStackParamList } from '../../app/navigation/types';
+import type {
+  MainTabParamList,
+  RootStackParamList,
+} from '../../app/navigation/types';
 
-import {
-  calculatePackReadiness,
-  documentMatchesRequirement,
-} from './calculatePackReadiness';
+import { calculatePackReadiness } from './calculatePackReadiness';
 
 import type { DocumentRecord, PackageSummary } from '../../api/types';
 
@@ -91,11 +108,7 @@ function errorMessage(error: unknown) {
     error?: string;
   };
 
-  return (
-    value?.message ??
-    value?.error ??
-    'Unable to load packages.'
-  );
+  return value?.message ?? value?.error ?? 'Unable to load packages.';
 }
 
 function readinessColor(
@@ -160,10 +173,7 @@ function getPackageIcon(title: string) {
     return Contact;
   }
 
-  if (
-    value.includes('health') ||
-    value.includes('medical')
-  ) {
+  if (value.includes('health') || value.includes('medical')) {
     return HeartPulse;
   }
 
@@ -197,19 +207,11 @@ function ReadinessRing({
 
   const circumference = 2 * Math.PI * radius;
 
-  const progress = Math.max(
-    0,
-    Math.min(100, Math.round(percentage)),
-  );
+  const progress = Math.max(0, Math.min(100, Math.round(percentage)));
 
-  const dashOffset =
-    circumference -
-    (circumference * progress) / 100;
+  const dashOffset = circumference - (circumference * progress) / 100;
 
-  const color = readinessColor(
-    progress,
-    theme,
-  );
+  const color = readinessColor(progress, theme);
 
   return (
     <View
@@ -221,10 +223,7 @@ function ReadinessRing({
         },
       ]}
     >
-      <Svg
-        width={size}
-        height={size}
-      >
+      <Svg width={size} height={size}>
         <Circle
           cx={size / 2}
           cy={size / 2}
@@ -250,10 +249,7 @@ function ReadinessRing({
       </Svg>
 
       <View style={styles.readinessValue}>
-        <AppText
-          align="center"
-          style={styles.readinessNumber}
-        >
+        <AppText align="center" style={styles.readinessNumber}>
           {progress}
         </AppText>
       </View>
@@ -287,9 +283,7 @@ function CategoryChip({
             ? theme.colors.surfaceElevated
             : 'transparent',
 
-          borderColor: selected
-            ? theme.colors.primary
-            : theme.colors.border,
+          borderColor: selected ? theme.colors.primary : theme.colors.border,
 
           opacity: pressed ? 0.7 : 1,
         },
@@ -297,11 +291,7 @@ function CategoryChip({
     >
       <AppText
         variant="caption"
-        color={
-          selected
-            ? 'primary'
-            : 'secondary'
-        }
+        color={selected ? 'primary' : 'secondary'}
         style={styles.categoryText}
       >
         {title}
@@ -355,35 +345,23 @@ function PackageCard({
       >
         {/* Readiness */}
 
-        <ReadinessRing
-          percentage={percentage}
-          size={48}
-        />
+        <ReadinessRing percentage={percentage} size={48} />
 
         {/* Package information */}
 
         <View style={styles.packageContent}>
-          <Row
-            align="center"
-            gap="sm"
-          >
+          <Row align="center" gap="sm">
             <View
               style={[
                 styles.packageIcon,
                 {
-                  backgroundColor:
-                    theme.colors.surfaceElevated,
+                  backgroundColor: theme.colors.surfaceElevated,
 
-                  borderRadius:
-                    theme.radius.md,
+                  borderRadius: theme.radius.md,
                 },
               ]}
             >
-              <Icon
-                size={18}
-                color={theme.colors.primary}
-                strokeWidth={2}
-              />
+              <Icon size={18} color={theme.colors.primary} strokeWidth={2} />
             </View>
 
             <AppText
@@ -414,8 +392,7 @@ function PackageCard({
             style={[
               styles.readyStamp,
               {
-                borderColor:
-                  theme.colors.success,
+                borderColor: theme.colors.success,
               },
             ]}
           >
@@ -423,8 +400,7 @@ function PackageCard({
               style={[
                 styles.readyText,
                 {
-                  color:
-                    theme.colors.success,
+                  color: theme.colors.success,
                 },
               ]}
             >
@@ -457,6 +433,8 @@ function PackageDetailBottomSheet({
   onAssignRequirement,
   onClearRequirement,
   onRefresh,
+  onCheckSource,
+  onUpload,
   onClose,
 }: {
   visible: boolean;
@@ -469,53 +447,92 @@ function PackageDetailBottomSheet({
     requirementId: string,
     documentId: string,
   ) => Promise<unknown>;
-  onClearRequirement: (
-    requirementId: string,
-  ) => Promise<unknown>;
+  onClearRequirement: (requirementId: string) => Promise<unknown>;
   onRefresh: () => void;
+  onCheckSource: () => Promise<string | undefined>;
+  onUpload: () => void;
   onClose: () => void;
 }) {
   const { theme } = useAppTheme();
 
-  const [editingRequirementId, setEditingRequirementId] =
-    useState<string>();
+  const [editingRequirementId, setEditingRequirementId] = useState<string>();
 
-  const [savingRequirementId, setSavingRequirementId] =
-    useState<string>();
+  const [savingRequirementId, setSavingRequirementId] = useState<string>();
 
-  const [assignmentError, setAssignmentError] =
-    useState<string>();
+  const [assignmentError, setAssignmentError] = useState<string>();
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [refreshNote, setRefreshNote] = useState<{
+    message: string;
+    error: boolean;
+  }>();
+
+  const [addMenuId, setAddMenuId] = useState<string>();
+
+  const [skippedIds, setSkippedIds] = useState<string[]>([]);
 
   if (!visible) {
     return null;
   }
 
-  const requirements = selected && readiness
-    ? [...readiness.requirements].sort(
-        (left, right) =>
-          Number(left.status !== 'ready') -
-          Number(right.status !== 'ready'),
-      )
-    : [];
+  const requirements =
+    selected && readiness
+      ? [...readiness.requirements].sort(
+          (left, right) =>
+            Number(left.status !== 'ready') - Number(right.status !== 'ready'),
+        )
+      : [];
+  const readyRequirements = requirements.filter(
+    item => item.status === 'ready',
+  );
+  const missingRequirements = requirements.filter(
+    item => item.status !== 'ready' && !skippedIds.includes(item.id),
+  );
+  const skippedRequirements = requirements.filter(
+    item => item.status !== 'ready' && skippedIds.includes(item.id),
+  );
+  const addMenuRequirement = requirements.find(item => item.id === addMenuId);
+  const openAfterSheet = (action: () => void) => {
+    setAddMenuId(undefined);
+    setTimeout(action, 400);
+  };
+  const downloadable = readyRequirements.filter(item => item.matchedDocument);
 
-  const sourceTitle =
-    selected?.source?.title ??
-    selected?.source?.name ??
-    'Official source';
+  const sourceLinks = packageSourceLinks(selected);
 
-  const sourceCheckedDate =
-    formatPackageDate(
-      selected?.source?.lastCheckedAt,
-    );
+  const sourceCheckedDate = formatPackageDate(
+    selected?.source?.lastCheckedAt ??
+      selected?.verificationSources?.[0]?.retrievedAt,
+  );
 
-  const sourceIsStale =
-    isPackageSourceStale(
-      selected?.source?.lastCheckedAt,
-    );
+  const sourceIsStale = isPackageSourceStale(
+    selected?.source?.lastCheckedAt ??
+      selected?.verificationSources?.[0]?.retrievedAt,
+  );
 
-  const Icon = selected
-    ? getPackageIcon(selected.title)
-    : PackageIcon;
+  const checkSource = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshNote(undefined);
+    try {
+      const message = await onCheckSource();
+      setRefreshNote({
+        message: message ?? 'Requirements are up to date.',
+        error: false,
+      });
+    } catch (refreshError) {
+      setRefreshNote({ message: errorMessage(refreshError), error: true });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const pickerRequirement = requirements.find(
+    item => item.id === editingRequirementId,
+  );
+
+  const Icon = selected ? getPackageIcon(selected.title) : PackageIcon;
 
   const updateRequirement = async (
     requirementId: string,
@@ -543,19 +560,14 @@ function PackageDetailBottomSheet({
     >
       <View style={styles.sheetOverlay}>
         {/* Close when tapping outside */}
-        <Pressable
-          style={styles.sheetBackdrop}
-          onPress={onClose}
-        />
+        <Pressable style={styles.sheetBackdrop} onPress={onClose} />
 
         <View
           style={[
             styles.sheet,
             {
-              backgroundColor:
-                theme.colors.background,
-              borderColor:
-                theme.colors.border,
+              backgroundColor: theme.colors.background,
+              borderColor: theme.colors.border,
             },
           ]}
         >
@@ -570,38 +582,33 @@ function PackageDetailBottomSheet({
           ================================================================ */}
 
           <View
-            style={[
-              styles.sheetHeader,
-              {
-                borderBottomColor:
-                  theme.colors.border,
-              },
-            ]}
+            style={[styles.sheetHeader, { borderBottomColor: 'transparent' }]}
           >
             <View
               style={[
                 styles.sheetPackageIcon,
-                {
-                  backgroundColor:
-                    theme.colors.surfaceElevated,
-                },
+                { backgroundColor: theme.colors.surfaceElevated },
               ]}
             >
-              <Icon
-                size={23}
-                color={theme.colors.primary}
-                strokeWidth={2}
-              />
+              <Icon size={23} color={theme.colors.primary} strokeWidth={2} />
             </View>
-
-            <AppText
-              variant="title"
-              numberOfLines={1}
-              style={styles.sheetTitle}
-            >
-              {selected?.title ?? 'Package'}
-            </AppText>
-
+            <View style={styles.packageHeaderCopy}>
+              <AppText
+                variant="title"
+                numberOfLines={2}
+                style={styles.sheetTitle}
+              >
+                {selected?.title ?? 'Package'}
+              </AppText>
+              <AppText
+                variant="body"
+                color="secondary"
+                style={styles.packageSubtitle}
+              >
+                {selected?.description ??
+                  'Documents and requirements for this package'}
+              </AppText>
+            </View>
             <Pressable
               onPress={onClose}
               hitSlop={10}
@@ -610,18 +617,12 @@ function PackageDetailBottomSheet({
               style={[
                 styles.sheetCloseButton,
                 {
-                  backgroundColor:
-                    theme.colors.surfaceElevated,
-                  borderColor:
-                    theme.colors.border,
+                  backgroundColor: theme.colors.surfaceElevated,
+                  borderColor: theme.colors.border,
                 },
               ]}
             >
-              <X
-                size={21}
-                color={theme.colors.textPrimary}
-                strokeWidth={2}
-              />
+              <X size={21} color={theme.colors.textPrimary} strokeWidth={2} />
             </Pressable>
           </View>
 
@@ -631,167 +632,110 @@ function PackageDetailBottomSheet({
 
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={
-              styles.sheetContent
-            }
+            contentContainerStyle={styles.sheetContent}
           >
             {loading && !selected ? (
-              <Stack
-                align="center"
-                style={styles.sheetLoading}
-              >
-                <LoadingState
-                  label="Loading package details…"
-                />
+              <Stack align="center" style={styles.sheetLoading}>
+                <LoadingState label="Loading package details…" />
               </Stack>
             ) : null}
 
             {error && !selected ? (
-              <Stack
-                gap="md"
-                style={styles.sheetError}
-              >
-                <ErrorState
-                  message={errorMessage(error)}
-                />
+              <Stack gap="md" style={styles.sheetError}>
+                <ErrorState message={errorMessage(error)} />
 
-                <Button
-                  title="Retry"
-                  variant="secondary"
-                  onPress={onRefresh}
-                />
+                <Button title="Retry" variant="secondary" onPress={onRefresh} />
               </Stack>
             ) : null}
 
             {selected && readiness ? (
               <Stack gap="md">
-
-                {/* ==========================================================
-                    Source information
-                ========================================================== */}
-
-                <Stack gap="xs">
-                  <AppText
-                    variant="body"
-                    color="secondary"
-                    style={styles.sheetSource}
-                  >
-                    🇺🇸 {sourceTitle}
-                    {sourceCheckedDate
-                      ? ` · from published sources, checked ${sourceCheckedDate}`
-                      : ''}
-                  </AppText>
-                </Stack>
-
-                {/* ==========================================================
-                    Curated source card
-                ========================================================== */}
-
                 <View
                   style={[
                     styles.sourceCard,
                     {
-                      backgroundColor:
-                        theme.colors.surfaceElevated,
-                      borderColor:
-                        theme.colors.border,
+                      backgroundColor: theme.colors.surfaceElevated,
+                      borderColor: theme.colors.border,
                     },
                   ]}
                 >
-                  <AppText
-                    variant="body"
-                    color="secondary"
-                    style={styles.sourceText}
-                  >
-                    Curated for {sourceTitle}.
+                  <AppText variant="caption" color="secondary">
+                    Source
                   </AppText>
-
-                  <Row
-                    justify="flex-end"
-                    align="center"
-                    gap="sm"
-                    style={styles.checkedRow}
-                  >
-                    <AppText
-                      variant="body"
-                      color="secondary"
-                    >
-                      Checked{' '}
-                      {sourceCheckedDate ??
-                        'Not available'}
-                    </AppText>
-
+                  <Row align="center" justify="space-between">
+                    <View style={styles.sourceLinks}>
+                      {sourceLinks.length ? (
+                        sourceLinks.map((link, index) => (
+                          <Pressable
+                            key={`${link.url}-${index}`}
+                            accessibilityRole="link"
+                            onPress={() => Linking.openURL(link.url)}
+                          >
+                            <AppText
+                              variant="label"
+                              color="primary"
+                              style={styles.sourceProvider}
+                            >
+                              {link.name}
+                            </AppText>
+                          </Pressable>
+                        ))
+                      ) : (
+                        <AppText variant="body" color="secondary">
+                          No source saved for this package.
+                        </AppText>
+                      )}
+                    </View>
                     <Pressable
-                      onPress={onRefresh}
+                      onPress={checkSource}
+                      disabled={refreshing}
                       hitSlop={8}
                       accessibilityRole="button"
-                      accessibilityLabel="Refresh requirements"
+                      accessibilityLabel="Check again now"
                     >
-                      <RefreshCw
-                        size={20}
-                        color={
-                          theme.colors.textSecondary
-                        }
-                        strokeWidth={2}
-                      />
+                      {refreshing ? (
+                        <ActivityIndicator color={theme.colors.primary} />
+                      ) : (
+                        <RefreshCw
+                          size={20}
+                          color={theme.colors.textSecondary}
+                          strokeWidth={2}
+                        />
+                      )}
                     </Pressable>
                   </Row>
+                  <AppText variant="body" color="secondary">
+                    Last checked{' '}
+                    <AppText variant="body" style={styles.sourceCheckedDate}>
+                      {sourceCheckedDate ?? 'Not yet checked'}
+                    </AppText>
+                  </AppText>
+                  {refreshNote ? (
+                    <AppText
+                      variant="caption"
+                      color={refreshNote.error ? 'danger' : 'secondary'}
+                    >
+                      {refreshNote.message}
+                    </AppText>
+                  ) : null}
                 </View>
 
                 {sourceIsStale ? (
-                  <AppText
-                    variant="caption"
-                    color="danger"
-                  >
-                    These requirements were last
-                    checked over 30 days ago.
+                  <AppText variant="caption" color="danger">
+                    These requirements were last checked over 30 days ago.
                   </AppText>
                 ) : null}
 
-                {/* ==========================================================
-                    Readiness
-                ========================================================== */}
-
-                <View
-                  style={styles.sheetReadiness}
-                >
-                  <ReadinessRing
-                    percentage={
-                      readiness.percentage
-                    }
-                    size={128}
-                  />
-
-                  {readiness.percentage >= 100 ? (
-                    <View
-                      style={[
-                        styles.readyStampLarge,
-                        {
-                          borderColor:
-                            theme.colors.success,
-                        },
-                      ]}
-                    >
-                      <AppText
-                        style={[
-                          styles.readyTextLarge,
-                          {
-                            color:
-                              theme.colors.success,
-                          },
-                        ]}
-                      >
-                        READY
-                      </AppText>
-                    </View>
-                  ) : (
-                    <AppText
-                      variant="heading"
-                      color="secondary"
-                    >
-                      {readiness.percentage}% ready
-                    </AppText>
-                  )}
+                <View style={styles.readinessSummaryRow}>
+                  <ReadinessRing percentage={readiness.percentage} size={88} />
+                  <AppText
+                    variant="body"
+                    color="secondary"
+                    style={styles.readinessSummaryText}
+                  >
+                    {readiness.satisfiedRequired} of {readiness.totalRequired}{' '}
+                    ready
+                  </AppText>
                 </View>
 
                 {/* ==========================================================
@@ -802,10 +746,8 @@ function PackageDetailBottomSheet({
                   style={[
                     styles.vaultCard,
                     {
-                      backgroundColor:
-                        theme.colors.surface,
-                      borderColor:
-                        theme.colors.border,
+                      backgroundColor: theme.colors.surface,
+                      borderColor: theme.colors.border,
                     },
                   ]}
                 >
@@ -813,299 +755,399 @@ function PackageDetailBottomSheet({
                     style={[
                       styles.vaultHeader,
                       {
-                        borderBottomColor:
-                          theme.colors.border,
+                        borderBottomColor: theme.colors.border,
                       },
                     ]}
                   >
                     <Check
                       size={20}
-                      color={
-                        theme.colors.success
-                      }
+                      color={theme.colors.success}
                       strokeWidth={2.5}
                     />
 
-                    <AppText
-                      variant="heading"
-                      style={styles.vaultTitle}
-                    >
-                      Already in your vault (
-                      {
-                        readiness.satisfiedRequired
-                      }
-                      )
+                    <AppText variant="heading" style={styles.vaultTitle}>
+                      Already in your vault ({readyRequirements.length})
                     </AppText>
                   </View>
 
-                  {requirements.map(
-                    (requirement, index) => {
-                      const ready =
-                        requirement.status ===
-                        'ready';
+                  {readyRequirements.map((requirement, index) => {
+                    const ready = requirement.status === 'ready';
 
-                      const previous =
-                        requirements[
-                          index - 1
-                        ];
+                    const previous = readyRequirements[index - 1];
 
-                      const editing =
-                        editingRequirementId ===
-                        requirement.id;
+                    const editing = editingRequirementId === requirement.id;
 
-                      const eligibleDocuments =
-                        documents
-                          .filter(document =>
-                            documentMatchesRequirement(
-                              requirement,
-                              document,
-                            ),
-                          )
-                          .sort(
-                            (left, right) =>
-                              right.confidence -
-                              left.confidence,
-                          );
+                    return (
+                      <React.Fragment key={requirement.id}>
+                        {previous?.status !== requirement.status ? (
+                          <AppText
+                            variant="caption"
+                            color="secondary"
+                            style={styles.requirementGroupHeading}
+                          >
+                            {ready ? 'Found in Readiness' : 'Still needed'}
+                          </AppText>
+                        ) : null}
 
-                      return (
-                        <React.Fragment
-                          key={requirement.id}
+                        <View
+                          style={[
+                            styles.vaultRow,
+                            {
+                              borderBottomColor: theme.colors.border,
+                            },
+                          ]}
                         >
-                          {previous?.status !==
-                          requirement.status ? (
-                            <AppText
-                              variant="caption"
-                              color="secondary"
-                              style={
-                                styles.requirementGroupHeading
-                              }
-                            >
-                              {ready
-                                ? 'Found in Readiness'
-                                : 'Still needed'}
-                            </AppText>
-                          ) : null}
-
                           <View
                             style={[
-                              styles.vaultRow,
+                              styles.vaultCheck,
                               {
-                                borderBottomColor:
-                                  theme.colors.border,
+                                backgroundColor: theme.colors.success + '22',
                               },
                             ]}
                           >
-                            <View
-                              style={[
-                                styles.vaultCheck,
-                                {
-                                  backgroundColor:
-                                    theme.colors.success +
-                                    '22',
-                                },
-                              ]}
-                            >
-                              {ready ? (
-                                <Check
-                                  size={17}
-                                  color={
-                                    theme.colors
-                                      .success
-                                  }
-                                  strokeWidth={2.5}
-                                />
-                              ) : (
-                                <Shield
-                                  size={17}
-                                  color={
-                                    theme.colors
-                                      .warning
-                                  }
-                                  strokeWidth={2}
-                                />
-                              )}
-                            </View>
-
-                            <Stack
-                              gap="xs"
-                              style={
-                                styles.vaultContent
-                              }
-                            >
-                              <Row
-                                align="center"
-                                justify="space-between"
-                              >
-                                <AppText
-                                  variant="body"
-                                  style={
-                                    styles.requirementTitle
-                                  }
-                                >
-                                  {requirement.title}
-                                </AppText>
-
-                                <ChevronRight
-                                  size={18}
-                                  color={
-                                    theme.colors
-                                      .textSecondary
-                                  }
-                                  strokeWidth={2}
-                                />
-                              </Row>
-
-                              {requirement.matchedDocument ? (
-                                <AppText
-                                  variant="caption"
-                                  color="secondary"
-                                >
-                                  {requirement
-                                    .matchedDocument
-                                    .displayName ??
-                                    requirement
-                                      .matchedDocument
-                                      .originalName}
-                                </AppText>
-                              ) : null}
-
-                              <Pressable
-                                onPress={() => {
-                                  setAssignmentError(
-                                    undefined,
-                                  );
-
-                                  setEditingRequirementId(
-                                    editing
-                                      ? undefined
-                                      : requirement.id,
-                                  );
-                                }}
-                              >
-                                <AppText
-                                  variant="caption"
-                                  color="primary"
-                                >
-                                  {editing
-                                    ? 'Cancel'
-                                    : ready
-                                      ? 'Change document'
-                                      : 'Choose document'}
-                                </AppText>
-                              </Pressable>
-
-                              {editing ? (
-                                <Stack gap="xs">
-                                  {eligibleDocuments.length ? (
-                                    eligibleDocuments.map(
-                                      document => (
-                                        <Pressable
-                                          key={
-                                            document.id
-                                          }
-                                          disabled={
-                                            savingRequirementId ===
-                                            requirement.id
-                                          }
-                                          onPress={() =>
-                                            updateRequirement(
-                                              requirement.id,
-                                              () =>
-                                                onAssignRequirement(
-                                                  requirement.id,
-                                                  document.id,
-                                                ),
-                                            )
-                                          }
-                                          style={[
-                                            styles.documentChoice,
-                                            {
-                                              borderColor:
-                                                theme.colors
-                                                  .border,
-                                              backgroundColor:
-                                                theme.colors
-                                                  .surfaceElevated,
-                                            },
-                                          ]}
-                                        >
-                                          <AppText variant="caption">
-                                            {document.displayName ??
-                                              document.originalName}
-                                          </AppText>
-                                        </Pressable>
-                                      ),
-                                    )
-                                  ) : (
-                                    <AppText
-                                      variant="caption"
-                                      color="muted"
-                                    >
-                                      No eligible
-                                      documents found.
-                                    </AppText>
-                                  )}
-
-                                  {requirement.assignment ? (
-                                    <Pressable
-                                      disabled={
-                                        savingRequirementId ===
-                                        requirement.id
-                                      }
-                                      onPress={() =>
-                                        updateRequirement(
-                                          requirement.id,
-                                          () =>
-                                            onClearRequirement(
-                                              requirement.id,
-                                            ),
-                                        )
-                                      }
-                                    >
-                                      <AppText
-                                        variant="caption"
-                                        color="secondary"
-                                      >
-                                        Use automatic match
-                                      </AppText>
-                                    </Pressable>
-                                  ) : null}
-
-                                  {assignmentError ? (
-                                    <AppText
-                                      variant="caption"
-                                      color="danger"
-                                    >
-                                      {assignmentError}
-                                    </AppText>
-                                  ) : null}
-                                </Stack>
-                              ) : null}
-                            </Stack>
+                            {ready ? (
+                              <Check
+                                size={17}
+                                color={theme.colors.success}
+                                strokeWidth={2.5}
+                              />
+                            ) : (
+                              <Shield
+                                size={17}
+                                color={theme.colors.warning}
+                                strokeWidth={2}
+                              />
+                            )}
                           </View>
-                        </React.Fragment>
-                      );
+
+                          <Stack gap="xs" style={styles.vaultContent}>
+                            <Row align="center" justify="space-between">
+                              <AppText
+                                variant="body"
+                                style={styles.requirementTitle}
+                              >
+                                {requirement.title}
+                              </AppText>
+
+                              <ChevronRight
+                                size={18}
+                                color={theme.colors.textSecondary}
+                                strokeWidth={2}
+                              />
+                            </Row>
+
+                            {requirement.matchedDocument ? (
+                              <AppText variant="caption" color="secondary">
+                                {requirement.matchedDocument.displayName ??
+                                  requirement.matchedDocument.originalName}
+                              </AppText>
+                            ) : null}
+
+                            <Pressable
+                              style={[
+                                styles.actionPill,
+                                { borderColor: theme.colors.border },
+                              ]}
+                              onPress={() => {
+                                setAssignmentError(undefined);
+
+                                setEditingRequirementId(
+                                  editing ? undefined : requirement.id,
+                                );
+                              }}
+                            >
+                              <AppText variant="label" color="primary">
+                                {editing
+                                  ? 'Cancel'
+                                  : ready
+                                    ? 'Change document'
+                                    : 'Choose document'}
+                              </AppText>
+                            </Pressable>
+                          </Stack>
+                        </View>
+                      </React.Fragment>
+                    );
+                  })}
+                </View>
+
+                {missingRequirements.length ? (
+                  <View
+                    style={[
+                      styles.vaultCard,
+                      {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.vaultHeader,
+                        { borderBottomColor: theme.colors.border },
+                      ]}
+                    >
+                      <Shield
+                        size={20}
+                        color={theme.colors.warning}
+                        strokeWidth={2}
+                      />
+                      <AppText variant="heading" style={styles.vaultTitle}>
+                        Still needed ({missingRequirements.length})
+                      </AppText>
+                    </View>
+
+                    {missingRequirements.map(requirement => (
+                      <View
+                        key={requirement.id}
+                        style={[
+                          styles.missingRequirementRow,
+                          { borderBottomColor: theme.colors.border },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.vaultCheck,
+                            { backgroundColor: theme.colors.warning + '22' },
+                          ]}
+                        >
+                          <X
+                            size={17}
+                            color={theme.colors.warning}
+                            strokeWidth={2.5}
+                          />
+                        </View>
+                        <View style={styles.missingRequirementCopy}>
+                          <AppText
+                            variant="body"
+                            style={styles.requirementTitle}
+                          >
+                            {requirement.title}
+                          </AppText>
+                          {requirement.description ? (
+                            <AppText variant="body" color="secondary">
+                              {requirement.description}
+                            </AppText>
+                          ) : null}
+                        </View>
+                        <Pressable
+                          onPress={() => {
+                            setAssignmentError(undefined);
+                            setAddMenuId(requirement.id);
+                          }}
+                          accessibilityRole="button"
+                          style={[
+                            styles.addRequirementButton,
+                            { borderColor: theme.colors.primary },
+                          ]}
+                        >
+                          <AppText variant="label" color="primary">
+                            Add
+                          </AppText>
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+
+                {skippedRequirements.length ? (
+                  <View
+                    style={[
+                      styles.vaultCard,
+                      {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.vaultHeader,
+                        { borderBottomColor: theme.colors.border },
+                      ]}
+                    >
+                      <X
+                        size={20}
+                        color={theme.colors.textSecondary}
+                        strokeWidth={2}
+                      />
+                      <AppText variant="heading" style={styles.vaultTitle}>
+                        Not needed ({skippedRequirements.length})
+                      </AppText>
+                    </View>
+                    {skippedRequirements.map(requirement => (
+                      <View
+                        key={requirement.id}
+                        style={[
+                          styles.missingRequirementRow,
+                          { borderBottomColor: theme.colors.border },
+                        ]}
+                      >
+                        <View style={styles.missingRequirementCopy}>
+                          <AppText
+                            variant="body"
+                            style={styles.requirementTitle}
+                          >
+                            {requirement.title}
+                          </AppText>
+                        </View>
+                        <Pressable
+                          onPress={() =>
+                            setSkippedIds(ids =>
+                              ids.filter(id => id !== requirement.id),
+                            )
+                          }
+                          accessibilityRole="button"
+                          style={[
+                            styles.addRequirementButton,
+                            { borderColor: theme.colors.primary },
+                          ]}
+                        >
+                          <AppText variant="label" color="primary">
+                            Need it after all
+                          </AppText>
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+
+                <View
+                  style={[
+                    styles.vaultCard,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      borderColor: theme.colors.border,
                     },
-                  )}
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.vaultHeader,
+                      { borderBottomColor: theme.colors.border },
+                    ]}
+                  >
+                    <Download
+                      size={20}
+                      color={theme.colors.textSecondary}
+                      strokeWidth={2}
+                    />
+                    <AppText variant="heading" style={styles.vaultTitle}>
+                      In this download
+                    </AppText>
+                    <AppText variant="caption" color="secondary">
+                      {downloadable.length}
+                    </AppText>
+                  </View>
+                  {downloadable.map(requirement => (
+                    <View
+                      key={requirement.id}
+                      style={[
+                        styles.downloadDocumentRow,
+                        { borderBottomColor: theme.colors.border },
+                      ]}
+                    >
+                      <View style={styles.downloadCheckbox}>
+                        <Check size={17} color="#17151D" strokeWidth={3} />
+                      </View>
+                      <View style={styles.downloadDocumentCopy}>
+                        <AppText variant="body">{requirement.title}</AppText>
+                        <AppText variant="caption" color="secondary">
+                          {requirement.matchedDocument?.displayName ??
+                            requirement.matchedDocument?.originalName ??
+                            'Document selected'}
+                        </AppText>
+                      </View>
+                    </View>
+                  ))}
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      Alert.alert(
+                        'Download not connected',
+                        'Connect this button to your document bundle/export API.',
+                      );
+                    }}
+                    style={[
+                      styles.downloadAction,
+                      { backgroundColor: theme.colors.primary },
+                    ]}
+                  >
+                    <Download size={20} color="#17151D" strokeWidth={2.5} />
+                    <AppText variant="label" style={styles.downloadActionText}>
+                      Download
+                    </AppText>
+                  </Pressable>
                 </View>
 
                 {/* ==========================================================
                     Official source
                 ========================================================== */}
 
-                {selected.source?.url ? (
+                {selected.verificationSources?.length ? (
+                  <View
+                    style={[
+                      styles.vaultCard,
+                      {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.vaultHeader,
+                        { borderBottomColor: theme.colors.border },
+                      ]}
+                    >
+                      <AppText variant="heading" style={styles.vaultTitle}>
+                        Sources
+                      </AppText>
+                    </View>
+                    {selected.verificationSources.slice(0, 4).map(source => (
+                      <Pressable
+                        key={`${source.title}-${source.url}`}
+                        accessibilityRole="link"
+                        onPress={() => Linking.openURL(source.url)}
+                        style={[
+                          styles.missingRequirementRow,
+                          { borderBottomColor: theme.colors.border },
+                        ]}
+                      >
+                        <View style={styles.missingRequirementCopy}>
+                          <AppText variant="label" color="primary">
+                            {sourceProviderName(source)}
+                          </AppText>
+                          <AppText variant="caption" color="secondary">
+                            {[
+                              source.title,
+                              sourceHostname(source.url),
+                              `checked ${formatPackageDate(source.retrievedAt) ?? 'recently'}`,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </AppText>
+                        </View>
+                        <ChevronRight
+                          size={18}
+                          color={theme.colors.textSecondary}
+                        />
+                      </Pressable>
+                    ))}
+                    <AppText
+                      variant="caption"
+                      color="secondary"
+                      style={styles.sourcesNote}
+                    >
+                      Sources help verify the checklist, but institutions can
+                      still ask for more.
+                    </AppText>
+                  </View>
+                ) : selected.source?.url ? (
                   <Button
-                    title={
-                      selected.source.title ??
-                      selected.source.name ??
-                      'Open official source'
-                    }
+                    title={sourceLinks[0]?.name ?? 'Open official source'}
                     variant="secondary"
-                    onPress={() =>
-                      Linking.openURL(
-                        selected.source!.url!,
-                      )
-                    }
+                    onPress={() => Linking.openURL(selected.source!.url!)}
                   />
                 ) : null}
 
@@ -1119,16 +1161,73 @@ function PackageDetailBottomSheet({
                   align="center"
                   style={styles.sheetDisclaimer}
                 >
-                  Checklist based on published
-                  requirements; completeness and
+                  Checklist based on published requirements; completeness and
                   eligibility are not guaranteed.
                 </AppText>
-
               </Stack>
             ) : null}
           </ScrollView>
         </View>
       </View>
+      <ActionSheet
+        visible={Boolean(addMenuRequirement)}
+        title={addMenuRequirement?.title ?? 'Add document'}
+        onClose={() => setAddMenuId(undefined)}
+        options={
+          addMenuRequirement
+            ? [
+                {
+                  label: 'Upload',
+                  icon: Upload,
+                  onPress: () => {
+                    setAddMenuId(undefined);
+                    onUpload();
+                  },
+                },
+                {
+                  label: 'Pick from Documents',
+                  icon: FolderOpen,
+                  onPress: () =>
+                    openAfterSheet(() => {
+                      setAssignmentError(undefined);
+                      setEditingRequirementId(addMenuRequirement.id);
+                    }),
+                },
+                {
+                  label: 'Not needed',
+                  icon: X,
+                  onPress: () => {
+                    setSkippedIds(ids => [...ids, addMenuRequirement.id]);
+                    setAddMenuId(undefined);
+                  },
+                },
+              ]
+            : []
+        }
+      />
+      {pickerRequirement ? (
+        <ChangeDocumentSheet
+          requirement={pickerRequirement}
+          documents={documents}
+          busy={savingRequirementId === pickerRequirement.id}
+          error={assignmentError}
+          onAssign={document =>
+            updateRequirement(pickerRequirement.id, () =>
+              onAssignRequirement(pickerRequirement.id, document.id),
+            )
+          }
+          onClearAssignment={() =>
+            updateRequirement(pickerRequirement.id, () =>
+              onClearRequirement(pickerRequirement.id),
+            )
+          }
+          onUpload={() => {
+            setEditingRequirementId(undefined);
+            onUpload();
+          }}
+          onClose={() => setEditingRequirementId(undefined)}
+        />
+      ) : null}
     </Modal>
   );
 }
@@ -1139,12 +1238,13 @@ function PackageDetailBottomSheet({
 
 export function ReadinessScreen() {
   const { theme } = useAppTheme();
-  const navigation = useNavigation<
-    CompositeNavigationProp<
-      BottomTabNavigationProp<MainTabParamList, 'Packages'>,
-      NativeStackNavigationProp<RootStackParamList>
-    >
-  >();
+  const navigation =
+    useNavigation<
+      CompositeNavigationProp<
+        BottomTabNavigationProp<MainTabParamList, 'Packages'>,
+        NativeStackNavigationProp<RootStackParamList>
+      >
+    >();
   const authStatus = useAppSelector(state => state.auth.status);
   const guestPreview = __DEV__ && authStatus === 'unauthenticated';
   const searchInputRef = useRef<React.ElementRef<typeof TextInput>>(null);
@@ -1153,26 +1253,17 @@ export function ReadinessScreen() {
   // State
   // --------------------------------------------------------------------------
 
-  const [query, setQuery] =
-    useState('');
+  const [query, setQuery] = useState('');
 
-  const [
-    submittedQuery,
-    setSubmittedQuery,
-  ] = useState('');
+  const [submittedQuery, setSubmittedQuery] = useState('');
 
-  const [category, setCategory] =
-    useState('All');
+  const [category, setCategory] = useState('All');
 
-  const [page, setPage] =
-    useState(1);
+  const [page, setPage] = useState(1);
 
-  const [
-    selectedSlug,
-    setSelectedSlug,
-  ] = useState<string>();
+  const [selectedSlug, setSelectedSlug] = useState<string>();
 
-  const [generated,setGenerated] = useState<PackageSummary | null>(null);
+  const [generated, setGenerated] = useState<PackageSummary | null>(null);
   const [createdCustomPack, setCreatedCustomPack] = useState<PackageSummary>();
   const [customPackVisible, setCustomPackVisible] = useState(false);
 
@@ -1184,25 +1275,23 @@ export function ReadinessScreen() {
     }
   }, [guestPreview]);
 
-  React.useEffect(() =>
-    navigation.addListener('blur', () => {
-      setSelectedSlug(undefined);
-      setCustomPackVisible(false);
-    }),
-  [navigation]);
+  React.useEffect(
+    () =>
+      navigation.addListener('blur', () => {
+        setSelectedSlug(undefined);
+        setCustomPackVisible(false);
+      }),
+    [navigation],
+  );
 
   // --------------------------------------------------------------------------
   // API
   // --------------------------------------------------------------------------
 
   const packageQuery = {
-    category:
-      category === 'All'
-        ? undefined
-        : category,
+    category: category === 'All' ? undefined : category,
 
-    search:
-      submittedQuery || undefined,
+    search: submittedQuery || undefined,
 
     page,
 
@@ -1211,104 +1300,73 @@ export function ReadinessScreen() {
 
   const packages = usePackagesQuery(packageQuery, { skip: guestPreview });
 
-  const bootstrap = useBootstrapQuery(undefined, { skip: guestPreview });
+  const documentsQuery = useDocumentsQuery(undefined, { skip: guestPreview });
 
-  const detail =
-    usePackageDetailQuery(
-      selectedSlug!,
-      {
-        skip: !selectedSlug || guestPreview,
-      },
-    );
+  const detail = usePackageDetailQuery(selectedSlug!, {
+    skip: !selectedSlug || guestPreview,
+  });
 
-  const [
-    generate,
-    generation,
-  ] =
-    useGeneratePackageMutation();
+  const refetchDocuments = documentsQuery.refetch;
+  useFocusEffect(
+    useCallback(() => {
+      if (!guestPreview) refetchDocuments();
+    }, [guestPreview, refetchDocuments]),
+  );
+
+  const [generate, generation] = useGeneratePackageMutation();
   const [createCustomPackage] = useCreateCustomPackageMutation();
   const [assignRequirement] = useAssignRequirementDocumentMutation();
+  const [refreshPackage] = useRefreshPackageMutation();
   const [clearRequirement] = useClearRequirementDocumentMutation();
 
   // --------------------------------------------------------------------------
   // Data
   // --------------------------------------------------------------------------
 
-  const documents =
-    useMemo<DocumentRecord[]>(
-      () =>
-        guestPreview ? [] : bootstrap.data?.documents ?? [],
-      [
-        guestPreview,
-        bootstrap.data
-          ?.documents,
-      ],
-    );
+  const documents = useMemo<DocumentRecord[]>(
+    () => (guestPreview ? [] : (documentsQuery.data ?? [])),
+    [guestPreview, documentsQuery.data],
+  );
 
-  const items =
-    useMemo<PackageSummary[]>(
-      () => {
-        if (guestPreview) return [];
-        if (generated) return [generated];
+  const items = useMemo<PackageSummary[]>(() => {
+    if (guestPreview) return [];
+    if (generated) return [generated];
 
-        const listed = packages.data?.items ?? [];
-        const shouldShowRecentCustom =
-          category === 'All' || category === 'Custom';
-        if (
-          shouldShowRecentCustom &&
-          createdCustomPack &&
-          !listed.some(item => item.slug === createdCustomPack.slug)
-        ) {
-          return [createdCustomPack, ...listed];
-        }
-        return listed;
-      },
-      [
-        category,
-        createdCustomPack,
-        generated,
-        guestPreview,
-        packages.data
-          ?.items,
-      ],
-    );
+    const listed = packages.data?.items ?? [];
+    const shouldShowRecentCustom = category === 'All' || category === 'Custom';
+    if (
+      shouldShowRecentCustom &&
+      createdCustomPack &&
+      !listed.some(item => item.slug === createdCustomPack.slug)
+    ) {
+      return [createdCustomPack, ...listed];
+    }
+    return listed;
+  }, [
+    category,
+    createdCustomPack,
+    generated,
+    guestPreview,
+    packages.data?.items,
+  ]);
 
-  const cards =
-    useMemo(
-      () =>
-        items.map(
-          item => ({
-            item,
+  const cards = useMemo(
+    () =>
+      items.map(item => ({
+        item,
 
-            readiness:
-              calculatePackReadiness(
-                item.requirements,
-                documents,
-              ),
-          }),
-        ),
-      [
-        documents,
-        items,
-      ],
-    );
+        readiness: calculatePackReadiness(item.requirements, documents),
+      })),
+    [documents, items],
+  );
 
   const selected = guestPreview
     ? undefined
-    : detail.data ??
-    items.find(
-      item =>
-        item.slug ===
-        selectedSlug,
-    );
+    : (detail.data ?? items.find(item => item.slug === selectedSlug));
 
-  const selectedReadiness =
-    selected
-      ? calculatePackReadiness(
-          selected.requirements,
-          documents,
-        )
-      : null;
+  const selectedReadiness = selected
+    ? calculatePackReadiness(selected.requirements, documents)
+    : null;
 
   // --------------------------------------------------------------------------
   // Search
@@ -1318,64 +1376,41 @@ export function ReadinessScreen() {
     setGenerated(null);
     setPage(1);
 
-    setSubmittedQuery(
-      query.trim(),
-    );
+    setSubmittedQuery(query.trim());
 
-    setSelectedSlug(
-      undefined,
-    );
+    setSelectedSlug(undefined);
   };
 
   // --------------------------------------------------------------------------
   // Generate missing package
   // --------------------------------------------------------------------------
 
-  const generateMissing =
-    async () => {
-      const result =
-        await generate({
-          packageType:
-            submittedQuery,
+  const generateMissing = async () => {
+    const result = await generate({
+      packageType: submittedQuery,
 
-          documentLabels:
-            [...new Set(
-              documents.map(
-                document =>
-                  document.normalizedType || document.documentType,
-              ),
-            )],
-        }).unwrap();
+      documentLabels: [
+        ...new Set(
+          documents.map(
+            document => document.normalizedType || document.documentType,
+          ),
+        ),
+      ],
+    }).unwrap();
 
-      setGenerated(
-        result.package,
-      );
+    setGenerated(result.package);
 
-      setSelectedSlug(
-        result.package.slug,
-      );
-    };
+    setSelectedSlug(result.package.slug);
+  };
 
   // --------------------------------------------------------------------------
   // Loading
   // --------------------------------------------------------------------------
 
-  if (
-    !guestPreview && (packages.isLoading || bootstrap.isLoading)
-  ) {
+  if (!guestPreview && (packages.isLoading || documentsQuery.isLoading)) {
     return (
       <Screen>
-        <Stack
-          align="center"
-          style={{
-            paddingVertical:
-              theme.spacing.xl,
-          }}
-        >
-          <LoadingState
-            label="Loading packages…"
-          />
-        </Stack>
+        <LoadingState fill label="Loading packages…" />
       </Screen>
     );
   }
@@ -1384,30 +1419,24 @@ export function ReadinessScreen() {
   // Error
   // --------------------------------------------------------------------------
 
-  if (
-    !guestPreview && (packages.error || bootstrap.error)
-  ) {
+  if (!guestPreview && (packages.error || documentsQuery.error)) {
     return (
       <Screen>
         <Stack
           gap="md"
           style={{
-            padding:
-              theme.spacing.lg,
+            padding: theme.spacing.lg,
           }}
         >
           <ErrorState
-            message={errorMessage(
-              packages.error ??
-                bootstrap.error,
-            )}
+            message={errorMessage(packages.error ?? documentsQuery.error)}
           />
 
           <Button
             title="Retry"
             onPress={() => {
               packages.refetch();
-              bootstrap.refetch();
+              documentsQuery.refetch();
             }}
           />
         </Stack>
@@ -1422,6 +1451,11 @@ export function ReadinessScreen() {
   return (
     <Screen
       scroll
+      onRefresh={
+        guestPreview
+          ? undefined
+          : () => Promise.all([packages.refetch(), documentsQuery.refetch()])
+      }
       floatingAction={
         guestPreview || customPackVisible ? null : (
           <FloatingActionButton
@@ -1436,11 +1470,9 @@ export function ReadinessScreen() {
         style={[
           styles.container,
           {
-            paddingTop:
-              theme.spacing.xs,
+            paddingTop: theme.spacing.xs,
 
-            paddingBottom:
-              theme.spacing.lg,
+            paddingBottom: theme.spacing.lg,
           },
         ]}
       >
@@ -1448,21 +1480,11 @@ export function ReadinessScreen() {
             HEADER
         ================================================================ */}
 
-        <Row
-          align="center"
-          justify="space-between"
-          style={styles.header}
-        >
+        <Row align="center" justify="space-between" style={styles.header}>
           {/* Title */}
 
-          <Row
-            align="center"
-            gap="sm"
-          >
-            <AppText
-              variant="title"
-              style={styles.pageTitle}
-            >
+          <Row align="center" gap="sm">
+            <AppText variant="title" style={styles.pageTitle}>
               Packages
             </AppText>
 
@@ -1470,12 +1492,9 @@ export function ReadinessScreen() {
               style={[
                 styles.countBadge,
                 {
-                  backgroundColor:
-                    theme.colors
-                      .surfaceElevated,
+                  backgroundColor: theme.colors.surfaceElevated,
 
-                  borderColor:
-                    theme.colors.border,
+                  borderColor: theme.colors.border,
                 },
               ]}
             >
@@ -1501,26 +1520,17 @@ export function ReadinessScreen() {
               style={({ pressed }) => [
                 styles.headerButton,
                 {
-                  backgroundColor:
-                    theme.colors
-                      .surfaceElevated,
+                  backgroundColor: theme.colors.surfaceElevated,
 
-                  borderColor:
-                    theme.colors.border,
+                  borderColor: theme.colors.border,
 
-                  opacity:
-                    pressed
-                      ? 0.75
-                      : 1,
+                  opacity: pressed ? 0.75 : 1,
                 },
               ]}
             >
               <Search
                 size={20}
-                color={
-                  theme.colors
-                    .textSecondary
-                }
+                color={theme.colors.textSecondary}
                 strokeWidth={2}
               />
             </Pressable>
@@ -1531,12 +1541,9 @@ export function ReadinessScreen() {
               style={[
                 styles.avatar,
                 {
-                  backgroundColor:
-                    theme.colors
-                      .surfaceElevated,
+                  backgroundColor: theme.colors.surfaceElevated,
 
-                  borderColor:
-                    theme.colors.border,
+                  borderColor: theme.colors.border,
                 },
               ]}
             >
@@ -1545,9 +1552,7 @@ export function ReadinessScreen() {
                 style={[
                   styles.avatarText,
                   {
-                    color:
-                      theme.colors
-                        .warning,
+                    color: theme.colors.warning,
                   },
                 ]}
               >
@@ -1561,60 +1566,40 @@ export function ReadinessScreen() {
             SEARCH
         ================================================================ */}
 
-        <Row
-          gap="xs"
-          align="center"
-        >
+        <Row gap="xs" align="center">
           <View
             style={[
               styles.searchContainer,
               {
                 flex: 1,
 
-                backgroundColor:
-                  theme.colors
-                    .surface,
+                backgroundColor: theme.colors.surface,
 
-                borderColor:
-                  theme.colors
-                    .border,
+                borderColor: theme.colors.border,
 
-                borderRadius:
-                  theme.radius.md,
+                borderRadius: theme.radius.md,
               },
             ]}
           >
             <Search
               size={19}
-              color={
-                theme.colors
-                  .textSecondary
-              }
+              color={theme.colors.textSecondary}
               strokeWidth={2}
             />
 
             <TextInput
               ref={searchInputRef}
               value={query}
-              onChangeText={
-                setQuery
-              }
+              onChangeText={setQuery}
               maxLength={160}
-              onSubmitEditing={
-                search
-              }
+              onSubmitEditing={search}
               returnKeyType="search"
               placeholder="Visa, loan, admission..."
-              placeholderTextColor={
-                theme.colors
-                  .textMuted
-              }
+              placeholderTextColor={theme.colors.textMuted}
               style={[
                 styles.searchInput,
                 {
-                  color:
-                    theme.colors
-                      .textPrimary,
+                  color: theme.colors.textPrimary,
                 },
               ]}
             />
@@ -1627,41 +1612,26 @@ export function ReadinessScreen() {
 
         <ScrollView
           horizontal
-          showsHorizontalScrollIndicator={
-            false
-          }
-          contentContainerStyle={
-            styles.categoryScroll
-          }
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScroll}
         >
           <Row gap="xs">
-            {categories.map(
-              item => (
-                <CategoryChip
-                  key={item}
-                  title={item}
-                  selected={
-                    category ===
-                    item
-                  }
-                  onPress={() => {
-                    setCategory(
-                      item,
-                    );
+            {categories.map(item => (
+              <CategoryChip
+                key={item}
+                title={item}
+                selected={category === item}
+                onPress={() => {
+                  setCategory(item);
 
-                    setPage(1);
+                  setPage(1);
 
-                    setGenerated(
-                      null,
-                    );
+                  setGenerated(null);
 
-                    setSelectedSlug(
-                      undefined,
-                    );
-                  }}
-                />
-              ),
-            )}
+                  setSelectedSlug(undefined);
+                }}
+              />
+            ))}
           </Row>
         </ScrollView>
 
@@ -1670,106 +1640,76 @@ export function ReadinessScreen() {
         ================================================================ */}
 
         <Stack gap="sm">
-            {/* EMPTY STATE */}
+          {/* EMPTY STATE */}
 
-            {cards.length === 0 ? (
-              <Stack gap="md">
-                <EmptyState
-                  title={guestPreview ? 'Readiness preview' : 'No matching packages'}
-                  message={guestPreview
+          {cards.length === 0 ? (
+            <Stack gap="md">
+              <EmptyState
+                title={
+                  guestPreview ? 'Readiness preview' : 'No matching packages'
+                }
+                message={
+                  guestPreview
                     ? 'Your saved packages and document checklist will appear here when you sign in.'
                     : submittedQuery
                       ? `No package currently matches “${submittedQuery}”.`
-                      : 'No packages are available in this category.'}
-                />
-
-                {guestPreview ? (
-                  <Button
-                    title="Sign in"
-                    onPress={() =>
-                      navigation
-                        .getParent<NativeStackNavigationProp<RootStackParamList>>()
-                        ?.navigate('Auth')
-                    }
-                  />
-                ) : null}
-
-                {!guestPreview && packages.data
-                  ?.canGenerate &&
-                submittedQuery ? (
-                  <Button
-                    title={
-                      generation.isLoading
-                        ? 'Searching official sources…'
-                        : 'Search official sources'
-                    }
-                    disabled={
-                      generation.isLoading
-                    }
-                    onPress={
-                      generateMissing
-                    }
-                  />
-                ) : null}
-
-                {!guestPreview && generation.error ? (
-                  <AppText
-                    color="danger"
-                  >
-                    {errorMessage(
-                      generation.error,
-                    )}
-                  </AppText>
-                ) : null}
-              </Stack>
-            ) : (
-              cards.map(
-                ({
-                  item,
-                  readiness,
-                }) => (
-                  <PackageCard
-                    key={
-                      item.slug
-                    }
-                    item={
-                      item
-                    }
-                    percentage={
-                      readiness.percentage
-                    }
-                    satisfiedRequired={
-                      readiness.satisfiedRequired
-                    }
-                    totalRequired={
-                      readiness.totalRequired
-                    }
-                    onPress={() =>
-                      setSelectedSlug(
-                        item.slug,
-                      )
-                    }
-                  />
-                ),
-              )
-            )}
-
-            {/* LOAD MORE */}
-
-            {!guestPreview && packages.data
-              ?.pagination
-              .hasNextPage ? (
-              <Button
-                title="Load more"
-                variant="secondary"
-                onPress={() =>
-                  setPage(
-                    value =>
-                      value + 1,
-                  )
+                      : 'No packages are available in this category.'
                 }
               />
-            ) : null}
+
+              {guestPreview ? (
+                <Button
+                  title="Sign in"
+                  onPress={() =>
+                    navigation
+                      .getParent<
+                        NativeStackNavigationProp<RootStackParamList>
+                      >()
+                      ?.navigate('Auth')
+                  }
+                />
+              ) : null}
+
+              {!guestPreview && packages.data?.canGenerate && submittedQuery ? (
+                <Button
+                  title={
+                    generation.isLoading
+                      ? 'Searching official sources…'
+                      : 'Search official sources'
+                  }
+                  disabled={generation.isLoading}
+                  onPress={generateMissing}
+                />
+              ) : null}
+
+              {!guestPreview && generation.error ? (
+                <AppText color="danger">
+                  {errorMessage(generation.error)}
+                </AppText>
+              ) : null}
+            </Stack>
+          ) : (
+            cards.map(({ item, readiness }) => (
+              <PackageCard
+                key={item.slug}
+                item={item}
+                percentage={readiness.percentage}
+                satisfiedRequired={readiness.satisfiedRequired}
+                totalRequired={readiness.totalRequired}
+                onPress={() => setSelectedSlug(item.slug)}
+              />
+            ))
+          )}
+
+          {/* LOAD MORE */}
+
+          {!guestPreview && packages.data?.pagination.hasNextPage ? (
+            <Button
+              title="Load more"
+              variant="secondary"
+              onPress={() => setPage(value => value + 1)}
+            />
+          ) : null}
         </Stack>
         <PackageDetailBottomSheet
           visible={Boolean(selectedSlug)}
@@ -1796,7 +1736,18 @@ export function ReadinessScreen() {
                 }).unwrap()
               : Promise.resolve()
           }
-          onRefresh={() => { detail.refetch(); }}
+          onRefresh={() => {
+            detail.refetch();
+          }}
+          onCheckSource={async () =>
+            selected
+              ? (await refreshPackage(selected.slug).unwrap()).message
+              : undefined
+          }
+          onUpload={() => {
+            setSelectedSlug(undefined);
+            navigation.navigate('Documents');
+          }}
           onClose={() => setSelectedSlug(undefined)}
         />
         <CustomPackBottomSheet
@@ -1806,7 +1757,12 @@ export function ReadinessScreen() {
             document => document.normalizedType || document.documentType,
           )}
           onCreateGenerationJob={async (packageType, documentLabels) =>
-            (await packagesApi.createCustomGenerationJob(packageType, documentLabels)).job
+            (
+              await packagesApi.createCustomGenerationJob(
+                packageType,
+                documentLabels,
+              )
+            ).job
           }
           onGetGenerationJob={async jobId =>
             (await packagesApi.getCustomGenerationJob(jobId)).job
@@ -1848,7 +1804,7 @@ const styles = StyleSheet.create({
      * for now so the content remains aligned with the current design.
      */
     width: '100%',
-  paddingHorizontal: 0,
+    paddingHorizontal: 0,
   },
 
   // --------------------------------------------------------------------------
@@ -1860,8 +1816,8 @@ const styles = StyleSheet.create({
   },
 
   pageTitle: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 22,
+    lineHeight: 27,
     fontWeight: '700',
   },
 
@@ -1876,8 +1832,8 @@ const styles = StyleSheet.create({
   },
 
   countText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
     fontWeight: '600',
   },
 
@@ -1900,8 +1856,8 @@ const styles = StyleSheet.create({
   },
 
   avatarText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
     fontWeight: '600',
   },
 
@@ -1921,8 +1877,8 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 46,
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 18,
     fontWeight: '400',
     padding: 0,
   },
@@ -1946,8 +1902,8 @@ const styles = StyleSheet.create({
   },
 
   categoryText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
     fontWeight: '600',
   },
 
@@ -1984,8 +1940,8 @@ const styles = StyleSheet.create({
   },
 
   readinessNumber: {
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 19,
     fontWeight: '600',
   },
 
@@ -2010,15 +1966,15 @@ const styles = StyleSheet.create({
 
   packageTitle: {
     flex: 1,
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 18,
     fontWeight: '600',
   },
 
   packageStatus: {
     marginTop: 2,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   // --------------------------------------------------------------------------
@@ -2042,8 +1998,8 @@ const styles = StyleSheet.create({
   },
 
   readyText: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: '600',
     letterSpacing: 0,
   },
@@ -2053,14 +2009,14 @@ const styles = StyleSheet.create({
   // --------------------------------------------------------------------------
 
   detailTitle: {
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 19,
+    lineHeight: 24,
     fontWeight: '700',
   },
 
   detailDescription: {
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
   },
 
   detailSummary: {
@@ -2068,22 +2024,22 @@ const styles = StyleSheet.create({
   },
 
   detailPercentage: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 18,
+    lineHeight: 23,
     fontWeight: '600',
   },
 
   requirementsHeading: {
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 18,
     fontWeight: '600',
   },
 
   requirementGroupHeading: {
     paddingTop: 4,
     paddingBottom: 2,
-    fontSize: 13,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 15,
     fontWeight: '600',
   },
 
@@ -2111,11 +2067,11 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   documentChoice: {
-    minHeight: 38,
+    minHeight: 44,
     justifyContent: 'center',
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   sheetOverlay: {
     flex: 1,
@@ -2128,10 +2084,10 @@ const styles = StyleSheet.create({
   sheet: {
     maxHeight: '90%',
     minHeight: '55%',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 8,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
   },
   sheetGrabber: {
@@ -2161,15 +2117,13 @@ const styles = StyleSheet.create({
   sheetTitle: {
     flex: 1,
     minWidth: 0,
-    fontSize: 22,
-    lineHeight: 28,
   },
   sheetCloseButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
   },
   sheetContent: {
@@ -2183,30 +2137,87 @@ const styles = StyleSheet.create({
   sheetError: {
     paddingVertical: 16,
   },
-  sheetSource: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
   sourceCard: {
     padding: 12,
     borderWidth: 1,
-    borderRadius: 12,
-    gap: 12,
-  },
-  sourceText: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  checkedRow: {
-    minHeight: 32,
-  },
-  sheetReadiness: {
-    minHeight: 156,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 16,
     gap: 8,
   },
+  sourceText: {},
+  checkedRow: {
+    minHeight: 28,
+  },
+  packageHeaderCopy: { flex: 1, minWidth: 0, gap: 3 },
+  packageSubtitle: { fontSize: 14, lineHeight: 20 },
+  sourceProvider: { fontSize: 14, lineHeight: 20, fontWeight: '700' },
+  sourceCheckedDate: { fontWeight: '600' },
+  sourceLinks: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  sourcesNote: { padding: 12 },
+  readinessSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18,
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  readinessSummaryText: { fontSize: 16, lineHeight: 23 },
+  missingRequirementRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  missingRequirementCopy: { flex: 1, minWidth: 0, gap: 2 },
+  addRequirementButton: {
+    minWidth: 56,
+    minHeight: 32,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  downloadDocumentRow: {
+    minHeight: 76,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  downloadCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 3,
+    backgroundColor: '#B18AE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  downloadDocumentCopy: { flex: 1, minWidth: 0, gap: 3 },
+  downloadAction: {
+    minHeight: 58,
+    margin: 12,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  downloadActionText: { color: '#17151D', fontSize: 16, fontWeight: '700' },
+  actionPill: {
+    alignSelf: 'flex-start',
+    minHeight: 32,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    marginTop: 4,
+  },
   readyStampLarge: {
+    alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderWidth: 2,
@@ -2214,14 +2225,14 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-6deg' }],
   },
   readyTextLarge: {
-    fontSize: 13,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 15,
     fontWeight: '700',
     letterSpacing: 0,
   },
   vaultCard: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   vaultHeader: {
@@ -2234,8 +2245,6 @@ const styles = StyleSheet.create({
   },
   vaultTitle: {
     flex: 1,
-    fontSize: 17,
-    lineHeight: 22,
   },
   vaultRow: {
     minHeight: 70,

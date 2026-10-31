@@ -184,6 +184,8 @@ export const healthApi = {
     memberId: string;
     title: string;
     dueDate: string;
+    type?: string;
+    frequency?: string;
   }) =>
     request<HealthHomeReminder>('/api/health/reminders', {
       method: 'POST',

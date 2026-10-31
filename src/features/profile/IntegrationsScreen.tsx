@@ -3,6 +3,8 @@ import { Linking, Pressable, StyleSheet } from 'react-native';
 import { ArrowLeft, Cloud, Mail } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useAppDispatch } from '../../app/store/hooks';
+import { api } from '../../services/api';
 import type { RootStackParamList } from '../../app/navigation/types';
 import { integrationsApi, type DriveStatus, type GmailCandidate, type GmailStatus } from '../../api/integrations.api';
 import { ErrorState } from '../../components/feedback/ErrorState';
@@ -13,12 +15,14 @@ import { Card } from '../../components/primitives/Card';
 import { Row } from '../../components/primitives/Row';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
+import { DigiLockerCard } from '../integrations/digilocker/DigiLockerCard';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 
 type DuplicateAction = 'ignore' | 'keep_both' | 'replace';
 
 export function IntegrationsScreen() {
   const { theme } = useAppTheme();
+  const dispatch = useAppDispatch();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [gmail, setGmail] = useState<GmailStatus>();
   const [drive, setDrive] = useState<DriveStatus>();
@@ -103,11 +107,11 @@ export function IntegrationsScreen() {
       : [...current, id]);
 
   if (loading) {
-    return <Screen><LoadingState label="Loading integrations…" /></Screen>;
+    return <Screen><LoadingState fill label="Loading integrations…" /></Screen>;
   }
 
   return (
-    <Screen scroll>
+    <Screen scroll onRefresh={load}>
       <Stack gap="md" style={styles.container}>
         <Row align="center" gap="sm">
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => navigation.goBack()}>
@@ -208,6 +212,8 @@ export function IntegrationsScreen() {
             )}
           </Stack>
         </Card>
+
+        <DigiLockerCard onImported={() => dispatch(api.util.invalidateTags(['Documents']))} />
 
         <Button title="Refresh connections" variant="secondary" disabled={busy} onPress={load} />
       </Stack>

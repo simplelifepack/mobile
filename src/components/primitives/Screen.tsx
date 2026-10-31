@@ -1,5 +1,11 @@
 import React from 'react';
-import { StatusBar, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  RefreshControl,
+  StatusBar,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
@@ -24,22 +30,58 @@ export function Screen({
   scroll = false,
   padded = true,
   contentContainerStyle,
+  onRefresh,
 }: React.PropsWithChildren<{
   scroll?: boolean;
   padded?: boolean;
   floatingAction?: React.ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
+  onRefresh?: () => Promise<unknown> | void;
 }>) {
   const { theme } = useAppTheme();
+  const [refreshing, setRefreshing] = React.useState(false);
+  const handleRefresh = React.useCallback(async () => {
+    if (!onRefresh) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } catch {
+      // Screens surface their own load errors.
+    } finally {
+      setRefreshing(false);
+    }
+  }, [onRefresh]);
+  const tabInset = React.useContext(BottomTabBarHeightContext) ?? 0;
   return (
-    <Safe>
+    <Safe
+      edges={tabInset ? ['top', 'left', 'right'] : undefined}
+    >
       <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} />
       {scroll ? (
-        <Scroll padded={padded} contentContainerStyle={contentContainerStyle}>
+        <Scroll
+          padded={padded}
+          scrollIndicatorInsets={{ bottom: tabInset }}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={theme.colors.primary}
+                colors={[theme.colors.primary]}
+              />
+            ) : undefined
+          }
+          contentContainerStyle={[
+            contentContainerStyle,
+            { paddingBottom: tabInset + 16 },
+          ]}
+        >
           {children}
         </Scroll>
       ) : (
-        <Content padded={padded}>{children}</Content>
+        <Content padded={padded} style={{ paddingBottom: tabInset }}>
+          {children}
+        </Content>
       )}
       {floatingAction}
     </Safe>

@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../app/navigation/types';
+import { ApiError } from '../../api/client';
 import styled from 'styled-components/native';
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Linking,
@@ -17,6 +20,7 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
+  FileCheck2,
   FileText,
   Fingerprint,
   HeartPulse,
@@ -45,7 +49,7 @@ import { documentsApi } from '../../api/documents.api';
 import {
   analyzeSelectedDocument,
   captureDocumentPhoto,
-  discardSelectedDocument,
+  startConsentedImport,
   selectDocumentFile,
   selectImageFromGallery,
   type SelectedDocument,
@@ -219,6 +223,7 @@ function formatDocumentDate(
 }
 
 export function DocumentsScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { theme } = useAppTheme();
   const searchInputRef = useRef<React.ElementRef<typeof TextInput>>(null);
   const previewRequestId = useRef(0);
@@ -327,19 +332,22 @@ export function DocumentsScreen() {
 
     const payload: DocumentSavePayload = {
       tempFileIds,
-      title: document.title,
-      category: document.category,
-      documentType: document.documentType,
-      confidence: document.confidence,
+      originalName: analysis.files[0]?.originalName,
+      mimeType: analysis.files[0]?.mimeType,
+      size: analysis.files.reduce((sum, file) => sum + file.size, 0),
+      title: document.title?.trim() || analysis.files[0]?.originalName || 'Document',
+      category: document.category?.trim() || 'Other',
+      documentType: document.documentType?.trim() || 'Unknown',
+      confidence: Number(document.confidence) || 0,
       fields: document.fields ?? {},
       reviewFields: document.reviewFields ?? [],
-      rawExtractedText: document.rawExtractedText ?? '',
+      rawExtractedText: document.rawExtractedText ?? document.extractedText ?? '',
       warnings: analysis.warnings ?? [],
       evidence: document.evidence ?? [],
       analysisSource: aiAnalysisConsent ? 'ai' : 'rules',
       duplicateAction: 'fail',
       owner: 'self',
-      userConfirmedUnknown: document.documentType.toLowerCase() === 'unknown',
+      userConfirmedUnknown: (document.documentType ?? 'unknown').toLowerCase() === 'unknown',
       verified: false,
     };
 
@@ -356,9 +364,16 @@ export function DocumentsScreen() {
         `${result.document.displayName ?? result.document.title ?? document.title} is now in your vault.`,
       );
     } catch (saveError) {
+      if (__DEV__) console.warn('[save payload]', JSON.stringify(payload).slice(0, 1500));
       Alert.alert(
         'Unable to save document',
-        saveError instanceof Error ? saveError.message : 'Please try again.',
+        saveError instanceof Error
+          ? `${saveError.message}${
+              saveError instanceof ApiError
+                ? ` [${saveError.status}${saveError.code ? ` ${saveError.code}` : ''}${saveError.errorId ? ` ${saveError.errorId}` : ''}]`
+                : ''
+            }`
+          : 'Please try again.',
       );
     } finally {
       setIsImporting(false);
@@ -388,6 +403,7 @@ export function DocumentsScreen() {
         },
       ]);
     } catch (importError) {
+      console.warn('[documents] import failed', importError);
       Alert.alert(
         'Unable to add document',
         importError instanceof Error ? importError.message : 'Please try again.',
@@ -397,42 +413,13 @@ export function DocumentsScreen() {
     }
   };
 
-  const startDocumentImport = async (
-    selectDocument: () => Promise<SelectedDocument | undefined>,
+  const startDocumentImport = (
+    select: () => Promise<SelectedDocument | undefined>,
   ) => {
     setShowAddDocumentsSheet(false);
-    try {
-      const selected = await selectDocument();
-      if (!selected) return;
-      Alert.alert(
-        'Analyze document?',
-        'The file is encrypted on this device before upload. Choose whether to allow AI analysis.',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-            onPress: () => discardSelectedDocument(selected),
-          },
-          {
-            text: 'Rules only',
-            onPress: () => processSelectedDocument(selected, false),
-          },
-          {
-            text: 'Allow AI',
-            onPress: () => processSelectedDocument(selected, true),
-          },
-        ],
-        { cancelable: false },
-      );
-    } catch (selectionError) {
-      Alert.alert(
-        'Unable to select document',
-        selectionError instanceof Error
-          ? selectionError.message
-          : 'Please try again.',
-      );
-    }
+    return startConsentedImport({ select, onConsent: processSelectedDocument });
   };
+
   const documents = useMemo(() => {
     const normalizedQuery = query
       .trim()
@@ -498,7 +485,7 @@ export function DocumentsScreen() {
   if (isLoading) {
     return (
       <Screen>
-        <LoadingState label="Loading your document vault…" />
+        <LoadingState fill label="Loading your document vault…" />
       </Screen>
     );
   }
@@ -522,6 +509,7 @@ export function DocumentsScreen() {
     <Screen
       scroll
       padded={false}
+      onRefresh={refetch}
       contentContainerStyle={styles.screenContent}
       floatingAction={
         showAddDocumentsSheet || isImporting ? null : (
@@ -1003,6 +991,15 @@ export function DocumentsScreen() {
           { label: 'Upload files', icon: Upload, accessibilityLabel: 'Upload a PDF or image file', onPress: () => startDocumentImport(selectDocumentFile) },
           { label: 'From gallery', icon: ImageIcon, accessibilityLabel: 'Choose an image from the gallery', onPress: () => startDocumentImport(selectImageFromGallery) },
           { label: 'Scan with camera', icon: Camera, accessibilityLabel: 'Capture a document with the camera', onPress: () => startDocumentImport(captureDocumentPhoto) },
+          {
+            label: 'Import from DigiLocker',
+            icon: FileCheck2,
+            accessibilityLabel: 'Import issued documents from DigiLocker',
+            onPress: () => {
+              setShowAddDocumentsSheet(false);
+              navigation.navigate('DigiLocker');
+            },
+          },
         ]}
       />
 
@@ -1017,8 +1014,7 @@ export function DocumentsScreen() {
               },
             ]}
           >
-            <ActivityIndicator color={theme.colors.primary} />
-            <AppText variant="body">Encrypting and preparing document…</AppText>
+            <LoadingState label="Encrypting and preparing document…" />
           </View>
         </View>
       </Modal>
@@ -1070,7 +1066,7 @@ export function DocumentsScreen() {
 
                 <View style={styles.previewContent}>
                   {previewLoading ? (
-                    <ActivityIndicator color={theme.colors.primary} />
+                    <LoadingState label="Loading preview…" />
                   ) : previewError ? (
                     <ErrorState message={previewError} />
                   ) : previewPath && previewMimeType === 'application/pdf' ? (
@@ -1180,8 +1176,8 @@ const styles = StyleSheet.create({
   /* Header */
 
   headerTitle: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 22,
+    lineHeight: 27,
     fontWeight: '700',
   },
 
@@ -1237,8 +1233,8 @@ const styles = StyleSheet.create({
   },
 
   documentCount: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 19,
   },
 
   toolbarButton: {
@@ -1249,8 +1245,8 @@ const styles = StyleSheet.create({
   },
 
   toolbarText: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 19,
   },
 
   /* Filters */
@@ -1271,8 +1267,8 @@ const styles = StyleSheet.create({
   },
 
   filterText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   /* Document list */
@@ -1312,15 +1308,15 @@ const styles = StyleSheet.create({
   },
 
   documentTitle: {
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 18,
     fontWeight: '600',
   },
 
   documentMeta: {
     marginTop: 4,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   selectionCircle: {

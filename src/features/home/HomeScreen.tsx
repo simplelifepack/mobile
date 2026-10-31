@@ -2,25 +2,26 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import {
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
-
-import Svg, {
-  Circle,
-} from 'react-native-svg';
-
-import {
-  ChevronRight,
+  AlertCircle,
+  ArrowRight,
+  Folder,
+  FileText,
   HeartPulse,
+  ListChecks,
   Plus,
   Search,
+  ShieldCheck,
+  WalletCards,
+  ChevronRight,
+  type LucideIcon,
 } from 'lucide-react-native';
 
 import { useBootstrapQuery, usePackagesQuery } from '../../services/api';
 import { healthApi, type HealthHomeReminder } from '../../api/health.api';
+import { wealthApi, type WealthRecord } from '../../api/wealth.api';
+import type { DocumentRecord } from '../../api/types';
 import { calculatePackReadiness } from '../readiness/calculatePackReadiness';
 import type { MainTabParamList, RootStackParamList } from '../../app/navigation/types';
 import { parseHomeOverview } from './homeSelectors';
@@ -38,191 +39,157 @@ import { BrandMark } from '../../components/BrandMark';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 
+const DAY = 86_400_000;
+const ACCENT = '#B79BE6';
+const ACCENT_TINT = 'rgba(167, 132, 222, 0.08)';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-type NeedsYouItem = {
-  id: string;
-  person?: string;
-  title: string;
-  due: string;
-  overdue?: boolean;
-};
-
-
-// ============================================================================
-// Readiness Ring
-// ============================================================================
-
-function ReadinessRing({
-  ready,
-  total,
-}: {
-  ready: number;
-  total: number;
-}) {
-  const { theme } = useAppTheme();
-
-  const size = 64;
-  const strokeWidth = 6;
-
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-
-  const value = total ? Math.round((ready / total) * 100) : 0;
-
-  const offset = circumference - (circumference * value) / 100;
-
-  return (
-    <View
-      style={[
-        styles.readinessRing,
-        {
-          width: size,
-          height: size,
-        },
-      ]}
-    >
-      <Svg
-        width={size}
-        height={size}
-      >
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={theme.colors.surfaceElevated}
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={theme.colors.warning}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={offset}
-          rotation="-90"
-          origin={`${size / 2}, ${size / 2}`}
-        />
-      </Svg>
-
-      <View style={styles.readinessRingCenter}>
-        <AppText
-          variant="heading"
-          align="center"
-          style={styles.readinessNumber}
-        >
-          {ready}
-        </AppText>
-      </View>
-    </View>
-  );
+function daysUntil(value?: string | null, now = Date.now()) {
+  if (!value) return undefined;
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? undefined : Math.ceil((time - now) / DAY);
 }
 
+function documentTitle(document: DocumentRecord) {
+  return document.displayName ?? document.title ?? document.originalName ?? document.documentType;
+}
 
-// ============================================================================
-// Needs You Item
-// ============================================================================
-
-function NeedsYouItem({
-  item,
-  isLast,
+function RecentDocumentCard({
+  document,
   onPress,
 }: {
-  item: NeedsYouItem;
-  isLast: boolean;
+  document: DocumentRecord;
   onPress: () => void;
 }) {
   const { theme } = useAppTheme();
-
   return (
     <Pressable
-      onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${item.person ?? ''} ${item.title}`}
+      accessibilityLabel={`View ${documentTitle(document)}`}
+      onPress={onPress}
       style={({ pressed }) => [
-        styles.needsYouItem,
-        {
-          borderBottomColor: theme.colors.border,
-          borderBottomWidth: isLast ? 0 : 1,
-          opacity: pressed ? 0.82 : 1,
-        },
+        styles.recentCard,
+        { backgroundColor: theme.colors.surface, opacity: pressed ? 0.85 : 1 },
       ]}
     >
-      <Row
-        align="center"
-        gap="md"
-        style={styles.needsYouRow}
-      >
-        {/* Health icon */}
-        <View
-          style={[
-            styles.needsYouIcon,
-            {
-              backgroundColor:
-                theme.colors.surfaceElevated,
-            },
-          ]}
-        >
-          <HeartPulse
-            size={23}
-            color={theme.colors.danger}
-            strokeWidth={2}
-          />
-        </View>
-
-        <View style={styles.needsYouContent}>
-          {item.person ? (
-            <AppText
-              variant="label"
-              numberOfLines={1}
-              style={styles.personName}
-            >
-              {item.person}
-            </AppText>
-          ) : null}
-          <AppText
-            variant="body"
-            numberOfLines={2}
-            style={styles.needsYouTitle}
-          >
-            {item.title}
+      <View style={styles.recentTop}>
+        <View style={styles.recentCopy}>
+          <AppText variant="label" numberOfLines={1} style={styles.recentTitle}>
+            {documentTitle(document)}
           </AppText>
-
-          <AppText
-            variant="body"
-            color={
-              item.overdue
-                ? 'danger'
-                : 'secondary'
-            }
-            style={styles.needsYouDue}
-          >
-            {item.due}
+          <AppText variant="caption" numberOfLines={1} style={styles.recentSubtitle}>
+            {document.owner ?? document.originalName}
           </AppText>
         </View>
-
-        <ChevronRight
-          size={18}
-          color={theme.colors.textMuted}
-          strokeWidth={2}
-        />
-      </Row>
+      </View>
+      <View style={styles.recentBottom}>
+        <View style={styles.thumb}>
+          <FileText size={26} color={ACCENT} strokeWidth={1.8} />
+        </View>
+        <View style={styles.recentRight}>
+          <View style={styles.badge}>
+            <AppText style={styles.badgeText}>{document.category ?? 'Document'}</AppText>
+          </View>
+          <View style={styles.viewButton}>
+            <AppText style={styles.viewButtonText}>View document</AppText>
+            <ArrowRight size={16} color={ACCENT} strokeWidth={2} />
+          </View>
+        </View>
+      </View>
     </Pressable>
   );
 }
 
+function SummaryCard({
+  Icon,
+  iconColor,
+  badge,
+  badgeBackground,
+  badgeColor,
+  label,
+  value,
+  note,
+  onPress,
+}: {
+  Icon: LucideIcon;
+  iconColor: string;
+  badge: string;
+  badgeBackground: string;
+  badgeColor: string;
+  label: string;
+  value: string;
+  note: string;
+  onPress: () => void;
+}) {
+  const { theme } = useAppTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}, ${note}`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.summaryCard,
+        { backgroundColor: theme.colors.surface, opacity: pressed ? 0.85 : 1 },
+      ]}
+    >
+      <View style={styles.summaryTop}>
+        <View style={[styles.summaryIcon, { backgroundColor: theme.colors.surfaceElevated }]}>
+          <Icon size={18} color={iconColor} strokeWidth={2} />
+        </View>
+        <View style={[styles.summaryBadge, { backgroundColor: badgeBackground }]}>
+          <AppText style={[styles.summaryBadgeText, { color: badgeColor }]}>{badge}</AppText>
+        </View>
+      </View>
+      <View style={styles.summaryBody}>
+        <AppText style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>{label}</AppText>
+        <AppText style={[styles.summaryValue, { color: theme.colors.textPrimary }]}>{value}</AppText>
+        <AppText style={[styles.summaryNote, { color: theme.colors.danger }]}>{note}</AppText>
+      </View>
+      <View style={styles.viewAll}>
+        <AppText style={styles.viewAllText}>View all</AppText>
+        <ArrowRight size={12} color={ACCENT} strokeWidth={2} />
+      </View>
+    </Pressable>
+  );
+}
 
-// ============================================================================
-// Home Screen
-// ============================================================================
+function QuickAction({
+  Icon,
+  title,
+  subtitle,
+  onPress,
+}: {
+  Icon: LucideIcon;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
+  const { theme } = useAppTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.quickAction,
+        {
+          backgroundColor: theme.colors.surfaceElevated,
+          borderColor: theme.colors.border,
+          opacity: pressed ? 0.85 : 1,
+        },
+      ]}
+    >
+      <View style={styles.quickIcon}>
+        <Icon size={18} color={ACCENT} strokeWidth={2} />
+      </View>
+      <View style={styles.quickCopy}>
+        <AppText style={styles.quickTitle} numberOfLines={1}>{title}</AppText>
+        <AppText style={[styles.quickSubtitle, { color: theme.colors.textMuted }]} numberOfLines={1}>
+          {subtitle}
+        </AppText>
+      </View>
+    </Pressable>
+  );
+}
 
 export function HomeScreen() {
   const { theme } = useAppTheme();
@@ -252,6 +219,16 @@ export function HomeScreen() {
       .catch(error => {
         if (active) setReminderError(error instanceof Error ? error.message : 'Unable to load reminders.');
       });
+    return () => { active = false; };
+  }, []);
+
+  const [wealthRecords, setWealthRecords] = useState<WealthRecord[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    wealthApi.records()
+      .then(items => { if (active) setWealthRecords(items); })
+      .catch(() => {});
     return () => { active = false; };
   }, []);
 
@@ -293,17 +270,7 @@ export function HomeScreen() {
   if (bootstrap.isLoading) {
     return (
       <Screen>
-        <Stack
-          align="center"
-          style={{
-            paddingVertical:
-              theme.spacing.xl,
-          }}
-        >
-          <LoadingState
-            label="Loading your readiness overview…"
-          />
-        </Stack>
+        <LoadingState fill label="Loading your readiness overview…" />
       </Screen>
     );
   }
@@ -363,551 +330,311 @@ export function HomeScreen() {
     parseHomeOverview(
       bootstrap.data,
     );
-  const firstName = homeOverview.name.trim().split(/\s+/)[0] || 'there';
 
-  const needsYouItems: NeedsYouItem[] = healthReminders.map(reminder => {
-    const dueTimestamp = reminder.dueDate ? Date.parse(reminder.dueDate) : Number.NaN;
-    const daysUntilDue = Number.isNaN(dueTimestamp)
-      ? undefined
-      : Math.ceil((dueTimestamp - Date.now()) / 86_400_000);
-    const overdue = daysUntilDue !== undefined && daysUntilDue < 0;
-
-    return {
-      id: reminder.id,
-      person: reminder.memberName,
-      title: reminder.title,
-      due: daysUntilDue === undefined
-        ? 'Date not set'
-        : overdue
-          ? `${Math.abs(daysUntilDue)} ${Math.abs(daysUntilDue) === 1 ? 'day' : 'days'} overdue`
-          : daysUntilDue === 0
-            ? 'Due today'
-            : `In ${daysUntilDue} days`,
-      overdue,
-    };
+  const documents = bootstrap.data.documents ?? [];
+  const now = Date.now();
+  const recentDocuments = [...documents]
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+    .slice(0, 5);
+  const expiringDocuments = documents.filter(document => {
+    const days = daysUntil(document.expiryDate, now);
+    return days !== undefined && days <= 60;
   });
-
-  // --------------------------------------------------------------------------
-  // Readiness
-  // --------------------------------------------------------------------------
-
-  // --------------------------------------------------------------------------
-  // Screen
-  // --------------------------------------------------------------------------
+  const expiredDocuments = expiringDocuments.filter(document => (daysUntil(document.expiryDate, now) ?? 0) < 0);
+  const overdueReminders = healthReminders.filter(reminder => (daysUntil(reminder.dueDate, now) ?? 0) < 0);
+  const renewalsDue = wealthRecords.filter(record => {
+    const days = daysUntil(String(record.details.renewalDate ?? record.details.maturityDate ?? ''), now);
+    return days !== undefined && days <= 30;
+  });
+  const attentionCount = expiringDocuments.length + healthReminders.length + renewalsDue.length;
+  const overdueCount = expiredDocuments.length + overdueReminders.length;
+  const readyPercent = situationStats.total
+    ? Math.round((situationStats.ready / situationStats.total) * 100)
+    : 0;
 
   return (
-    <Screen scroll padded={false}>
-        <GlobalSearchModal
-          visible={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          onOpenResult={openSearchResult}
-        />
-        <Stack
-          gap="md"
-          style={styles.container}
-        >
-
-          {/* ================================================================
-              HEADER
-          ================================================================ */}
-
-          <Row
-            align="center"
-            justify="space-between"
-          >
-            <Row align="center" gap="sm">
-              <BrandMark size={26} color={theme.colors.textPrimary} />
-              <AppText variant="heading">Readiness</AppText>
-            </Row>
-
-            {/* Existing actions */}
-            <Row gap="sm">
-              <Pressable
-                onPress={() => setSearchOpen(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Search"
-                style={[
-                  styles.headerButton,
-                  {
-                    borderColor:
-                      theme.colors.border,
-                    backgroundColor:
-                      theme.colors.surface,
-                  },
-                ]}
-              >
-                <Search
-                  size={22}
-                  color={
-                    theme.colors.textSecondary
-                  }
-                  strokeWidth={2}
-                />
-              </Pressable>
-
-              <Pressable
-                onPress={() => navigation.navigate('Profile')}
-                accessibilityRole="button"
-                accessibilityLabel="Profile"
-                style={[
-                  styles.avatar,
-                  {
-                    borderColor:
-                      theme.colors.border,
-                    backgroundColor:
-                      theme.colors.surfaceElevated,
-                  },
-                ]}
-              >
-                <AppText
-                  variant="heading"
-                  color="secondary"
-                  align="center"
-                >
-                  {homeOverview.name
-                    .charAt(0)
-                    .toUpperCase()}
-                </AppText>
-              </Pressable>
-            </Row>
+    <Screen
+      scroll
+      padded={false}
+      onRefresh={() => Promise.all([bootstrap.refetch(), packages.refetch()])}
+    >
+      <GlobalSearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onOpenResult={openSearchResult}
+      />
+      <Stack gap="md" style={styles.container}>
+        <Row align="center" justify="space-between">
+          <Row align="center" gap="sm">
+            <BrandMark size={26} color={theme.colors.textPrimary} />
+            <AppText variant="heading">Readiness</AppText>
           </Row>
-
-
-          {/* ================================================================
-              GREETING
-          ================================================================ */}
-
-          <Stack
-            gap="xs"
-            style={styles.greetingContainer}
-          >
-            <AppText
-              variant="title"
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.78}
-              style={styles.greeting}
+          <Row gap="sm">
+            <Pressable
+              onPress={() => setSearchOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Search"
+              style={[styles.headerButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}
             >
-              Good morning, {firstName}
-            </AppText>
-
-            <AppText
-              variant="body"
-              color="secondary"
-              style={styles.greetingSubtitle}
+              <Search size={22} color={theme.colors.textSecondary} strokeWidth={2} />
+            </Pressable>
+            <Pressable
+              onPress={() => navigation.navigate('Profile')}
+              accessibilityRole="button"
+              accessibilityLabel="Profile"
+              style={[styles.avatar, { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceElevated }]}
             >
-              Small steps today. A more ready tomorrow.
-            </AppText>
-          </Stack>
-
-
-          {/* ================================================================
-              NEEDS YOU
-          ================================================================ */}
-
-          <View
-            style={[
-              styles.needsYouCard,
-              {
-                backgroundColor:
-                  theme.colors.surface,
-                borderColor:
-                  theme.colors.border,
-                borderRadius:
-                  theme.radius.lg,
-              },
-            ]}
-          >
-            {/* Header */}
-
-            <View style={styles.needsYouHeader}>
-              <AppText
-                variant="heading"
-                style={styles.needsYouHeaderTitle}
-              >
-                Needs you
+              <AppText variant="heading" color="secondary" align="center">
+                {homeOverview.name.charAt(0).toUpperCase()}
               </AppText>
+            </Pressable>
+          </Row>
+        </Row>
 
-              <AppText
-                variant="heading"
-                color="secondary"
-                style={styles.needsYouCount}
-              >
-                {needsYouItems.length}
-              </AppText>
+        {recentDocuments.length ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <AppText style={styles.sectionTitle}>Recently viewed</AppText>
             </View>
-
-            {reminderError ? (
-              <AppText variant="caption" color="secondary" style={styles.emptyReminders}>
-                Reminders are temporarily unavailable.
-              </AppText>
-            ) : null}
-
-            {/* Items */}
-
-            {needsYouItems.length ? needsYouItems.map(
-              (item, index) => (
-                <NeedsYouItem
-                  key={item.id}
-                  item={item}
-                  isLast={
-                    index ===
-                    needsYouItems.length - 1
-                  }
-                  onPress={() => navigation.navigate('Health')}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.recentRow}
+            >
+              {recentDocuments.map(document => (
+                <RecentDocumentCard
+                  key={document.id}
+                  document={document}
+                  onPress={() => navigation.navigate('Documents')}
                 />
-              ),
-            ) : !reminderError ? (
-              <AppText variant="body" color="secondary" style={styles.emptyReminders}>
-                Nothing needs your attention right now.
-              </AppText>
-            ) : null}
-
-
-            {/* Show all */}
-            {needsYouItems.length ? (
-              <Pressable
-                onPress={() => navigation.navigate('Health')}
-                accessibilityRole="button"
-                accessibilityLabel={`Show all ${needsYouItems.length} items`}
-                style={({ pressed }) => [
-                  styles.showAllButton,
-                  {
-                    borderTopColor: theme.colors.border,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
-              >
-                <AppText
-                  variant="heading"
-                  style={[styles.showAllText, { color: theme.colors.primary }]}
-                >
-                  Show all {needsYouItems.length}
-                </AppText>
-              </Pressable>
-            ) : null}
+              ))}
+            </ScrollView>
           </View>
+        ) : null}
 
-
-          {/* ================================================================
-              READINESS
-          ================================================================ */}
-
-          <Pressable
-            onPress={() => navigation.navigate('Packages')}
-            accessibilityRole="button"
-            accessibilityLabel="Readiness"
-            style={({ pressed }) => [
-              styles.readinessCard,
-              {
-                borderColor:
-                  theme.colors.border,
-                backgroundColor:
-                  theme.colors.background,
-                borderRadius:
-                  theme.radius.lg,
-                opacity: pressed ? 0.82 : 1,
-              },
-            ]}
-          >
-            <Row
-              align="center"
-              gap="md"
-            >
-              <ReadinessRing
-                ready={situationStats.ready}
-                total={situationStats.total}
-              />
-
-              <View
-                style={styles.readinessCopy}
-              >
-                <AppText variant="label" color="primary">
-                  Readiness
-                </AppText>
-                <AppText
-                  variant="body"
-                  color="secondary"
-                  numberOfLines={2}
-                  style={styles.readinessDescription}
-                >
-                  {situationStats.ready} of {situationStats.total} situations ready
-                </AppText>
-              </View>
-
-              <ChevronRight
-                size={26}
-                color={
-                  theme.colors.textMuted
-                }
-                strokeWidth={2}
-              />
-            </Row>
-          </Pressable>
-
-
-          {/* ================================================================
-              ADD RECORD
-          ================================================================ */}
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add a record or document"
+        <View style={styles.grid}>
+          <SummaryCard
+            Icon={Folder}
+            iconColor={ACCENT}
+            badge={String(expiringDocuments.length)}
+            badgeBackground="#3A1A1D"
+            badgeColor="#F5A3A8"
+            label="Documents"
+            value={String(documents.length)}
+            note={`${expiringDocuments.length} expiring soon`}
             onPress={() => navigation.navigate('Documents')}
-            style={({ pressed }) => [
-              styles.addRecordButton,
-              {
-                backgroundColor: theme.colors.primary,
-                opacity: pressed ? 0.84 : 1,
-              },
-            ]}
-          >
-            <Plus
-              size={20}
-              color={theme.colors.onPrimary}
-              strokeWidth={2.5}
-            />
+          />
+          <SummaryCard
+            Icon={ListChecks}
+            iconColor={ACCENT}
+            badge={`${readyPercent}%`}
+            badgeBackground="#17301F"
+            badgeColor="#8FD9AA"
+            label="Packages"
+            value={`${situationStats.ready}/${situationStats.total}`}
+            note={`${readyPercent}% ready`}
+            onPress={() => navigation.navigate('Packages')}
+          />
+          <SummaryCard
+            Icon={HeartPulse}
+            iconColor="#F08CB4"
+            badge={String(healthReminders.length)}
+            badgeBackground="#332A12"
+            badgeColor="#F0C86A"
+            label="Health"
+            value={String(healthReminders.length)}
+            note="Tasks pending"
+            onPress={() => navigation.navigate('Health')}
+          />
+          <SummaryCard
+            Icon={WalletCards}
+            iconColor="#E0B45A"
+            badge={String(renewalsDue.length)}
+            badgeBackground="#172238"
+            badgeColor="#9DBEF5"
+            label="Wealth"
+            value={String(renewalsDue.length)}
+            note="Renewals due"
+            onPress={() => navigation.navigate('Wealth')}
+          />
+        </View>
 
-            <AppText
-              variant="heading"
-              style={[styles.addRecordLabel, { color: theme.colors.onPrimary }]}
-            >
-              Add a record or document
+        {reminderError ? (
+          <AppText variant="caption" color="secondary">Reminders are temporarily unavailable.</AppText>
+        ) : null}
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${attentionCount} items need your attention`}
+          onPress={() => navigation.navigate(healthReminders.length ? 'Health' : 'Documents')}
+          style={({ pressed }) => [styles.needsBanner, { opacity: pressed ? 0.85 : 1 }]}
+        >
+          <View style={styles.needsIcon}>
+            <AlertCircle size={18} color="#17141F" strokeWidth={2} />
+          </View>
+          <View style={styles.needsCopy}>
+            <AppText style={styles.needsTitle}>
+              {attentionCount} {attentionCount === 1 ? 'item needs' : 'items need'} your attention
             </AppText>
-          </Pressable>
+            <AppText style={styles.needsSubtitle}>
+              {overdueCount} overdue · View all
+            </AppText>
+          </View>
+          <ChevronRight size={16} color={ACCENT} strokeWidth={2} />
+        </Pressable>
 
-        </Stack>
+        <View style={styles.quickSection}>
+          <View style={styles.quickHeader}>
+            <AppText style={styles.quickHeading}>Quick actions</AppText>
+            <AppText style={styles.quickHint}>Add or create</AppText>
+          </View>
+          <View style={styles.quickRow}>
+            <QuickAction
+              Icon={Plus}
+              title="Add document"
+              subtitle="Upload a new file"
+              onPress={() => navigation.navigate('Documents')}
+            />
+            <QuickAction
+              Icon={ListChecks}
+              title="Create package"
+              subtitle="Organize items"
+              onPress={() => navigation.navigate('Packages')}
+            />
+          </View>
+        </View>
+
+        <View style={[styles.brandBanner, { backgroundColor: theme.colors.surfaceElevated }]}>
+          <View style={styles.brandIcon}>
+            <ShieldCheck size={18} color={ACCENT} strokeWidth={2} />
+          </View>
+          <View style={styles.brandCopy}>
+            <AppText style={styles.needsTitle}>Your essentials, in one place.</AppText>
+            <AppText style={[styles.quickSubtitle, { color: theme.colors.textMuted }]}>
+              Secure access to documents, packages, health, and wealth.
+            </AppText>
+          </View>
+        </View>
+      </Stack>
     </Screen>
   );
 }
 
-
-// ============================================================================
-// Styles
-// ============================================================================
-
 const styles = StyleSheet.create({
+  container: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 },
+  headerButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  retryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
 
-  container: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 24,
-  },
-
-
-  // --------------------------------------------------------------------------
-  // Header
-  // --------------------------------------------------------------------------
-
-  logo: {
-    letterSpacing: 0,
-  },
-
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  section: { gap: 8 },
+  sectionHeader: { paddingLeft: 4 },
+  sectionTitle: { fontSize: 14, lineHeight: 17, fontWeight: '600' },
+  recentRow: { gap: 12, paddingRight: 16 },
+  recentCard: {
+    width: 312,
+    height: 148,
+    padding: 16,
     borderWidth: 1,
+    borderColor: '#2A2A31',
+    borderRadius: 20,
+    justifyContent: 'space-between',
+  },
+  recentTop: { flexDirection: 'row', justifyContent: 'space-between' },
+  recentCopy: { gap: 4, flex: 1 },
+  recentTitle: { fontSize: 14, lineHeight: 17, fontWeight: '600' },
+  recentSubtitle: { fontSize: 11, lineHeight: 13 },
+  recentBottom: { flexDirection: 'row', alignItems: 'flex-end', gap: 16 },
+  thumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    backgroundColor: '#070930',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  recentRight: { flex: 1, gap: 8, alignItems: 'flex-start' },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: 'rgba(167, 132, 222, 0.2)',
+    backgroundColor: ACCENT_TINT,
   },
-
-
-  // --------------------------------------------------------------------------
-  // Greeting
-  // --------------------------------------------------------------------------
-
-  greetingContainer: {
-    marginTop: 2,
-    marginBottom: 4,
-  },
-
-  greeting: {
-    fontSize: 28,
-    lineHeight: 34,
-    letterSpacing: 0,
-  },
-
-  greetingSubtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-
-
-  // --------------------------------------------------------------------------
-  // Needs You
-  // --------------------------------------------------------------------------
-
-  needsYouCard: {
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-
-  needsYouHeader: {
-    minHeight: 52,
-    paddingHorizontal: 12,
+  badgeText: { fontSize: 10, lineHeight: 12, fontWeight: '500', color: ACCENT },
+  viewButton: {
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-
-  needsYouHeaderTitle: {
-    fontSize: 22,
-    lineHeight: 28,
-    fontWeight: '700',
-  },
-
-  needsYouCount: {
-    fontSize: 17,
-    lineHeight: 22,
-  },
-
-  needsYouItem: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
-  },
-
-  needsYouRow: {
-    minHeight: 52,
-  },
-
-  needsYouIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-
-  needsYouContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  needsYouTitle: {
-    fontSize: 17,
-    lineHeight: 22,
-    fontWeight: '400',
-  },
-
-  personName: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '700',
-  },
-
-  needsYouDue: {
-    marginTop: 2,
-    fontSize: 15,
-    lineHeight: 20,
-  },
-
-  showAllButton: {
-    minHeight: 48,
-    borderTopWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  showAllText: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '700',
-  },
-
-
-  // --------------------------------------------------------------------------
-  // Readiness
-  // --------------------------------------------------------------------------
-
-  readinessCard: {
-    minHeight: 86,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    justifyContent: 'center',
+    borderColor: '#9470CC',
+    borderRadius: 8,
   },
+  viewButtonText: { fontSize: 11, lineHeight: 13, color: ACCENT },
 
-  readinessRing: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  summaryCard: {
+    width: '47.9%',
+    flexGrow: 1,
+    height: 148,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#2A2A31',
+    borderRadius: 16,
+    justifyContent: 'space-between',
   },
+  summaryTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  summaryIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  summaryBadge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
+  summaryBadgeText: { fontSize: 10, lineHeight: 12, fontWeight: '700' },
+  summaryBody: { gap: 3 },
+  summaryLabel: { fontSize: 11, lineHeight: 13 },
+  summaryValue: { fontSize: 20, lineHeight: 24, fontWeight: '700' },
+  summaryNote: { fontSize: 10, lineHeight: 12 },
+  viewAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  viewAllText: { fontSize: 11, lineHeight: 13, color: ACCENT },
 
-  readinessRingCenter: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  readinessNumber: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: '700',
-  },
-
-  readinessCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  readinessDescription: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-
-
-  // --------------------------------------------------------------------------
-  // Add record
-  // --------------------------------------------------------------------------
-
-  addRecordButton: {
-    minHeight: 58,
-    borderRadius: 12,
+  needsBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    gap: 8,
-    marginTop: 2,
-    marginBottom: 8,
+    gap: 10,
+    minHeight: 56,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: ACCENT,
+    borderRadius: 12,
+    backgroundColor: '#2A2537',
   },
+  needsIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#A784DE', alignItems: 'center', justifyContent: 'center' },
+  needsCopy: { flex: 1, gap: 2 },
+  needsTitle: { fontSize: 13, lineHeight: 16, fontWeight: '600' },
+  needsSubtitle: { fontSize: 11, lineHeight: 13, color: ACCENT },
 
-  addRecordPlus: {
-    fontSize: 24,
-    lineHeight: 28,
+  quickSection: { gap: 10 },
+  quickHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 4 },
+  quickHeading: { fontSize: 13, lineHeight: 16, fontWeight: '600' },
+  quickHint: { fontSize: 11, lineHeight: 13, color: ACCENT },
+  quickRow: { flexDirection: 'row', gap: 12 },
+  quickAction: {
+    flex: 1,
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 12,
   },
+  quickIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: ACCENT_TINT, alignItems: 'center', justifyContent: 'center' },
+  quickCopy: { flex: 1, gap: 2 },
+  quickTitle: { fontSize: 13, lineHeight: 16, fontWeight: '600' },
+  quickSubtitle: { fontSize: 10, lineHeight: 12 },
 
-  addRecordLabel: {
-    fontSize: 17,
-    lineHeight: 22,
-    fontWeight: '700',
-  },
-
-
-  emptyReminders: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    lineHeight: 20,
-  },
-
-
-  // --------------------------------------------------------------------------
-  // Error
-  // --------------------------------------------------------------------------
-
-  retryButton: {
-    minHeight: 48,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
+  brandBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14 },
+  brandIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: ACCENT_TINT, alignItems: 'center', justifyContent: 'center' },
+  brandCopy: { flex: 1, gap: 2 },
 });

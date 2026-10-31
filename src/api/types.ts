@@ -83,6 +83,7 @@ export type DocumentAnalysisResponse = {
     fields?: Record<string, unknown>;
     reviewFields?: Array<Record<string, unknown>>;
     rawExtractedText?: string;
+    extractedText?: string;
     evidence?: Array<Record<string, unknown>>;
     ownership?: 'mine' | 'other' | 'unknown';
   };
@@ -97,6 +98,9 @@ export type DocumentAnalysisResponse = {
 
 export type DocumentSavePayload = {
   tempFileIds: string[];
+  originalName?: string;
+  mimeType?: string;
+  size?: number;
   title: string;
   category: string;
   documentType: string;

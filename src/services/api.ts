@@ -140,6 +140,22 @@ export const api = createApi({
         { type: 'PackageDetail', id: slug },
       ],
     }),
+    refreshPackage: builder.mutation<
+      { package: PackageSummary; changed: boolean; message: string },
+      string
+    >({
+      async queryFn(slug) {
+        try {
+          return { data: await packagesApi.refresh(slug) };
+        } catch (error) {
+          return errorValue(error);
+        }
+      },
+      invalidatesTags: (_result, _error, slug) => [
+        'Packages',
+        { type: 'PackageDetail', id: slug },
+      ],
+    }),
     clearRequirementDocument: builder.mutation<
       PackageSummary,
       { requirementId: string; slug: string }
@@ -166,6 +182,7 @@ export const api = createApi({
 export const {
   useBootstrapQuery,
   useDocumentsQuery,
+  useRefreshPackageMutation,
   usePackagesQuery,
   usePackageDetailQuery,
   useCreateCustomPackageMutation,

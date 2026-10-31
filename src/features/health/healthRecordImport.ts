@@ -1,13 +1,13 @@
 import { documentsApi } from '../../api/documents.api';
 import {
-  healthApi,
-  isMemberResolution,
-  type HealthMemberResolution,
-  type HealthRecordDetail,
+healthApi,
+isMemberResolution,
+type HealthMemberResolution,
+type HealthRecordDetail,
 } from '../../api/health.api';
 import {
-  analyzeSelectedDocument,
-  type SelectedDocument,
+analyzeSelectedDocument,
+type SelectedDocument,
 } from '../documents/documentImport';
 
 export type HealthDocumentType = 'lab_report' | 'medical_report' | 'prescription';

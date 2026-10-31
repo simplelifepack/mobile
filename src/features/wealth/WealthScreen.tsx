@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import {
   Building2,
+  Check,
   ChevronRight,
+  CircleCheck,
   CircleDollarSign,
   HandCoins,
   KeyRound,
@@ -20,31 +22,31 @@ import {
   ShieldCheck,
   Siren,
   Trash2,
+  X,
 } from 'lucide-react-native';
+import {
+  useNavigation,
+  type NavigationProp,
+} from '@react-navigation/native';
+import type { RootStackParamList } from '../../app/navigation/types';
 
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { Row } from '../../components/primitives/Row';
+import { ProcessingOverlay } from '../../components/feedback/ProcessingOverlay';
+import { LoadingState } from '../../components/feedback/LoadingState';
 import { AppText } from '../../components/primitives/AppText';
 import { Card } from '../../components/primitives/Card';
 import { Button } from '../../components/primitives/Button';
 import { FloatingActionButton } from '../../components/primitives/FloatingActionButton';
 import { WealthAddSheet, LentBorrowedForm } from './WealthAddSheet';
-import { documentsApi } from '../../api/documents.api';
-import {
-  analyzeSelectedDocument,
-  captureDocumentPhoto,
-  discardSelectedDocument,
-  selectDocumentFile,
-  selectImageFromGallery,
-  type SelectedDocument,
-} from '../documents/documentImport';
+import { WealthHoldingForm } from './WealthHoldingForm';
+import { pickAndSaveDocument, type SavedWealthDocument } from './wealthDocumentImport';
 import {
   wealthApi,
-  type DynamicFormCategory,
-  type DynamicFormField,
-  type DynamicFormSchema,
+  type WealthHandoffRecipient,
+  type WealthHandoffSendResponse,
   type WealthHandoffSummary,
   type WealthRecord,
 } from '../../api/wealth.api';
@@ -105,7 +107,15 @@ function recordAmount(record: WealthRecord) {
 function recordCounterparty(record: WealthRecord) {
   const details = record.details;
   return String(
-    details.counterparty ?? details.borrower ?? details.lender ?? record.title,
+    details.counterparty ?? details.borrower ?? details.lender ?? (details.who || undefined) ?? record.title,
+  );
+}
+
+function isLendingRecord(record: WealthRecord) {
+  const details = record.details;
+  return (
+    details.recordKind === 'money_lent_borrowed' ||
+    Boolean(details.counterparty ?? details.borrower ?? details.lender)
   );
 }
 
@@ -811,16 +821,25 @@ export function WealthScreen({
     };
   }, [guestPreview, reloadKey]);
 
+  const refreshRecords = async () => {
+    if (guestPreview) return;
+    try {
+      setRecords(await wealthApi.records());
+      setError(undefined);
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : 'Unable to load wealth records.',
+      );
+    }
+  };
+
   const lendingItems = records
     .filter(record => {
-      const details = record.details;
       return (
         (record.type === 'LOAN_TAKEN' || record.type === 'LOAN_GIVEN') &&
-        Boolean(
-          details.counterparty ??
-            details.borrower ??
-            details.lender,
-        )
+        isLendingRecord(record)
       );
     })
     .map(toLendingItem);
@@ -838,12 +857,7 @@ export function WealthScreen({
       return false;
     }
 
-    const details = record.details;
-    const isLending = Boolean(
-      details.counterparty ??
-        details.borrower ??
-        details.lender,
-    );
+    const isLending = isLendingRecord(record);
 
     switch (selectedCategory) {
       case 'Accounts and investments':
@@ -876,11 +890,7 @@ export function WealthScreen({
     record =>
       (record.type === 'LOAN_GIVEN' ||
         record.type === 'LOAN_TAKEN') &&
-      !Boolean(
-        record.details.counterparty ??
-          record.details.borrower ??
-          record.details.lender,
-      ),
+      !isLendingRecord(record),
   );
 
   const insuranceRecords = filteredRecords.filter(
@@ -1018,28 +1028,9 @@ export function WealthScreen({
     );
   };
 
-  const importAsRecord = async (selected: SelectedDocument, aiConsent: boolean) => {
-    setImporting(true);
+  const importAsRecord = async (document: SavedWealthDocument) => {
     try {
-      const analysis = await analyzeSelectedDocument(selected, aiConsent);
-      const doc = analysis.document;
-      const saved = await documentsApi.save({
-        tempFileIds: analysis.files.map(file => file.tempFileId),
-        title: doc.title,
-        category: doc.category,
-        documentType: doc.documentType,
-        confidence: doc.confidence,
-        fields: doc.fields ?? {},
-        reviewFields: doc.reviewFields ?? [],
-        rawExtractedText: doc.rawExtractedText ?? '',
-        warnings: analysis.warnings ?? [],
-        evidence: doc.evidence ?? [],
-        analysisSource: aiConsent ? 'ai' : 'rules',
-        duplicateAction: 'keep_both',
-        owner: 'self',
-        userConfirmedUnknown: true,
-        verified: false,
-      });
+      const doc = document.analysis;
       const kind = `${doc.category} ${doc.documentType}`.toLowerCase();
       const type = /insurance|policy|cover/.test(kind)
         ? 'INSURANCE'
@@ -1048,14 +1039,14 @@ export function WealthScreen({
           : 'ASSET';
       const record = await wealthApi.createRecord({
         type,
-        title: saved.document.displayName ?? saved.document.title ?? doc.title,
+        title: document.title,
         details: {
-          sourceDocumentId: saved.document.id,
+          sourceDocumentId: document.id,
           sourceDocumentCategory: doc.category,
           sourceDocumentType: doc.documentType,
           currency: 'INR',
         },
-        attachmentDocumentIds: [saved.document.id],
+        attachmentDocumentIds: [document.id],
       });
       setRecords(current => [record, ...current]);
       Alert.alert('Added to Wealth', `${record.title} was created from your document. You can edit its details later.`);
@@ -1064,41 +1055,18 @@ export function WealthScreen({
         'Unable to add from document',
         importError instanceof Error ? importError.message : 'Please try again.',
       );
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const startDocumentRecord = async (
-    select: () => Promise<SelectedDocument | undefined>,
-  ) => {
-    try {
-      const selected = await select();
-      if (!selected) return;
-      Alert.alert(
-        'Analyze document?',
-        'The file is encrypted on this device before upload. Choose whether to allow AI analysis.',
-        [
-          { text: 'Cancel', style: 'cancel', onPress: () => discardSelectedDocument(selected) },
-          { text: 'Rules only', onPress: () => importAsRecord(selected, false) },
-          { text: 'Allow AI', onPress: () => importAsRecord(selected, true) },
-        ],
-        { cancelable: false },
-      );
-    } catch (selectionError) {
-      Alert.alert(
-        'Unable to select document',
-        selectionError instanceof Error ? selectionError.message : 'Please try again.',
-      );
     }
   };
 
   const chooseDocumentSource = () => {
     setAddSheetVisible(false);
+    const sources = pickAndSaveDocument(
+      importAsRecord,
+      () => setImporting(true),
+      () => setImporting(false),
+    );
     Alert.alert('From a document', 'Choose where the document comes from.', [
-      { text: 'Choose file', onPress: () => startDocumentRecord(selectDocumentFile) },
-      { text: 'Photo library', onPress: () => startDocumentRecord(selectImageFromGallery) },
-      { text: 'Camera', onPress: () => startDocumentRecord(captureDocumentPhoto) },
+      ...sources,
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
@@ -1107,6 +1075,7 @@ export function WealthScreen({
     <Screen
       scroll
       padded={false}
+      onRefresh={refreshRecords}
       contentContainerStyle={styles.screenContent}
       floatingAction={
         guestPreview ? null : (
@@ -1202,9 +1171,7 @@ export function WealthScreen({
         ) : null}
 
         {loading ? (
-          <AppText variant="caption" color="secondary">
-            Loading wealth records…
-          </AppText>
+          <LoadingState label="Loading wealth records…" />
         ) : null}
 
         <ReadinessCard
@@ -1283,11 +1250,7 @@ export function WealthScreen({
             setLentFormVisible(true);
           }}
         />
-        {importing ? (
-          <AppText variant="caption" color="secondary">
-            Adding record from document…
-          </AppText>
-        ) : null}
+        <ProcessingOverlay visible={importing} label="Adding record from document…" />
         {lentFormVisible ? (
           <LentBorrowedForm
             onClose={() => setLentFormVisible(false)}
@@ -1298,7 +1261,7 @@ export function WealthScreen({
           />
         ) : null}
         {formVisible ? (
-          <WealthRecordForm
+          <WealthHoldingForm
             onClose={() => setFormVisible(false)}
             onCreated={record => {
               setRecords(current => [record, ...current]);
@@ -1317,250 +1280,448 @@ export function WealthScreen({
   );
 }
 
-function WealthRecordForm({
-  onClose,
-  onCreated,
-}: {
-  onClose: () => void;
-  onCreated: (record: WealthRecord) => void;
-}) {
-  const { theme } = useAppTheme();
-  const [formCategories, setFormCategories] = useState<DynamicFormCategory[]>([]);
-  const [subtypes, setSubtypes] = useState<DynamicFormCategory[]>([]);
-  const [schema, setSchema] = useState<DynamicFormSchema>();
-  const [categoryCode, setCategoryCode] = useState('');
-  const [subtypeCode, setSubtypeCode] = useState('');
-  const [values, setValues] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string>();
-
-  useEffect(() => {
-    let active = true;
-    wealthApi.formCategories()
-      .then(items => {
-        if (!active) return;
-        setFormCategories(items);
-        setCategoryCode(items[0]?.code ?? '');
-      })
-      .catch(loadError => setError(loadError instanceof Error ? loadError.message : 'Unable to load wealth forms.'));
-    return () => { active = false; };
-  }, []);
-
-  useEffect(() => {
-    if (!categoryCode) return;
-    let active = true;
-    setSubtypeCode('');
-    setSchema(undefined);
-    wealthApi.formSubtypes(categoryCode)
-      .then(items => {
-        if (!active) return;
-        setSubtypes(items);
-        setSubtypeCode(items[0]?.code ?? '');
-      })
-      .catch(loadError => setError(loadError instanceof Error ? loadError.message : 'Unable to load record types.'));
-    return () => { active = false; };
-  }, [categoryCode]);
-
-  useEffect(() => {
-    if (!categoryCode || !subtypeCode) return;
-    let active = true;
-    setLoading(true);
-    wealthApi.formSchema(categoryCode, subtypeCode)
-      .then(formSchema => {
-        if (!active) return;
-        setSchema(formSchema);
-        setValues(Object.fromEntries(
-          formSchema.fields.map(field => [field.id, String(field.defaultValue ?? '')]),
-        ));
-      })
-      .catch(loadError => setError(loadError instanceof Error ? loadError.message : 'Unable to load record fields.'))
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [categoryCode, subtypeCode]);
-
-  const save = async () => {
-    if (!schema || schema.fields.some(field => field.required && !values[field.id]?.trim())) {
-      setError('Complete all required fields.');
-      return;
-    }
-    setSaving(true);
-    setError(undefined);
-    try {
-      const record = await wealthApi.createRecordFromForm({
-        categoryCode,
-        subtypeCode,
-        values,
-      });
-      onCreated(record);
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to save wealth record.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.modalBackdrop}>
-        <View style={[styles.modalPanel, { backgroundColor: theme.colors.background }]}>
-          <Row align="center" justify="space-between">
-            <AppText variant="heading">Add wealth record</AppText>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose}>
-              <AppText variant="label" color="secondary">Close</AppText>
-            </Pressable>
-          </Row>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.formContent}>
-            <AppText variant="caption" color="secondary">Category</AppText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <Row gap="xs">
-                {formCategories.map(category => (
-                  <Pressable
-                    key={category.code}
-                    onPress={() => setCategoryCode(category.code)}
-                    style={[styles.formChoice, {
-                      borderColor: categoryCode === category.code ? theme.colors.primary : theme.colors.border,
-                    }]}
-                  >
-                    <AppText variant="caption">{category.label}</AppText>
-                  </Pressable>
-                ))}
-              </Row>
-            </ScrollView>
-            <AppText variant="caption" color="secondary">Record type</AppText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <Row gap="xs">
-                {subtypes.map(subtype => (
-                  <Pressable
-                    key={subtype.code}
-                    onPress={() => setSubtypeCode(subtype.code)}
-                    style={[styles.formChoice, {
-                      borderColor: subtypeCode === subtype.code ? theme.colors.primary : theme.colors.border,
-                    }]}
-                  >
-                    <AppText variant="caption">{subtype.label}</AppText>
-                  </Pressable>
-                ))}
-              </Row>
-            </ScrollView>
-            {loading ? <AppText variant="caption" color="secondary">Loading fields…</AppText> : null}
-            {schema?.fields.map((field: DynamicFormField) => (
-              <Stack key={field.id} gap="xs">
-                <AppText variant="caption" color="secondary">
-                  {field.label}{field.required ? ' *' : ''}
-                </AppText>
-                <TextInput
-                  value={values[field.id] ?? ''}
-                  onChangeText={value => setValues(current => ({ ...current, [field.id]: value }))}
-                  placeholder={field.placeholder ?? ''}
-                  placeholderTextColor={theme.colors.textMuted}
-                  keyboardType={field.inputType === 'number' ? 'numeric' : 'default'}
-                  multiline={field.inputType === 'textarea'}
-                  style={[styles.formInput, {
-                    backgroundColor: theme.colors.surface,
-                    borderColor: theme.colors.border,
-                    color: theme.colors.textPrimary,
-                  }]}
-                />
-              </Stack>
-            ))}
-            {error ? <AppText variant="caption" color="danger">{error}</AppText> : null}
-            <Button title={saving ? 'Saving…' : 'Save record'} disabled={saving || loading || !schema} onPress={() => { save(); }} />
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
-  );
-}
 
 function WealthHandoffModal({ onClose }: { onClose: () => void }) {
   const { theme } = useAppTheme();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
   const [summary, setSummary] = useState<WealthHandoffSummary>();
-  const [familyIds, setFamilyIds] = useState<string[]>([]);
-  const [emergencyIds, setEmergencyIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState<string>();
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [ack, setAck] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState<WealthHandoffSendResponse>();
 
   useEffect(() => {
     let active = true;
-    wealthApi.handoffSummary()
-      .then(value => { if (active) setSummary(value); })
-      .catch(error => setMessage(error instanceof Error ? error.message : 'Unable to load recipients.'))
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    wealthApi
+      .handoffSummary()
+      .then(data => {
+        if (!active) return;
+        setSummary(data);
+        setChosen(
+          [...data.recipients.family, ...data.recipients.emergency]
+            .filter(item => item.canReceiveHandoff)
+            .map(item => item.id),
+        );
+      })
+      .catch(err => {
+        if (active)
+          setError(
+            err instanceof Error ? err.message : 'Unable to load SOS handoff.',
+          );
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const toggle = (id: string, selected: string[], update: (ids: string[]) => void) =>
-    update(selected.includes(id) ? selected.filter(item => item !== id) : [...selected, id]);
+  const recipients = summary
+    ? [
+        ...summary.recipients.family,
+        ...summary.recipients.emergency,
+        ...(summary.recipients.other ?? []),
+      ]
+    : [];
+  const docs =
+    summary?.handoffTypes.reduce(
+      (sum, item) => sum + item.counts.documents + item.counts.images,
+      0,
+    ) ?? 0;
+  const selectedFamily =
+    summary?.recipients.family
+      .filter(item => chosen.includes(item.id))
+      .map(item => item.id) ?? [];
+  const selectedEmergency =
+    summary?.recipients.emergency
+      .filter(item => chosen.includes(item.id))
+      .map(item => item.id) ?? [];
+  const canSend = chosen.length > 0 && ack && !busy;
 
-  const send = async () => {
-    if (!familyIds.length && !emergencyIds.length) {
-      setMessage('Select at least one recipient.');
-      return;
-    }
-    setSending(true);
-    setMessage(undefined);
+  const toggle = (recipient: WealthHandoffRecipient) => {
+    if (!recipient.canReceiveHandoff) return;
+    setChosen(current =>
+      current.includes(recipient.id)
+        ? current.filter(id => id !== recipient.id)
+        : [...current, recipient.id],
+    );
+  };
+
+  const release = async () => {
+    if (!canSend) return;
+    setBusy(true);
+    setError('');
     try {
-      const result = await wealthApi.sendHandoff({
-        familyRecipientIds: familyIds,
-        emergencyRecipientIds: emergencyIds,
-      });
-      setMessage(result.message);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Unable to send handoff.');
+      setDone(
+        await wealthApi.sendHandoff({
+          familyRecipientIds: selectedFamily,
+          emergencyRecipientIds: selectedEmergency,
+        }),
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Unable to release SOS handoff.',
+      );
     } finally {
-      setSending(false);
+      setBusy(false);
     }
   };
 
+  const manageFamily = () => {
+    onClose();
+    navigation.navigate('Family');
+  };
+
+  const sent = done?.results.filter(item => item.sent).length ?? 0;
+
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
       <View style={styles.modalBackdrop}>
-        <View style={[styles.modalPanel, { backgroundColor: theme.colors.background }]}>
+        <View
+          style={[
+            styles.modalPanel,
+            styles.sosPanel,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          <View
+            style={[styles.sosHandle, { backgroundColor: theme.colors.border }]}
+          />
+
           <Row align="center" justify="space-between">
-            <AppText variant="heading">Wealth SOS handoff</AppText>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose}>
-              <AppText variant="label" color="secondary">Close</AppText>
+            <Row align="center" gap="sm">
+              <Siren size={22} color={theme.colors.danger} strokeWidth={2} />
+              <AppText variant="heading">SOS handoff</AppText>
+            </Row>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close SOS handoff"
+              onPress={onClose}
+              style={styles.sosCloseButton}
+            >
+              <X size={20} color={theme.colors.textSecondary} />
             </Pressable>
           </Row>
-          <ScrollView contentContainerStyle={styles.formContent}>
-            {loading ? <AppText color="secondary">Loading recipients…</AppText> : null}
-            {(['family', 'emergency'] as const).map(type => {
-              const recipients = summary?.recipients[type] ?? [];
-              const selected = type === 'family' ? familyIds : emergencyIds;
-              const update = type === 'family' ? setFamilyIds : setEmergencyIds;
-              return (
-                <Stack key={type} gap="xs">
-                  <AppText variant="label">{type === 'family' ? 'Family recipients' : 'Emergency recipients'}</AppText>
-                  {recipients.map(recipient => (
-                    <Pressable
-                      key={recipient.id}
-                      disabled={!recipient.canReceiveHandoff}
-                      onPress={() => toggle(recipient.id, selected, update)}
-                      style={[styles.handoffRecipient, { borderColor: theme.colors.border }]}
-                    >
-                      <AppText variant="body">
-                        {selected.includes(recipient.id) ? '✓ ' : ''}{recipient.name}
-                      </AppText>
-                      <AppText variant="caption" color="secondary">
-                        {recipient.canReceiveHandoff ? recipient.accessTypeLabel : 'Not eligible'}
-                      </AppText>
-                    </Pressable>
-                  ))}
-                </Stack>
-              );
-            })}
-            {message ? <AppText variant="caption" color="danger">{message}</AppText> : null}
-            <Button title={sending ? 'Sending…' : 'Send handoff'} disabled={sending || loading} onPress={() => { send(); }} />
-          </ScrollView>
+
+          {error ? (
+            <AppText variant="caption" color="danger">
+              {error}
+            </AppText>
+          ) : null}
+
+          {!summary && !error ? (
+            <LoadingState label="Loading emergency handoff…" size={28} />
+          ) : done ? (
+            <View style={styles.sosSuccess}>
+              <CircleCheck
+                size={52}
+                color={theme.colors.primary}
+                strokeWidth={1.8}
+              />
+              <AppText variant="heading">SOS handoff released</AppText>
+              <AppText color="secondary">
+                {sent} sent, {done.results.length - sent} failed.
+              </AppText>
+              {done.results.map(item => (
+                <AppText
+                  key={`${item.handoffType}-${item.email}`}
+                  variant="caption"
+                  color="secondary"
+                >
+                  {item.email}: {item.sent ? 'sent' : item.reason ?? 'failed'}
+                </AppText>
+              ))}
+              <Button title="Done" onPress={onClose} />
+            </View>
+          ) : summary ? (
+            <>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.sosContent}
+              >
+                <AppText color="secondary">
+                  For a real emergency. Releases {docs} wealth documents and
+                  every access instruction to the people below, so nothing is
+                  locked away when it matters.
+                </AppText>
+
+                <AppText variant="caption" color="secondary">
+                  WHO STEPS IN
+                </AppText>
+
+                {recipients.length ? (
+                  <View style={styles.sosGroup}>
+                    {recipients.map(recipient => {
+                      const isSelected = chosen.includes(recipient.id);
+                      const tone =
+                        recipient.type === 'family'
+                          ? theme.colors.success
+                          : theme.colors.primary;
+                      return (
+                        <Pressable
+                          key={recipient.id}
+                          accessibilityRole="checkbox"
+                          accessibilityState={{
+                            checked: isSelected,
+                            disabled: !recipient.canReceiveHandoff,
+                          }}
+                          disabled={!recipient.canReceiveHandoff}
+                          onPress={() => toggle(recipient)}
+                          style={[
+                            styles.sosRecipient,
+                            {
+                              borderColor: isSelected
+                                ? theme.colors.primary
+                                : theme.colors.border,
+                              backgroundColor: theme.colors.background,
+                              opacity: recipient.canReceiveHandoff ? 1 : 0.55,
+                            },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.sosAvatar,
+                              { backgroundColor: `${tone}2E` },
+                            ]}
+                          >
+                            <AppText variant="label" style={{ color: tone }}>
+                              {recipient.name.charAt(0).toUpperCase()}
+                            </AppText>
+                          </View>
+                          <View style={styles.sosRecipientDetails}>
+                            <AppText variant="body">{recipient.name}</AppText>
+                            <AppText variant="caption" color="secondary">
+                              {recipient.relationship} ·{' '}
+                              {recipient.accessTypeLabel}
+                            </AppText>
+                            <AppText variant="caption" color="secondary">
+                              {recipient.email}
+                              {recipient.canReceiveHandoff
+                                ? ''
+                                : ' · not enabled for SOS handoff'}
+                            </AppText>
+                          </View>
+                          <View
+                            style={[
+                              styles.sosCheckbox,
+                              {
+                                borderColor: isSelected
+                                  ? theme.colors.primary
+                                  : theme.colors.border,
+                                backgroundColor: isSelected
+                                  ? theme.colors.primary
+                                  : 'transparent',
+                              },
+                            ]}
+                          >
+                            {isSelected ? (
+                              <Check size={14} color={theme.colors.onPrimary} />
+                            ) : null}
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <View style={styles.sosGroup}>
+                    <AppText color="secondary">
+                      Nobody can step in yet. Give someone Emergency or Wealth
+                      download access and they will appear here.
+                    </AppText>
+                    <Button
+                      title="Manage family access"
+                      variant="secondary"
+                      onPress={manageFamily}
+                    />
+                  </View>
+                )}
+
+                <View
+                  style={[
+                    styles.sosInfoCard,
+                    {
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                    },
+                  ]}
+                >
+                  <AppText variant="label">They receive</AppText>
+                  <AppText variant="caption" style={{ color: theme.colors.success }}>
+                    ✓ {docs} wealth documents (deeds, policies, statements)
+                  </AppText>
+                  <AppText variant="caption" style={{ color: theme.colors.success }}>
+                    ✓ Access instructions per holding
+                  </AppText>
+                  <AppText variant="caption" color="secondary">
+                    ✗ Health records · ✗ personal notes · ✗ anything outside
+                    Wealth
+                  </AppText>
+                </View>
+
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: ack }}
+                  onPress={() => setAck(value => !value)}
+                  style={styles.sosConsentRow}
+                >
+                  <View
+                    style={[
+                      styles.sosCheckbox,
+                      {
+                        borderColor: ack
+                          ? theme.colors.primary
+                          : theme.colors.border,
+                        backgroundColor: ack
+                          ? theme.colors.primary
+                          : 'transparent',
+                      },
+                    ]}
+                  >
+                    {ack ? (
+                      <Check size={14} color={theme.colors.onPrimary} />
+                    ) : null}
+                  </View>
+                  <View style={styles.sosRecipientDetails}>
+                    <AppText variant="caption" color="secondary">
+                      I understand this shares my financial documents with the
+                      selected people now, and that I can cancel and revoke
+                      access at any time.
+                    </AppText>
+                  </View>
+                </Pressable>
+              </ScrollView>
+
+              <View style={styles.sosActions}>
+                <Button
+                  title={
+                    busy
+                      ? 'Releasing…'
+                      : `Release handoff to ${chosen.length} ${
+                          chosen.length === 1 ? 'person' : 'people'
+                        }`
+                  }
+                  variant="danger"
+                  disabled={!canSend}
+                  onPress={release}
+                />
+              </View>
+            </>
+          ) : null}
         </View>
       </View>
     </Modal>
   );
 }
 
+
 const styles = StyleSheet.create({
+
+  sosPanel: {
+    maxHeight: '92%',
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+  },
+
+  sosHandle: {
+    alignSelf: 'center',
+    width: 38,
+    height: 4,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+
+  sosCloseButton: {
+    minWidth: 36,
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  sosContent: {
+    gap: 16,
+    paddingTop: 12,
+    paddingBottom: 20,
+  },
+
+  sosInfoCard: {
+    gap: 4,
+    padding: 14,
+    borderWidth: 1,
+    borderRadius: 14,
+  },
+
+  sosGroup: {
+    gap: 10,
+  },
+
+  sosRecipient: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 12,
+  },
+
+  sosAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  sosRecipientDetails: {
+    flex: 1,
+    gap: 4,
+  },
+
+  sosCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  sosConsentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
+  },
+
+  sosActions: {
+    gap: 10,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(136,136,136,0.33)',
+  },
+
+  sosSuccess: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    paddingVertical: 32,
+  },
+
   screenContent: {
     paddingHorizontal: 0,
   },
@@ -1603,6 +1764,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   handoffRecipient: {
     minHeight: 48,
     paddingHorizontal: 12,
@@ -1615,8 +1795,8 @@ const styles = StyleSheet.create({
   /* Header */
 
   headerTitle: {
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: '700',
   },
 
@@ -1656,8 +1836,8 @@ const styles = StyleSheet.create({
 
   searchPlaceholder: {
     flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   guestNotice: {
@@ -1708,13 +1888,13 @@ const styles = StyleSheet.create({
 
   readinessTitle: {
     flexShrink: 1,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 19,
   },
 
   readinessPercentage: {
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 26,
+    lineHeight: 31,
     fontWeight: '700',
   },
 
@@ -1735,8 +1915,8 @@ const styles = StyleSheet.create({
 
   readinessMeta: {
     flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   howButton: {
@@ -1755,7 +1935,7 @@ const styles = StyleSheet.create({
 
   moneyText: {
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 12,
   },
 
   readinessActions: {
@@ -1786,8 +1966,8 @@ const styles = StyleSheet.create({
   },
 
   actionText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
   },
 
   /* Needs attention */
@@ -1803,8 +1983,8 @@ const styles = StyleSheet.create({
   },
 
   attentionHeaderTitle: {
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 19,
   },
 
   countBadge: {
@@ -1845,8 +2025,8 @@ const styles = StyleSheet.create({
   },
 
   severityText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
   },
 
   attentionContent: {
@@ -1855,14 +2035,14 @@ const styles = StyleSheet.create({
   },
 
   attentionTitle: {
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 18,
   },
 
   attentionDescription: {
     marginTop: 4,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
   },
 
   attentionAction: {
@@ -1875,8 +2055,8 @@ const styles = StyleSheet.create({
   },
 
   attentionActionText: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
   },
 
   viewAllButton: {
@@ -1888,8 +2068,8 @@ const styles = StyleSheet.create({
   },
 
   viewAllText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
   },
 
   chevronUp: {
@@ -1914,8 +2094,8 @@ const styles = StyleSheet.create({
   },
 
   categoryText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   /* Required wealth groups */
@@ -1932,8 +2112,8 @@ const styles = StyleSheet.create({
 
   sosText: {
     color: '#111111',
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 18,
     fontWeight: '700',
   },
 
@@ -1950,14 +2130,14 @@ const styles = StyleSheet.create({
   },
 
   groupTitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 19,
     flex: 1,
   },
 
   groupTotal: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
     fontWeight: '500',
   },
 
@@ -1985,32 +2165,32 @@ const styles = StyleSheet.create({
   },
 
   wealthName: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
   },
 
   wealthMeta: {
     marginTop: 2,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   wealthSecondary: {
     marginTop: 2,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   wealthWarning: {
     marginTop: 4,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 16,
   },
 
   wealthAmount: {
     maxWidth: 78,
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
     fontWeight: '700',
     textAlign: 'right',
     flexShrink: 0,
@@ -2036,8 +2216,8 @@ const styles = StyleSheet.create({
 
   lendingTitle: {
     flexShrink: 1,
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
   },
 
   openBadge: {
@@ -2084,14 +2264,14 @@ const styles = StyleSheet.create({
   },
 
   lendingName: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
   },
 
   lendingDescription: {
     marginTop: 4,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   amountColumn: {
@@ -2103,14 +2283,14 @@ const styles = StyleSheet.create({
   },
 
   amountText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 17,
     fontWeight: '700',
   },
 
   amountLabel: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 15,
   },
 
   lendingActions: {
@@ -2153,7 +2333,7 @@ const styles = StyleSheet.create({
 
   comingSoonText: {
     marginTop: 4,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
   },
 });

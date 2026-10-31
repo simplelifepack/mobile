@@ -18,8 +18,7 @@ function extensionForMimeType(mimeType: string) {
 }
 
 export const documentsApi = {
-  list: () =>
-    request<DocumentRecord[]>('/documents', { requiresAuth: true }),
+  list: () => request<DocumentRecord[]>('/documents', { requiresAuth: true }),
   getEncryptionKey: () =>
     request<PublicDocumentEncryptionKey>('/documents/encryption-key', {
       requiresAuth: true,
@@ -30,7 +29,12 @@ export const documentsApi = {
   ) =>
     uploadMultipart<DocumentAnalysisResponse>(
       '/documents/analyze',
-      { envelopes: JSON.stringify(envelopes) },
+      {
+        envelopes: JSON.stringify(envelopes),
+        aiAnalysisConsent: String(
+          envelopes.some(item => item.aiAnalysisConsent),
+        ),
+      },
       files.map(file => ({
         fieldName: 'encryptedFiles',
         uri: file.uri,

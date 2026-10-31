@@ -6,7 +6,7 @@ import {
   statusCodes,
 } from '@react-native-google-signin/google-signin';
 import { authApi } from '../../api/auth.api';
-import { ApiError, setAccessToken } from '../../api/client';
+import { ApiError, refreshUser, setAccessToken } from '../../api/client';
 import { sessionStorage } from '../../api/sessionStorage';
 import type { AuthResponse, AuthUser } from '../../api/types';
 import { environment } from '../../config/environment';
@@ -17,7 +17,7 @@ import {
   validateSignupInput,
 } from './auth.validators';
 
-export type AuthStatus = 'restoring' | 'unauthenticated' | 'authenticated';
+export type AuthStatus = 'restoring' | 'restoreFailed' | 'unauthenticated' | 'authenticated';
 type AuthState = {
   status: AuthStatus;
   user: AuthUser | null;
@@ -79,17 +79,19 @@ async function persist(result: AuthResponse) {
   return result.user;
 }
 
-export const restoreSession = createAsyncThunk('auth/restore', async () => {
-  const token = await sessionStorage.readAccessToken();
-  setAccessToken(token ?? '__restore__');
-  try {
-    return (await authApi.me()).user;
-  } catch (error) {
-    setAccessToken(null);
-    await sessionStorage.clear();
-    throw error;
-  }
-});
+export const restoreSession = createAsyncThunk(
+  'auth/restore',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await refreshUser();
+    } catch (error) {
+      // Only an explicit rejection of the refresh session means login is needed.
+      if (error instanceof ApiError && error.status === 401)
+        return rejectWithValue('anonymous');
+      throw error;
+    }
+  },
+);
 export const login = createAsyncThunk(
   'auth/login',
   async (input: { email: string; password: string }) => {
@@ -168,6 +170,11 @@ const slice = createSlice({
     clearAuthError: state => {
       state.error = null;
     },
+    sessionExpired: state => {
+      state.status = 'unauthenticated';
+      state.user = null;
+      state.error = 'Your session expired. Please sign in again.';
+    },
     updateCurrentUser: (state, action: { payload: AuthUser }) => {
       state.user = action.payload;
     },
@@ -201,9 +208,16 @@ const slice = createSlice({
         state.status = 'authenticated';
         state.user = action.payload;
       })
-      .addCase(restoreSession.rejected, state => {
-        state.status = 'unauthenticated';
-        state.user = null;
+      .addCase(restoreSession.pending, state => {
+        if (state.status === 'restoreFailed') state.status = 'restoring';
+      })
+      .addCase(restoreSession.rejected, (state, action) => {
+        if (action.payload === 'anonymous') {
+          state.user = null;
+          state.status = 'unauthenticated';
+        } else if (state.status === 'restoring') {
+          state.status = 'restoreFailed';
+        }
       })
       .addCase(login.pending, pending)
       .addCase(login.fulfilled, fulfilled)
@@ -260,5 +274,5 @@ const slice = createSlice({
       });
   },
 });
-export const { clearAuthError, updateCurrentUser } = slice.actions;
+export const { clearAuthError, sessionExpired, updateCurrentUser } = slice.actions;
 export const authReducer = slice.reducer;

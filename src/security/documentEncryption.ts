@@ -5,7 +5,9 @@ import type {
   PublicDocumentEncryptionKey,
 } from '../api/types';
 
-export const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
+import { MAX_DOCUMENT_SIZE_BYTES } from './documentLimits';
+
+export { MAX_DOCUMENT_SIZE_BYTES };
 
 export type SupportedDocumentMimeType =
   | 'application/pdf'
@@ -61,22 +63,38 @@ export async function encryptDocumentForUpload(
   let encryptedPath: string | undefined;
 
   try {
-    const cipher = QuickCrypto.createCipheriv('aes-256-gcm', aesKey, iv);
-    const encryptedBytes = QuickCrypto.Buffer.concat([
-      cipher.update(originalBytes),
-      cipher.final(),
-      cipher.getAuthTag(),
-    ]);
-    const wrappedKey = QuickCrypto.publicEncrypt(
-      {
-        key: publicKey.publicKeyPem,
-        padding: QuickCrypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256',
-      },
+    const subtle = QuickCrypto.subtle;
+    const aesCryptoKey = await subtle.importKey(
+      'raw',
       aesKey,
+      { name: 'AES-GCM' },
+      false,
+      ['encrypt'],
+    );
+    const encryptedBytes = QuickCrypto.Buffer.from(
+      await subtle.encrypt(
+        { name: 'AES-GCM', iv, tagLength: 128 },
+        aesCryptoKey,
+        originalBytes,
+      ),
+    );
+    const rsaKey = await subtle.importKey(
+      'spki',
+      QuickCrypto.Buffer.from(
+        publicKey.publicKeyPem
+          .replace(/-----(BEGIN|END) PUBLIC KEY-----/g, '')
+          .replace(/\s+/g, ''),
+        'base64',
+      ),
+      { name: 'RSA-OAEP', hash: 'SHA-256' },
+      false,
+      ['encrypt'],
+    );
+    const wrappedKey = QuickCrypto.Buffer.from(
+      await subtle.encrypt({ name: 'RSA-OAEP' }, rsaKey, aesKey),
     );
     const sanitizedFilename = safeFilename(filename || 'document');
-    encryptedPath = `${Dirs.CacheDir}/readiness-upload-${QuickCrypto.randomUUID()}.bin`;
+    encryptedPath = `${Dirs.CacheDir}/readiness-upload-${QuickCrypto.randomUUID()}.encrypted`;
     await FileSystem.writeFile(
       encryptedPath,
       encryptedBytes.toString('base64'),

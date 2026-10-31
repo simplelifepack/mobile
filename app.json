@@ -1,4 +1,5 @@
 {
   "name": "ReadinessMobile",
-  "displayName": "ReadinessMobile"
+  "displayName": "ReadinessMobile",
+  "scheme": "readiness"
 }

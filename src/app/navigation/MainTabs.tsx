@@ -1,6 +1,9 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
+import {
+  useNavigation,
+  type CompositeNavigationProp,
+} from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { MainTabParamList, RootStackParamList } from './types';
@@ -14,12 +17,13 @@ import { WealthScreen } from '../../features/wealth/WealthScreen';
 const Tabs = createBottomTabNavigator<MainTabParamList>();
 
 function WealthTab() {
-  const navigation = useNavigation<
-    CompositeNavigationProp<
-      BottomTabNavigationProp<MainTabParamList, 'Wealth'>,
-      NativeStackNavigationProp<RootStackParamList>
-    >
-  >();
+  const navigation =
+    useNavigation<
+      CompositeNavigationProp<
+        BottomTabNavigationProp<MainTabParamList, 'Wealth'>,
+        NativeStackNavigationProp<RootStackParamList>
+      >
+    >();
   const authStatus = useAppSelector(state => state.auth.status);
   const guestPreview = __DEV__ && authStatus === 'unauthenticated';
 
@@ -42,7 +46,10 @@ export function MainTabs() {
   return (
     <Tabs.Navigator
       initialRouteName={guestPreview ? 'Wealth' : 'Home'}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { position: 'absolute' },
+      }}
       tabBar={props => <TabBar {...props} />}
     >
       <Tabs.Screen name="Home" component={HomeScreen} />

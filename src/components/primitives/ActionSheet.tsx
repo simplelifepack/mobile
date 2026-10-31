@@ -53,10 +53,17 @@ export function ActionSheet({
             },
           ]}
         >
-          <View style={[styles.handle, { backgroundColor: theme.colors.border }]} />
+          <View
+            style={[styles.handle, { backgroundColor: theme.colors.border }]}
+          />
           <View style={styles.header}>
             <AppText variant="heading">{title}</AppText>
-            <Pressable accessibilityRole="button" accessibilityLabel="Done" hitSlop={12} onPress={onClose}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Done"
+              hitSlop={12}
+              onPress={onClose}
+            >
               <AppText variant="label" style={{ color: theme.colors.primary }}>
                 Done
               </AppText>
@@ -68,9 +75,16 @@ export function ActionSheet({
               accessibilityRole="button"
               accessibilityLabel={accessibilityLabel ?? label}
               onPress={onPress}
-              style={({ pressed }) => [styles.option, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.option,
+                pressed && styles.pressed,
+              ]}
             >
-              <Icon size={20} color={theme.colors.textSecondary} strokeWidth={2} />
+              <Icon
+                size={20}
+                color={theme.colors.textSecondary}
+                strokeWidth={2}
+              />
               <AppText style={styles.optionText}>{label}</AppText>
             </Pressable>
           ))}
@@ -82,7 +96,10 @@ export function ActionSheet({
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0, 0, 0, 0.58)' },
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0, 0, 0, 0.58)',
+  },
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -91,7 +108,13 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 16,
   },
-  handle: { width: 36, height: 4, borderRadius: 3, alignSelf: 'center', marginBottom: 12 },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
   header: {
     minHeight: 40,
     flexDirection: 'row',

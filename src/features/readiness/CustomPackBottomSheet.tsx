@@ -1,14 +1,10 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import {
+  ActivityIndicator,
   Animated,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,12 +12,7 @@ import {
   View,
 } from 'react-native';
 
-import {
-  Check,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-react-native';
+import { Check, Pencil, Plus, Search, Trash2, X } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/primitives/AppText';
@@ -39,7 +30,6 @@ import type {
   VerificationSource,
 } from '../../api/types';
 
-
 /* ============================================================================
    TYPES
 ============================================================================ */
@@ -55,28 +45,19 @@ type CustomPackBottomSheetProps = {
     documentLabels: string[],
   ) => Promise<CustomPackageGenerationJob>;
 
-  onGetGenerationJob: (
-    jobId: string,
-  ) => Promise<CustomPackageGenerationJob>;
+  onGetGenerationJob: (jobId: string) => Promise<CustomPackageGenerationJob>;
 
   onSearchOrGenerate: (
     packageType: string,
     documentLabels: string[],
   ) => Promise<PackageSearchResponse>;
 
-  onSaveCustomPack: (
-    payload: CustomPackPayload,
-  ) => Promise<PackageSummary>;
+  onSaveCustomPack: (payload: CustomPackPayload) => Promise<PackageSummary>;
 
-  onPackSaved: (
-    pack: PackageSummary,
-  ) => void;
+  onPackSaved: (pack: PackageSummary) => void;
 };
 
-type Step =
-  | 'lookup'
-  | 'result';
-
+type Step = 'lookup' | 'result';
 
 /* ============================================================================
    HELPERS
@@ -130,18 +111,12 @@ function packageToDraft(pack: PackageSummary): CustomPackDraft {
   };
 }
 
-function errorMessage(
-  error: unknown,
-  fallback: string,
-) {
+function errorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) {
     return error.message;
   }
 
-  if (
-    error &&
-    typeof error === 'object'
-  ) {
+  if (error && typeof error === 'object') {
     const value = error as {
       message?: unknown;
       error?: unknown;
@@ -150,29 +125,21 @@ function errorMessage(
       };
     };
 
-    if (
-      typeof value.message === 'string'
-    ) {
+    if (typeof value.message === 'string') {
       return value.message;
     }
 
-    if (
-      typeof value.error === 'string'
-    ) {
+    if (typeof value.error === 'string') {
       return value.error;
     }
 
-    if (
-      typeof value.data?.message ===
-      'string'
-    ) {
+    if (typeof value.data?.message === 'string') {
       return value.data.message;
     }
   }
 
   return fallback;
 }
-
 
 /**
  * Makes matching slightly more tolerant.
@@ -183,9 +150,7 @@ function errorMessage(
  * Passport Document
  * passport_document
  */
-function normalizeDocumentLabel(
-  value: string,
-) {
+function normalizeDocumentLabel(value: string) {
   return value
     .toLowerCase()
     .replace(/[_-]/g, ' ')
@@ -193,7 +158,6 @@ function normalizeDocumentLabel(
     .replace(/\s+/g, ' ')
     .trim();
 }
-
 
 /**
  * Determines whether a requirement is already
@@ -203,48 +167,32 @@ function requirementExistsInArchive(
   requirement: string,
   documentLabels: string[],
 ) {
-  const required =
-    normalizeDocumentLabel(
-      requirement,
-    );
+  const required = normalizeDocumentLabel(requirement);
 
   if (!required) {
     return false;
   }
 
   return documentLabels.some(label => {
-    const document =
-      normalizeDocumentLabel(label);
+    const document = normalizeDocumentLabel(label);
 
     if (!document) {
       return false;
     }
 
-    if (
-      document === required
-    ) {
+    if (document === required) {
       return true;
     }
 
-    if (
-      document.includes(required) ||
-      required.includes(document)
-    ) {
+    if (document.includes(required) || required.includes(document)) {
       return true;
     }
 
     /*
      * Common document aliases.
      */
-    const aliases: Record<
-      string,
-      string[]
-    > = {
-      passport: [
-        'passport',
-        'passport document',
-        'travel document',
-      ],
+    const aliases: Record<string, string[]> = {
+      passport: ['passport', 'passport document', 'travel document'],
 
       'proof of funds': [
         'proof of funds',
@@ -253,11 +201,7 @@ function requirementExistsInArchive(
         'bank account',
       ],
 
-      'travel itinerary': [
-        'travel itinerary',
-        'itinerary',
-        'flight itinerary',
-      ],
+      'travel itinerary': ['travel itinerary', 'itinerary', 'flight itinerary'],
 
       'accommodation proof': [
         'accommodation proof',
@@ -274,21 +218,15 @@ function requirementExistsInArchive(
       ],
     };
 
-    const aliasesForRequirement =
-      aliases[required];
+    const aliasesForRequirement = aliases[required];
 
-    if (
-      aliasesForRequirement?.includes(
-        document,
-      )
-    ) {
+    if (aliasesForRequirement?.includes(document)) {
       return true;
     }
 
     return false;
   });
 }
-
 
 /* ============================================================================
    COMPONENT
@@ -304,96 +242,42 @@ export function CustomPackBottomSheet({
   onSaveCustomPack,
   onPackSaved,
 }: CustomPackBottomSheetProps) {
-  const { theme } =
-    useAppTheme();
+  const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
 
-  const [
-    step,
-    setStep,
-  ] = useState<Step>('lookup');
+  const [step, setStep] = useState<Step>('lookup');
 
-  const [
-    purpose,
-    setPurpose,
-  ] = useState('');
+  const [purpose, setPurpose] = useState('');
 
-  const [
-    packName,
-    setPackName,
-  ] = useState('');
+  const [packName, setPackName] = useState('');
 
-  const [
-    requirements,
-    setRequirements,
-  ] = useState<string[]>([
-    '',
-    '',
-  ]);
+  const [requirements, setRequirements] = useState<string[]>(['', '']);
 
-  const [
-    source,
-    setSource,
-  ] =
-    useState<
-      CustomPackPayload['source']
-    >();
+  const [source, setSource] = useState<CustomPackPayload['source']>();
 
-  const [
-    verificationSources,
-    setVerificationSources,
-  ] = useState<
+  const [verificationSources, setVerificationSources] = useState<
     VerificationSource[]
   >([]);
 
-  const [
-    verificationStatus,
-    setVerificationStatus,
-  ] = useState(
-    'user_created',
-  );
+  const [verificationStatus, setVerificationStatus] = useState('user_created');
 
-  const [
-    searchMetadata,
-    setSearchMetadata,
-  ] =
-    useState<
-      Record<string, unknown>
-    >();
+  const [searchMetadata, setSearchMetadata] =
+    useState<Record<string, unknown>>();
 
-  const [
-    disclaimer,
-    setDisclaimer,
-  ] = useState('');
+  const [disclaimer, setDisclaimer] = useState('');
 
-  const [
-    generationJob,
-    setGenerationJob,
-  ] =
-    useState<
-      CustomPackageGenerationJob
-    >();
+  const [generationJob, setGenerationJob] =
+    useState<CustomPackageGenerationJob>();
 
-  const [
-    lookupLoading,
-    setLookupLoading,
-  ] = useState(false);
+  const [lookupLoading, setLookupLoading] = useState(false);
 
-  const [
-    lookupError,
-    setLookupError,
-  ] = useState<string>();
+  const [generating, setGenerating] = useState(false);
 
-  const translateY =
-    useRef(
-      new Animated.Value(800),
-    ).current;
+  const [lookupError, setLookupError] = useState<string>();
 
-  const backdropOpacity =
-    useRef(
-      new Animated.Value(0),
-    ).current;
+  const translateY = useRef(new Animated.Value(800)).current;
 
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
 
   /* ==========================================================================
      OPEN / CLOSE
@@ -407,150 +291,91 @@ export function CustomPackBottomSheet({
     setStep('lookup');
     setPurpose('');
     setPackName('');
-    setRequirements([
-      '',
-      '',
-    ]);
+    setRequirements(['', '']);
     setSource(undefined);
     setVerificationSources([]);
-    setVerificationStatus(
-      'user_created',
-    );
+    setVerificationStatus('user_created');
     setSearchMetadata(undefined);
     setDisclaimer('');
     setGenerationJob(undefined);
     setLookupError(undefined);
     setLookupLoading(false);
+    setGenerating(false);
 
     Animated.parallel([
-      Animated.spring(
-        translateY,
-        {
-          toValue: 0,
-          useNativeDriver: true,
-          damping: 22,
-          stiffness: 180,
-          mass: 0.8,
-        },
-      ),
+      Animated.spring(translateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        damping: 22,
+        stiffness: 180,
+        mass: 0.8,
+      }),
 
-      Animated.timing(
-        backdropOpacity,
-        {
-          toValue: 1,
-          duration: 180,
-          useNativeDriver: true,
-        },
-      ),
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
     ]).start();
-  }, [
-    visible,
-    translateY,
-    backdropOpacity,
-  ]);
+  }, [visible, translateY, backdropOpacity]);
 
-
-  const close = (
-    afterClose?: () => void,
-  ) => {
+  const close = (afterClose?: () => void) => {
     Animated.parallel([
-      Animated.timing(
-        translateY,
-        {
-          toValue: 800,
-          duration: 220,
-          useNativeDriver: true,
-        },
-      ),
+      Animated.timing(translateY, {
+        toValue: 800,
+        duration: 220,
+        useNativeDriver: true,
+      }),
 
-      Animated.timing(
-        backdropOpacity,
-        {
-          toValue: 0,
-          duration: 160,
-          useNativeDriver: true,
-        },
-      ),
-    ]).start(
-      ({ finished }) => {
-        if (!finished) {
-          return;
-        }
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (!finished) {
+        return;
+      }
 
-        onClose();
-        afterClose?.();
-      },
-    );
+      onClose();
+      afterClose?.();
+    });
   };
-
 
   /* ==========================================================================
      REQUIREMENTS
   ========================================================================== */
 
-  const addRequirement =
-    () => {
-      setRequirements(
-        current => [
-          ...current,
-          '',
-        ],
-      );
-    };
+  const addRequirement = () => {
+    setRequirements(current => [...current, '']);
+  };
 
+  const addFromArchive = (label: string) => {
+    setRequirements(current => [
+      ...current.filter(item => item.trim()),
+      label.trim(),
+    ]);
+  };
 
-  const updateRequirement = (
-    index: number,
-    value: string,
-  ) => {
-    setRequirements(
-      current =>
-        current.map(
-          (
-            item,
-            itemIndex,
-          ) =>
-            itemIndex === index
-              ? value
-              : item,
-        ),
+  const updateRequirement = (index: number, value: string) => {
+    setRequirements(current =>
+      current.map((item, itemIndex) => (itemIndex === index ? value : item)),
     );
   };
 
+  const removeRequirement = (index: number) => {
+    setRequirements(current => {
+      if (current.length <= 1) {
+        return [''];
+      }
 
-  const removeRequirement = (
-    index: number,
-  ) => {
-    setRequirements(
-      current => {
-        if (
-          current.length <= 1
-        ) {
-          return [''];
-        }
-
-        return current.filter(
-          (
-            _,
-            itemIndex,
-          ) =>
-            itemIndex !==
-            index,
-        );
-      },
-    );
+      return current.filter((_, itemIndex) => itemIndex !== index);
+    });
   };
-
 
   const canSave =
-    packName.trim().length >
-      0 &&
-    requirements.some(
-      requirement =>
-        requirement.trim()
-          .length > 0,
-    );
-
+    packName.trim().length > 0 &&
+    requirements.some(requirement => requirement.trim().length > 0);
 
   /* ==========================================================================
      APPLY SERVER RESPONSE
@@ -561,78 +386,46 @@ export function CustomPackBottomSheet({
     job: CustomPackageGenerationJob,
     query: string,
   ) => {
-    setPackName(
-      current =>
-        current.trim() ||
-        draft.packageName,
-    );
+    setPackName(current => current.trim() || draft.packageName);
 
-    setPurpose(
-      current =>
-        current.trim() ||
-        draft.description,
-    );
+    setPurpose(current => current.trim() || draft.description);
 
-    const requiredDocuments =
-      (draft.requiredDocuments ?? [])
-        .map(
-          requirement =>
-            requirement.title ||
-            requirement.name,
-        )
-        .filter(Boolean);
+    const requiredDocuments = (draft.requiredDocuments ?? [])
+      .map(requirement => requirement.title || requirement.name)
+      .filter(Boolean);
     setRequirements(requiredDocuments.length ? requiredDocuments : ['']);
 
     setSource(
       draft.sourceUrl
         ? {
-            name:
-              draft.sourceOrganization,
+            name: draft.sourceOrganization,
 
-            title:
-              draft.sourceTitle,
+            title: draft.sourceTitle,
 
-            url:
-              draft.sourceUrl,
+            url: draft.sourceUrl,
 
-            lastCheckedAt:
-              draft.lastChecked,
+            lastCheckedAt: draft.lastChecked,
           }
         : undefined,
     );
 
-    setVerificationSources(
-      draft.verificationSources,
-    );
+    setVerificationSources(draft.verificationSources);
 
     setVerificationStatus(
       draft.verificationStatus ||
-        (
-          draft
-            .verificationSources
-            .length
-            ? 'draft_verified'
-            : 'user_created'
-        ),
+        (draft.verificationSources.length ? 'draft_verified' : 'user_created'),
     );
 
     setSearchMetadata({
       ...draft.searchMetadata,
 
-      searchPhrases:
-        draft.searchMetadata
-          .searchPhrases ??
-        [query],
+      searchPhrases: draft.searchMetadata.searchPhrases ?? [query],
 
-      confidence:
-        job.confidence,
+      confidence: job.confidence,
 
-      disclaimer:
-        job.disclaimer ??
-        draft.disclaimer,
+      disclaimer: job.disclaimer ?? draft.disclaimer,
 
-      hasVerifiedOfficialSource:
-        job.hasVerifiedOfficialSource,
+      hasVerifiedOfficialSource: job.hasVerifiedOfficialSource,
     });
 
     setDisclaimer(
@@ -646,245 +439,180 @@ export function CustomPackBottomSheet({
     setGenerationJob(job);
   };
 
-
   /* ==========================================================================
      LOOKUP
   ========================================================================== */
 
-  const lookupPack =
-    async () => {
-      const packageType =
-        purpose.trim();
+  const lookupPack = async () => {
+    const packageType = purpose.trim();
 
-      if (
-        !packageType ||
-        lookupLoading
-      ) {
-        return;
-      }
+    if (!packageType || lookupLoading) {
+      return;
+    }
 
-      setLookupLoading(true);
-      setLookupError(undefined);
+    setLookupLoading(true);
+    setGenerating(true);
+    setLookupError(undefined);
+
+    /*
+     * Immediately move to result UI.
+     * This allows the user to see that research
+     * is happening.
+     */
+    setStep('result');
+
+    if (!packName.trim()) {
+      setPackName(
+        packageType
+          .replace(
+            /^documents?\s+(needed|required|requested)\s+(for|by)\s+/i,
+            '',
+          )
+          .slice(0, 80),
+      );
+    }
+
+    try {
+      /*
+       * 1. Create generation job
+       */
+      let job = await onCreateGenerationJob(packageType, documentLabels);
+
+      setGenerationJob(job);
 
       /*
-       * Immediately move to result UI.
-       * This allows the user to see that research
-       * is happening.
+       * 2. Wait for backend generation
        */
-      setStep('result');
+      const terminalStatuses = new Set([
+        'completed',
+        'completed_with_unverified_sources',
+        'failed',
+      ]);
 
-      if (!packName.trim()) {
-        setPackName(
-          packageType
-            .replace(
-              /^documents?\s+(needed|required|requested)\s+(for|by)\s+/i,
-              '',
-            )
-            .slice(0, 80),
-        );
-      }
+      /*
+       * 3. Poll every 1.5 seconds
+       */
+      for (
+        let attempt = 0;
+        !job.draft && !terminalStatuses.has(job.status) && attempt < 40;
+        attempt += 1
+      ) {
+        await new Promise<void>(resolve => setTimeout(resolve, 1500));
 
-      try {
-        /*
-         * 1. Create generation job
-         */
-        let job =
-          await onCreateGenerationJob(
-            packageType,
-            documentLabels,
-          );
+        job = await onGetGenerationJob(job.id);
 
         setGenerationJob(job);
+      }
 
-        /*
-         * 2. Wait for backend generation
-         */
-        const terminalStatuses =
-          new Set([
-            'completed',
-            'completed_with_unverified_sources',
-            'failed',
-          ]);
-
-        /*
-         * 3. Poll every 1.5 seconds
-         */
-        for (
-          let attempt = 0;
-
-          !job.draft &&
-          !terminalStatuses.has(
-            job.status,
-          ) &&
-          attempt < 40;
-
-          attempt += 1
-        ) {
-          await new Promise<void>(
-            resolve =>
-              setTimeout(
-                resolve,
-                1500,
-              ),
-          );
-
-          job =
-            await onGetGenerationJob(
-              job.id,
-            );
-
-          setGenerationJob(
-            job,
-          );
-        }
-
-        /*
-         * 4. No draft
-         */
-        if (!job.draft) {
-          throw new Error(
-            job.errorMessage ||
-              'Could not generate this package right now.',
-          );
-        }
-
-        /*
-         * 5. Apply response to UI
-         */
-        applyDraft(
-          job.draft,
-          job,
-          packageType,
-        );
-      } catch (error) {
-        if (isMissingRoute(error)) {
-          try {
-            const result = await onSearchOrGenerate(
-              packageType,
-              documentLabels,
-            );
-            const draft = packageToDraft(result.package);
-            const fallbackJob: CustomPackageGenerationJob = {
-              id: result.package.slug,
-              status: 'completed',
-              statusMessage: 'Package requirements loaded',
-              draft,
-              queuedAt: new Date().toISOString(),
-              retryCount: 0,
-              provider429Count: 0,
-              hasVerifiedOfficialSource: Boolean(
-                draft.hasVerifiedOfficialSource,
-              ),
-              confidence: draft.confidence,
-              disclaimer: draft.disclaimer,
-            };
-
-            setGenerationJob(fallbackJob);
-            applyDraft(draft, fallbackJob, packageType);
-            return;
-          } catch (fallbackError) {
-            error = fallbackError;
-          }
-        }
-
-        setLookupError(
-          errorMessage(
-            error,
-            'Could not look this up right now. You can still add the documents yourself.',
-          ),
-        );
-
-        /*
-         * Keep result screen visible so
-         * user can manually edit requirements.
-         */
-        setRequirements(
-          current =>
-            current.length
-              ? current
-              : [''],
-        );
-      } finally {
-        setLookupLoading(
-          false,
+      /*
+       * 4. No draft
+       */
+      if (!job.draft) {
+        throw new Error(
+          job.errorMessage || 'Could not generate this package right now.',
         );
       }
-    };
 
+      /*
+       * 5. Apply response to UI
+       */
+      applyDraft(job.draft, job, packageType);
+    } catch (error) {
+      if (isMissingRoute(error)) {
+        try {
+          const result = await onSearchOrGenerate(packageType, documentLabels);
+          const draft = packageToDraft(result.package);
+          const fallbackJob: CustomPackageGenerationJob = {
+            id: result.package.slug,
+            status: 'completed',
+            statusMessage: 'Package requirements loaded',
+            draft,
+            queuedAt: new Date().toISOString(),
+            retryCount: 0,
+            provider429Count: 0,
+            hasVerifiedOfficialSource: Boolean(draft.hasVerifiedOfficialSource),
+            confidence: draft.confidence,
+            disclaimer: draft.disclaimer,
+          };
+
+          setGenerationJob(fallbackJob);
+          applyDraft(draft, fallbackJob, packageType);
+          return;
+        } catch (fallbackError) {
+          error = fallbackError;
+        }
+      }
+
+      setLookupError(
+        errorMessage(
+          error,
+          'Could not look this up right now. You can still add the documents yourself.',
+        ),
+      );
+
+      /*
+       * Keep result screen visible so
+       * user can manually edit requirements.
+       */
+      setRequirements(current => (current.length ? current : ['']));
+    } finally {
+      setGenerating(false);
+      setLookupLoading(false);
+    }
+  };
 
   /* ==========================================================================
      SAVE
   ========================================================================== */
 
-  const savePack =
-    async () => {
-      const cleanedRequirements =
-        requirements
-          .map(item =>
-            item.trim(),
-          )
-          .filter(Boolean);
+  const savePack = async () => {
+    const cleanedRequirements = requirements
+      .map(item => item.trim())
+      .filter(Boolean);
 
-      if (
-        !canSave ||
-        lookupLoading
-      ) {
-        return;
-      }
+    if (!canSave || lookupLoading) {
+      return;
+    }
 
-      setLookupLoading(true);
-      setLookupError(undefined);
+    setLookupLoading(true);
+    setLookupError(undefined);
 
-      try {
-        const payload:
-          CustomPackPayload = {
-          title:
-            packName.trim(),
+    try {
+      const payload: CustomPackPayload = {
+        title: packName.trim(),
 
-          description:
-            purpose.trim() ||
-            'Custom pack',
+        description: purpose.trim() || 'Custom pack',
 
-          requirements:
-            cleanedRequirements,
+        requirements: cleanedRequirements,
 
-          searchMetadata,
+        searchMetadata,
 
-          source,
+        source,
 
-          verificationSources,
+        verificationSources,
 
-          verificationStatus:
-            verificationSources.length
-              ? verificationStatus
-              : verificationStatus ===
-                  'unverified_guidance'
-                ? 'unverified_guidance'
-                : 'user_created',
-        };
+        verificationStatus: verificationSources.length
+          ? verificationStatus
+          : verificationStatus === 'unverified_guidance'
+            ? 'unverified_guidance'
+            : 'user_created',
+      };
 
-        const pack =
-          await onSaveCustomPack(
-            payload,
-          );
+      const pack = await onSaveCustomPack(payload);
 
-        close(() =>
-          onPackSaved(pack),
-        );
-      } catch (error) {
-        setLookupError(
-          errorMessage(
-            error,
-            'Unable to create custom pack.',
-          ),
-        );
-      } finally {
-        setLookupLoading(
-          false,
-        );
-      }
-    };
+      close(() => onPackSaved(pack));
+    } catch (error) {
+      setLookupError(errorMessage(error, 'Unable to create custom pack.'));
+    } finally {
+      setLookupLoading(false);
+    }
+  };
 
+  const startManual = () => {
+    setLookupError(undefined);
+    setRequirements(['']);
+    setStep('result');
+  };
 
   /* ==========================================================================
      LOOKUP SCREEN
@@ -899,61 +627,38 @@ export function CustomPackBottomSheet({
       visible={visible}
       transparent
       animationType="none"
-      onRequestClose={() =>
-        close()
-      }
+      onRequestClose={() => close()}
       statusBarTranslucent
     >
-      <View
-        style={styles.modalRoot}
-      >
-
+      <View style={styles.modalRoot}>
         {/* BACKDROP */}
         <Animated.View
           pointerEvents="auto"
           style={[
             styles.backdrop,
             {
-              opacity:
-                backdropOpacity,
+              opacity: backdropOpacity,
             },
           ]}
         >
-          <Pressable
-            style={
-              StyleSheet.absoluteFill
-            }
-            onPress={() =>
-              close()
-            }
-          />
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => close()} />
         </Animated.View>
-
 
         <KeyboardAvoidingView
           style={[
             styles.keyboardContainer,
             { paddingBottom: Math.max(insets.bottom, 12) },
           ]}
-          behavior={
-            Platform.OS === 'ios'
-              ? 'padding'
-              : undefined
-          }
+          behavior="padding"
           pointerEvents="box-none"
         >
-
           <Animated.View
             style={[
               styles.sheet,
               {
-                backgroundColor:
-                  theme.colors
-                    .background,
+                backgroundColor: theme.colors.background,
 
-                borderColor:
-                  theme.colors
-                    .border,
+                borderColor: theme.colors.border,
 
                 transform: [
                   {
@@ -963,137 +668,77 @@ export function CustomPackBottomSheet({
               },
             ]}
           >
-
             {/* HANDLE */}
             <View
               style={[
                 styles.handle,
                 {
-                  backgroundColor:
-                    theme.colors
-                      .border,
+                  backgroundColor: theme.colors.border,
                 },
               ]}
             />
 
-
             {/* HEADER */}
-            <View
-              style={styles.header}
-            >
-              <AppText
-                variant="title"
-                style={
-                  styles.title
-                }
-              >
+            <View style={styles.header}>
+              <AppText variant="title" style={styles.title}>
                 Create a custom pack
               </AppText>
 
               <Pressable
-                onPress={() =>
-                  close()
-                }
+                onPress={() => close()}
                 style={[
                   styles.closeButton,
                   {
-                    backgroundColor:
-                      theme.colors
-                        .surfaceElevated,
+                    backgroundColor: theme.colors.surfaceElevated,
 
-                    borderColor:
-                      theme.colors
-                        .border,
+                    borderColor: theme.colors.border,
                   },
                 ]}
               >
-                <X
-                  size={25}
-                  color={
-                    theme.colors
-                      .textPrimary
-                  }
-                  strokeWidth={2}
-                />
+                <X size={18} color={theme.colors.textPrimary} strokeWidth={2} />
               </Pressable>
             </View>
-
 
             {step === 'lookup' ? (
               <LookupStep
                 theme={theme}
                 purpose={purpose}
-                setPurpose={
-                  setPurpose
-                }
-                onLookup={
-                  lookupPack
-                }
-                loading={
-                  lookupLoading
-                }
-                error={
-                  lookupError
-                }
+                setPurpose={setPurpose}
+                onLookup={lookupPack}
+                onManual={startManual}
+                loading={lookupLoading}
+                error={lookupError}
               />
             ) : (
               <ResultStep
                 theme={theme}
                 packName={packName}
-                setPackName={
-                  setPackName
-                }
-                requirements={
-                  requirements
-                }
-                updateRequirement={
-                  updateRequirement
-                }
-                addRequirement={
-                  addRequirement
-                }
-                removeRequirement={
-                  removeRequirement
-                }
-                documentLabels={
-                  documentLabels
-                }
-                error={
-                  lookupError
-                }
-                canSave={
-                  canSave
-                }
-                saving={
-                  lookupLoading
-                }
-                onSave={
-                  savePack
-                }
-                generationJob={
-                  generationJob
-                }
-                verificationSources={
-                  verificationSources
-                }
-                disclaimer={
-                  disclaimer
-                }
-                source={
-                  source
-                }
+                setPackName={setPackName}
+                purpose={purpose}
+                setPurpose={setPurpose}
+                generating={generating}
+                requirements={requirements}
+                updateRequirement={updateRequirement}
+                addRequirement={addRequirement}
+                addFromArchive={addFromArchive}
+                removeRequirement={removeRequirement}
+                documentLabels={documentLabels}
+                error={lookupError}
+                canSave={canSave}
+                saving={lookupLoading}
+                onSave={savePack}
+                generationJob={generationJob}
+                verificationSources={verificationSources}
+                disclaimer={disclaimer}
+                source={source}
               />
             )}
-
           </Animated.View>
-
         </KeyboardAvoidingView>
-
       </View>
     </Modal>
   );
 }
-
 
 /* ============================================================================
    LOOKUP STEP
@@ -1104,20 +749,19 @@ function LookupStep({
   purpose,
   setPurpose,
   onLookup,
+  onManual,
   loading,
   error,
 }: {
-  theme: ReturnType<
-    typeof useAppTheme
-  >['theme'];
+  theme: ReturnType<typeof useAppTheme>['theme'];
 
   purpose: string;
 
-  setPurpose: (
-    value: string,
-  ) => void;
+  setPurpose: (value: string) => void;
 
   onLookup: () => void;
+
+  onManual: () => void;
 
   loading: boolean;
 
@@ -1131,109 +775,109 @@ function LookupStep({
       showsVerticalScrollIndicator={false}
       nestedScrollEnabled
     >
-    <Stack
-      gap="md"
-      style={styles.content}
-    >
-
-      <AppText
-        variant="body"
-        color="secondary"
-        style={styles.intro}
-      >
-        For situations the catalog
-        does not cover.
-      </AppText>
-
-
-      <AppText
-        variant="label"
-        color="secondary"
-        style={styles.fieldLabel}
-      >
-        WHAT DO YOU NEED DOCUMENTS FOR?
-      </AppText>
-
-
-      <TextInput
-        value={purpose}
-        onChangeText={
-          setPurpose
-        }
-        placeholder="My son's school admission"
-        placeholderTextColor={
-          theme.colors
-            .textSecondary
-        }
-        multiline
-        textAlignVertical="top"
-        style={[
-          styles.textArea,
-          {
-            backgroundColor:
-              theme.colors
-                .surfaceElevated,
-
-            borderColor:
-              theme.colors
-                .border,
-
-            color:
-              theme.colors
-                .textPrimary,
-          },
-        ]}
-      />
-
-
-      <Pressable
-        onPress={
-          onLookup
-        }
-        disabled={
-          !purpose.trim() ||
-          loading
-        }
-        style={[
-          styles.primaryButton,
-          {
-            backgroundColor:
-              theme.colors.primary,
-          },
-
-          (!purpose.trim() ||
-            loading) &&
-            styles.disabledButton,
-        ]}
-      >
-        <AppText
-          variant="label"
-          color="onPrimary"
-          style={
-            styles.primaryButtonText
-          }
-        >
-          {loading
-            ? 'Searching official sources…'
-            : 'Look it up for me'}
+      <Stack gap="md" style={styles.content}>
+        <AppText variant="body" color="secondary" style={styles.intro}>
+          For situations the catalog does not cover.
         </AppText>
-      </Pressable>
 
-
-      {error ? (
-        <AppText
-          variant="caption"
-          color="danger"
-        >
-          {error}
+        <AppText variant="label" color="secondary" style={styles.fieldLabel}>
+          WHAT DO YOU NEED DOCUMENTS FOR?
         </AppText>
-      ) : null}
 
-    </Stack>
+        <TextInput
+          value={purpose}
+          onChangeText={setPurpose}
+          placeholder="My son's school admission"
+          placeholderTextColor={theme.colors.textSecondary}
+          multiline
+          textAlignVertical="top"
+          style={[
+            styles.textArea,
+            {
+              backgroundColor: theme.colors.surfaceElevated,
+
+              borderColor: theme.colors.border,
+
+              color: theme.colors.textPrimary,
+            },
+          ]}
+        />
+
+        <Pressable
+          onPress={onLookup}
+          disabled={!purpose.trim() || loading}
+          style={[
+            styles.primaryButton,
+            {
+              backgroundColor: theme.colors.primary,
+            },
+
+            (!purpose.trim() || loading) && styles.disabledButton,
+          ]}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+          ) : (
+            <Search
+              size={16}
+              color={theme.colors.onPrimary}
+              strokeWidth={2.2}
+            />
+          )}
+          <AppText
+            variant="label"
+            color="onPrimary"
+            style={styles.primaryButtonText}
+          >
+            {loading ? 'Searching official sources…' : 'Look it up for me'}
+          </AppText>
+        </Pressable>
+
+        <View style={styles.orRow}>
+          <View
+            style={[styles.orLine, { backgroundColor: theme.colors.border }]}
+          />
+          <AppText variant="caption" color="secondary">
+            or
+          </AppText>
+          <View
+            style={[styles.orLine, { backgroundColor: theme.colors.border }]}
+          />
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add documents myself"
+          onPress={onManual}
+          disabled={loading}
+          style={[
+            styles.secondaryButton,
+            {
+              backgroundColor: theme.colors.surfaceElevated,
+              borderColor: theme.colors.border,
+            },
+            loading && styles.disabledButton,
+          ]}
+        >
+          <Pencil
+            size={16}
+            color={theme.colors.textPrimary}
+            strokeWidth={2.2}
+          />
+          <AppText variant="label" style={styles.primaryButtonText}>
+            Add documents myself
+          </AppText>
+        </Pressable>
+
+        {error ? (
+          <AppText variant="caption" color="danger">
+            {error}
+          </AppText>
+        ) : null}
+      </Stack>
     </ScrollView>
   );
 }
-
 
 /* ============================================================================
    RESULT STEP
@@ -1243,9 +887,13 @@ function ResultStep({
   theme,
   packName,
   setPackName,
+  purpose,
+  setPurpose,
+  generating,
   requirements,
   updateRequirement,
   addRequirement,
+  addFromArchive,
   removeRequirement,
   documentLabels,
   error,
@@ -1257,28 +905,27 @@ function ResultStep({
   disclaimer,
   source,
 }: {
-  theme: ReturnType<
-    typeof useAppTheme
-  >['theme'];
+  theme: ReturnType<typeof useAppTheme>['theme'];
 
   packName: string;
 
-  setPackName: (
-    value: string,
-  ) => void;
+  setPackName: (value: string) => void;
+
+  purpose: string;
+
+  setPurpose: (value: string) => void;
+
+  generating: boolean;
 
   requirements: string[];
 
-  updateRequirement: (
-    index: number,
-    value: string,
-  ) => void;
+  updateRequirement: (index: number, value: string) => void;
 
   addRequirement: () => void;
 
-  removeRequirement: (
-    index: number,
-  ) => void;
+  addFromArchive: (label: string) => void;
+
+  removeRequirement: (index: number) => void;
 
   documentLabels: string[];
 
@@ -1298,107 +945,98 @@ function ResultStep({
 
   source?: CustomPackPayload['source'];
 }) {
-
   /*
    * Calculate archive matches.
    */
-  const archiveMatches =
-    requirements.filter(
-      requirement =>
-        requirementExistsInArchive(
-          requirement,
-          documentLabels,
-        ),
-    ).length;
+  const archiveMatches = requirements.filter(requirement =>
+    requirementExistsInArchive(requirement, documentLabels),
+  ).length;
 
-  const totalRequirements =
-    requirements.filter(
-      requirement =>
-        requirement.trim()
-          .length > 0,
-    ).length;
+  const totalRequirements = requirements.filter(
+    requirement => requirement.trim().length > 0,
+  ).length;
 
   /*
    * API can provide confidence.
    */
-  const confidence =
-    generationJob?.confidence ??
-    'low';
+  const confidence = generationJob?.confidence ?? 'low';
 
   /*
    * Last checked date.
    */
-  const lastChecked =
-    source?.lastCheckedAt;
+  const lastChecked = source?.lastCheckedAt;
 
-  const checkedDate =
-    lastChecked
-      ? new Date(
-          lastChecked,
-        ).toISOString()
-          .slice(0, 10)
-      : new Date()
-          .toISOString()
-          .slice(0, 10);
+  const checkedDate = lastChecked
+    ? new Date(lastChecked).toISOString().slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
 
-  const isVerified =
-    Boolean(
-      generationJob
-        ?.hasVerifiedOfficialSource,
-    );
+  const isVerified = Boolean(generationJob?.hasVerifiedOfficialSource);
 
   return (
     <ScrollView
       keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={
-        false
-      }
-      contentContainerStyle={
-        styles.resultContent
-      }
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.resultContent}
     >
+      {generating ? (
+        <View style={styles.generationState}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <AppText
+            variant="body"
+            color="secondary"
+            style={styles.generationText}
+          >
+            {generationJob?.statusMessage || 'Looking up requirements…'}
+          </AppText>
+        </View>
+      ) : null}
 
       {/* ==========================================================
           PACK NAME
       ========================================================== */}
 
-      <AppText
-        variant="label"
-        color="secondary"
-        style={styles.fieldLabel}
-      >
+      <AppText variant="label" color="secondary" style={styles.fieldLabel}>
         PACK NAME
       </AppText>
 
-
       <TextInput
         value={packName}
-        onChangeText={
-          setPackName
-        }
+        onChangeText={setPackName}
         placeholder="Name this pack"
-        placeholderTextColor={
-          theme.colors
-            .textSecondary
-        }
+        placeholderTextColor={theme.colors.textSecondary}
         style={[
           styles.input,
           {
-            backgroundColor:
-              theme.colors
-                .surfaceElevated,
+            backgroundColor: theme.colors.surfaceElevated,
 
-            borderColor:
-              theme.colors
-                .border,
+            borderColor: theme.colors.border,
 
-            color:
-              theme.colors
-                .textPrimary,
+            color: theme.colors.textPrimary,
           },
         ]}
       />
 
+      <AppText variant="label" color="secondary" style={styles.fieldLabel}>
+        DESCRIPTION
+      </AppText>
+
+      <TextInput
+        value={purpose}
+        onChangeText={setPurpose}
+        placeholder="What is this pack for?"
+        placeholderTextColor={theme.colors.textSecondary}
+        multiline
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.colors.surfaceElevated,
+            borderColor: theme.colors.border,
+            color: theme.colors.textPrimary,
+            minHeight: 64,
+            textAlignVertical: 'top',
+          },
+        ]}
+      />
 
       {/* ==========================================================
           DOCUMENTS NEEDED
@@ -1407,28 +1045,15 @@ function ResultStep({
       <AppText
         variant="label"
         color="secondary"
-        style={[
-          styles.fieldLabel,
-          styles.documentsLabel,
-        ]}
+        style={[styles.fieldLabel, styles.documentsLabel]}
       >
         DOCUMENTS NEEDED
       </AppText>
 
-
-      <AppText
-        variant="body"
-        color="secondary"
-        style={
-          styles.description
-        }
-      >
-        List what you were asked for.
-        You can attach the actual
-        documents once the pack is
-        saved.
+      <AppText variant="body" color="secondary" style={styles.description}>
+        List what you were asked for. You can attach the actual documents once
+        the pack is saved.
       </AppText>
-
 
       {/* ==========================================================
           VERIFICATION MESSAGE
@@ -1438,10 +1063,7 @@ function ResultStep({
           REQUIREMENTS
       ========================================================== */}
 
-      <Stack
-        gap="sm"
-        style={styles.requirements}
-      >
+      <Stack gap="sm" style={styles.requirements}>
         {requirements.map((requirement, index) => {
           const hasDocument = requirementExistsInArchive(
             requirement,
@@ -1449,11 +1071,7 @@ function ResultStep({
           );
 
           return (
-            <Row
-              key={`${requirement}-${index}`}
-              align="center"
-              gap="sm"
-            >
+            <Row key={`${requirement}-${index}`} align="center" gap="sm">
               <TextInput
                 value={requirement}
                 onChangeText={value => updateRequirement(index, value)}
@@ -1464,7 +1082,9 @@ function ResultStep({
                   hasDocument && styles.requirementMatched,
                   {
                     backgroundColor: theme.colors.surfaceElevated,
-                    borderColor: hasDocument ? theme.colors.success : theme.colors.border,
+                    borderColor: hasDocument
+                      ? theme.colors.success
+                      : theme.colors.border,
                     color: theme.colors.textPrimary,
                   },
                 ]}
@@ -1482,7 +1102,11 @@ function ResultStep({
                   },
                 ]}
               >
-                <Trash2 size={17} color={theme.colors.textPrimary} strokeWidth={2} />
+                <Trash2
+                  size={17}
+                  color={theme.colors.textPrimary}
+                  strokeWidth={2}
+                />
               </Pressable>
             </Row>
           );
@@ -1505,9 +1129,53 @@ function ResultStep({
         </AppText>
       </Pressable>
 
-      <AppText
-        style={[styles.archiveCount, { color: theme.colors.success }]}
-      >
+      {documentLabels.filter(
+        label =>
+          !requirements.some(
+            item => item.trim().toLowerCase() === label.trim().toLowerCase(),
+          ),
+      ).length ? (
+        <View style={styles.vaultBlock}>
+          <AppText variant="label" color="secondary" style={styles.fieldLabel}>
+            ADD FROM YOUR DOCUMENTS
+          </AppText>
+          <View style={styles.vaultChips}>
+            {documentLabels
+              .filter(
+                label =>
+                  !requirements.some(
+                    item =>
+                      item.trim().toLowerCase() === label.trim().toLowerCase(),
+                  ),
+              )
+              .slice(0, 12)
+              .map(label => (
+                <Pressable
+                  key={label}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Add ${label}`}
+                  onPress={() => addFromArchive(label)}
+                  style={[
+                    styles.vaultChip,
+                    {
+                      backgroundColor: theme.colors.surfaceElevated,
+                      borderColor: theme.colors.border,
+                    },
+                  ]}
+                >
+                  <Plus
+                    size={13}
+                    color={theme.colors.primary}
+                    strokeWidth={2.4}
+                  />
+                  <AppText variant="caption">{label}</AppText>
+                </Pressable>
+              ))}
+          </View>
+        </View>
+      ) : null}
+
+      <AppText style={[styles.archiveCount, { color: theme.colors.success }]}>
         {archiveMatches} of {totalRequirements} already in your archive.
       </AppText>
 
@@ -1515,16 +1183,11 @@ function ResultStep({
         style={[
           styles.infoCard,
           {
-            backgroundColor:
-              theme.colors
-                .surfaceElevated,
+            backgroundColor: theme.colors.surfaceElevated,
 
-            borderColor:
-              isVerified
-                ? theme.colors
-                    .success
-                : theme.colors
-                    .primary,
+            borderColor: isVerified
+              ? theme.colors.success
+              : theme.colors.primary,
           },
         ]}
       >
@@ -1532,12 +1195,7 @@ function ResultStep({
           style={[
             styles.infoText,
             {
-              color:
-                isVerified
-                  ? theme.colors
-                      .success
-                  : theme.colors
-                      .primary,
+              color: isVerified ? theme.colors.success : theme.colors.primary,
             },
           ]}
         >
@@ -1556,13 +1214,16 @@ function ResultStep({
         >
           <AppText variant="label">Official sources</AppText>
           {verificationSources.slice(0, 4).map(verificationSource => (
-            <AppText key={verificationSource.url} variant="caption" color="secondary">
+            <AppText
+              key={verificationSource.url}
+              variant="caption"
+              color="secondary"
+            >
               {verificationSource.organization}: {verificationSource.title}
             </AppText>
           ))}
         </View>
       ) : null}
-
 
       {/* ==========================================================
           OFFLINE ESTIMATE
@@ -1572,566 +1233,531 @@ function ResultStep({
         style={[
           styles.estimateCard,
           {
-            backgroundColor:
-              theme.colors
-                .background,
+            backgroundColor: theme.colors.background,
 
-            borderColor:
-              theme.colors
-                .border,
+            borderColor: theme.colors.border,
           },
         ]}
       >
-
-        <View
-          style={
-            styles.estimateHeader
-          }
-        >
-
+        <View style={styles.estimateHeader}>
           <AppText
             style={[
               styles.estimateTitle,
               {
-                color:
-                  theme.colors
-                    .danger,
+                color: theme.colors.danger,
               },
             ]}
           >
-            {isVerified
-              ? 'Official estimate'
-              : 'Offline estimate'}
+            {isVerified ? 'Official estimate' : 'Offline estimate'}
           </AppText>
 
-
-          <AppText
-            style={
-              styles.estimateMeta
-            }
-          >
-            · confidence:{' '}
-            {String(
-              confidence,
-            )}
+          <AppText style={styles.estimateMeta}>
+            · confidence: {String(confidence)}
           </AppText>
 
-
-          <AppText
-            style={
-              styles.estimateMeta
-            }
-          >
-            · checked{' '}
-            {checkedDate}
-          </AppText>
-
+          <AppText style={styles.estimateMeta}>· checked {checkedDate}</AppText>
         </View>
 
-
-        <AppText
-          style={
-            styles.estimateDescription
-          }
-          color="secondary"
-        >
+        <AppText style={styles.estimateDescription} color="secondary">
           {disclaimer ||
             'Offline estimate. Connect to get the current official list.'}
         </AppText>
-
       </View>
-
 
       {/* ==========================================================
           ERROR
       ========================================================== */}
 
       {error ? (
-        <AppText
-          variant="caption"
-          color="danger"
-          style={
-            styles.errorText
-          }
-        >
+        <AppText variant="caption" color="danger" style={styles.errorText}>
           {error}
         </AppText>
       ) : null}
-
 
       {/* ==========================================================
           SAVE
       ========================================================== */}
 
       <Pressable
-        onPress={
-          onSave
-        }
-        disabled={
-          !canSave ||
-          saving
-        }
+        onPress={onSave}
+        disabled={!canSave || saving}
         style={[
           styles.saveButton,
           {
-            backgroundColor:
-              theme.colors
-                .primary,
+            backgroundColor: theme.colors.primary,
           },
 
-          (!canSave ||
-            saving) &&
-            styles.disabledButton,
+          (!canSave || saving) && styles.disabledButton,
         ]}
       >
         <AppText
           variant="label"
           color="onPrimary"
-          style={
-            styles.saveButtonText
-          }
+          style={styles.saveButtonText}
         >
-          {saving
-            ? 'Saving…'
-            : 'Save pack'}
+          {saving ? 'Saving…' : 'Save pack'}
         </AppText>
       </Pressable>
-
     </ScrollView>
   );
 }
-
 
 /* ============================================================================
    STYLES
 ============================================================================ */
 
-const styles =
-  StyleSheet.create({
-
-    /* ------------------------------------------------------------
+const styles = StyleSheet.create({
+  /* ------------------------------------------------------------
        ROOT
     ------------------------------------------------------------ */
 
-    modalRoot: {
-      flex: 1,
-      justifyContent:
-        'flex-end',
-    },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
 
-    backdrop: {
-      ...StyleSheet.absoluteFill,
-      backgroundColor:
-        'rgba(0,0,0,0.58)',
-    },
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.58)',
+  },
 
-    keyboardContainer: {
-      width: '100%',
-      justifyContent:
-        'flex-end',
-    },
+  keyboardContainer: {
+    width: '100%',
+    justifyContent: 'flex-end',
+  },
 
-    sheet: {
-      width: '100%',
-      maxHeight: '90%',
+  sheet: {
+    width: '100%',
+    maxHeight: '92%',
 
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
 
-      borderWidth: 1,
+    borderWidth: 1,
 
-      paddingTop: 8,
-      paddingHorizontal: 12,
-      paddingBottom: 12,
-    },
+    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
 
-
-    /* ------------------------------------------------------------
+  /* ------------------------------------------------------------
        HANDLE
     ------------------------------------------------------------ */
 
-    handle: {
-      alignSelf:
-        'center',
+  handle: {
+    alignSelf: 'center',
 
-      width: 42,
-      height: 4,
+    width: 42,
+    height: 4,
 
-      borderRadius: 3,
+    borderRadius: 3,
 
-      marginBottom: 12,
-    },
+    marginBottom: 12,
+  },
 
-
-    /* ------------------------------------------------------------
+  /* ------------------------------------------------------------
        HEADER
     ------------------------------------------------------------ */
 
-    header: {
-      minHeight: 44,
+  header: {
+    minHeight: 44,
 
-      flexDirection:
-        'row',
+    flexDirection: 'row',
 
-      alignItems:
-        'center',
+    alignItems: 'center',
 
-      justifyContent:
-        'space-between',
+    justifyContent: 'space-between',
 
-      gap: 12,
+    gap: 12,
 
-      marginBottom: 4,
-    },
+    marginBottom: 4,
+  },
 
-    title: {
-      flex: 1,
+  title: {
+    flex: 1,
 
-      fontSize: 20,
-      lineHeight: 28,
+    fontSize: 16,
+    lineHeight: 22,
 
-      fontWeight:
-        '700',
-    },
+    fontWeight: '700',
+  },
 
-    closeButton: {
-      width: 44,
-      height: 44,
+  closeButton: {
+    width: 36,
+    height: 36,
 
-      borderRadius: 12,
+    borderRadius: 18,
 
-      borderWidth: 1,
+    borderWidth: 1,
 
-      alignItems:
-        'center',
+    alignItems: 'center',
 
-      justifyContent:
-        'center',
-    },
+    justifyContent: 'center',
+  },
 
-
-    /* ------------------------------------------------------------
+  /* ------------------------------------------------------------
        LOOKUP
     ------------------------------------------------------------ */
 
-    content: {
-      paddingTop: 8,
-      paddingBottom: 12,
-    },
+  content: {
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
 
-    lookupScroll: {
-      flexShrink: 1,
-    },
+  lookupScroll: {
+    flexShrink: 1,
+  },
 
-    lookupScrollContent: {
-      flexGrow: 1,
-    },
+  lookupScrollContent: {
+    flexGrow: 1,
+  },
 
-    intro: {
-      fontSize: 15,
-      lineHeight: 22,
-    },
+  intro: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
 
-    fieldLabel: {
-      marginTop: 12,
+  fieldLabel: {
+    marginTop: 12,
 
-      fontSize: 17,
-      lineHeight: 22,
+    fontSize: 11,
+    lineHeight: 14,
 
-      fontWeight:
-        '700',
+    fontWeight: '700',
 
-      letterSpacing:
-        0,
-    },
+    letterSpacing: 0.6,
+  },
 
-    textArea: {
-      minHeight: 104,
+  textArea: {
+    minHeight: 96,
 
-      borderRadius: 12,
-      borderWidth: 1,
+    borderRadius: 12,
+    borderWidth: 1,
 
-      paddingHorizontal: 12,
-      paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
 
-      fontSize: 15,
-      lineHeight: 22,
-    },
+    fontSize: 13,
+    lineHeight: 19,
+  },
 
-    primaryButton: {
-      height: 50,
+  primaryButton: {
+    height: 48,
 
-      borderRadius: 12,
+    borderRadius: 12,
 
-      alignItems:
-        'center',
+    flexDirection: 'row',
 
-      justifyContent:
-        'center',
+    alignItems: 'center',
 
-      marginTop: 4,
-    },
+    justifyContent: 'center',
 
-    primaryButtonText: {
-      fontSize: 15,
-      lineHeight: 22,
-    },
+    gap: 8,
 
-    disabledButton: {
-      opacity: 0.45,
-    },
+    marginTop: 4,
+  },
 
+  secondaryButton: {
+    height: 48,
 
-    /* ------------------------------------------------------------
+    borderRadius: 12,
+
+    borderWidth: 1,
+
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    justifyContent: 'center',
+
+    gap: 8,
+  },
+
+  orRow: {
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    gap: 12,
+  },
+
+  orLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+
+  vaultBlock: {
+    marginTop: 4,
+  },
+
+  vaultChips: {
+    flexDirection: 'row',
+
+    flexWrap: 'wrap',
+
+    gap: 8,
+
+    marginTop: 8,
+  },
+
+  vaultChip: {
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    gap: 6,
+
+    height: 34,
+
+    borderRadius: 17,
+
+    borderWidth: 1,
+
+    paddingHorizontal: 12,
+  },
+
+  primaryButtonText: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  disabledButton: {
+    opacity: 0.45,
+  },
+
+  /* ------------------------------------------------------------
        RESULT CONTENT
     ------------------------------------------------------------ */
 
-    resultContent: {
-      paddingTop: 4,
-      paddingBottom: 12,
-    },
+  resultContent: {
+    paddingTop: 4,
+    paddingBottom: 12,
+  },
 
-    input: {
-      height: 52,
+  input: {
+    height: 48,
 
-      borderRadius: 11,
-      borderWidth: 1,
+    borderRadius: 11,
+    borderWidth: 1,
 
-      paddingHorizontal: 12,
-      paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
 
-      fontSize: 15,
-      lineHeight: 22,
-    },
+    fontSize: 13,
+    lineHeight: 19,
+  },
 
-    documentsLabel: {
-      marginTop: 12,
-    },
+  generationState: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+  },
+  generationText: { flex: 1 },
+  documentsLabel: {
+    marginTop: 12,
+  },
 
-    description: {
-      marginTop: 4,
+  description: {
+    marginTop: 4,
 
-      fontSize: 13,
-      lineHeight: 20,
-    },
+    fontSize: 12,
+    lineHeight: 18,
+  },
 
-
-    /* ------------------------------------------------------------
+  /* ------------------------------------------------------------
        INFO CARD
     ------------------------------------------------------------ */
 
-    infoCard: {
-      marginTop: 12,
+  infoCard: {
+    marginTop: 12,
 
-      minHeight: 0,
+    minHeight: 0,
 
-      borderRadius: 12,
+    borderRadius: 12,
 
-      borderWidth: 1,
+    borderWidth: 1,
 
-      paddingHorizontal: 12,
-      paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
 
-      justifyContent:
-        'center',
-    },
+    justifyContent: 'center',
+  },
 
-    infoText: {
-      fontSize: 13,
-      lineHeight: 20,
+  infoText: {
+    fontSize: 12,
+    lineHeight: 18,
 
-      fontWeight:
-        '500',
-    },
+    fontWeight: '500',
+  },
 
-
-    /* ------------------------------------------------------------
+  /* ------------------------------------------------------------
        REQUIREMENTS
     ------------------------------------------------------------ */
 
-    requirements: {
-      marginTop: 12,
-    },
+  requirements: {
+    marginTop: 12,
+  },
 
-    requirementInput: {
-      flex: 1,
+  requirementInput: {
+    flex: 1,
 
-      minWidth: 0,
+    minWidth: 0,
 
-      height: 50,
+    height: 50,
 
-      borderRadius: 11,
+    borderRadius: 11,
 
-      borderWidth: 1,
+    borderWidth: 1,
 
-      paddingHorizontal: 12,
+    paddingHorizontal: 12,
 
-      fontSize: 15,
-      lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 19,
 
-      fontWeight:
-        '500',
-    },
+    fontWeight: '500',
+  },
 
-    requirementMatched: {
-      borderWidth: 1.5,
-    },
+  requirementMatched: {
+    borderWidth: 1.5,
+  },
 
-    deleteButton: {
-      width: 42,
-      height: 38,
+  deleteButton: {
+    width: 42,
+    height: 38,
 
-      borderRadius: 10,
+    borderRadius: 10,
 
-      borderWidth: 1,
+    borderWidth: 1,
 
-      alignItems:
-        'center',
+    alignItems: 'center',
 
-      justifyContent:
-        'center',
-    },
+    justifyContent: 'center',
+  },
 
-
-    /* ------------------------------------------------------------
+  /* ------------------------------------------------------------
        ADD REQUIREMENT
     ------------------------------------------------------------ */
 
-    addRequirementButton: {
-      alignSelf:
-        'flex-start',
+  addRequirementButton: {
+    alignSelf: 'flex-start',
 
-      height: 42,
+    height: 42,
 
-      borderRadius: 10,
+    borderRadius: 10,
 
-      borderWidth: 1,
+    borderWidth: 1,
 
-      paddingHorizontal: 12,
+    paddingHorizontal: 12,
 
-      marginTop: 8,
+    marginTop: 8,
 
-      flexDirection:
-        'row',
+    flexDirection: 'row',
 
-      alignItems:
-        'center',
+    alignItems: 'center',
 
-      justifyContent:
-        'center',
+    justifyContent: 'center',
 
-      gap: 8,
-    },
+    gap: 8,
+  },
 
-    addRequirementText: {
-      fontSize: 13,
-      lineHeight: 20,
-    },
+  addRequirementText: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
 
-
-    /* ------------------------------------------------------------
+  /* ------------------------------------------------------------
        ARCHIVE COUNT
     ------------------------------------------------------------ */
 
-    archiveCount: {
-      marginTop: 12,
+  archiveCount: {
+    marginTop: 12,
 
-      fontSize: 13,
-      lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
 
-      fontWeight:
-        '500',
-    },
+    fontWeight: '500',
+  },
 
-
-    /* ------------------------------------------------------------
+  /* ------------------------------------------------------------
        ESTIMATE
     ------------------------------------------------------------ */
 
-    estimateCard: {
-      marginTop: 12,
+  estimateCard: {
+    marginTop: 12,
 
-      borderRadius: 12,
+    borderRadius: 12,
 
-      borderWidth: 1,
+    borderWidth: 1,
 
-      paddingHorizontal: 12,
-      paddingVertical: 12,
-    },
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
 
-    estimateHeader: {
-      flexDirection:
-        'row',
+  estimateHeader: {
+    flexDirection: 'row',
 
-      alignItems:
-        'flex-start',
+    alignItems: 'flex-start',
 
-      flexWrap:
-        'wrap',
+    flexWrap: 'wrap',
 
-      columnGap: 12,
-      rowGap: 2,
-    },
+    columnGap: 12,
+    rowGap: 2,
+  },
 
-    estimateTitle: {
-      fontSize: 13,
-      lineHeight: 20,
+  estimateTitle: {
+    fontSize: 12,
+    lineHeight: 18,
 
-      fontWeight:
-        '700',
-    },
+    fontWeight: '700',
+  },
 
-    estimateMeta: {
-      fontSize: 12,
-      lineHeight: 18,
+  estimateMeta: {
+    fontSize: 11,
+    lineHeight: 16,
 
-      color: '#93A0B8',
-    },
+    color: '#93A0B8',
+  },
 
-    estimateDescription: {
-      marginTop: 8,
+  estimateDescription: {
+    marginTop: 8,
 
-      fontSize: 13,
-      lineHeight: 18,
-    },
+    fontSize: 12,
+    lineHeight: 17,
+  },
 
-
-    /* ------------------------------------------------------------
+  /* ------------------------------------------------------------
        ERROR
     ------------------------------------------------------------ */
 
-    errorText: {
-      marginTop: 12,
+  errorText: {
+    marginTop: 12,
 
-      fontSize: 13,
-      lineHeight: 20,
-    },
+    fontSize: 12,
+    lineHeight: 18,
+  },
 
-
-    /* ------------------------------------------------------------
+  /* ------------------------------------------------------------
        SAVE
     ------------------------------------------------------------ */
 
-    saveButton: {
-      height: 50,
+  saveButton: {
+    height: 50,
 
-      borderRadius: 12,
+    borderRadius: 12,
 
-      marginTop: 12,
+    marginTop: 12,
 
-      alignItems:
-        'center',
+    alignItems: 'center',
 
-      justifyContent:
-        'center',
-    },
+    justifyContent: 'center',
+  },
 
-    saveButtonText: {
-      fontSize: 15,
-      lineHeight: 22,
+  saveButtonText: {
+    fontSize: 13,
+    lineHeight: 19,
 
-      fontWeight:
-        '700',
-    },
-
-  });'='
+    fontWeight: '700',
+  },
+});
+('=');

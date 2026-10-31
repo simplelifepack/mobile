@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { Plus } from 'lucide-react-native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 
@@ -11,6 +12,7 @@ export function FloatingActionButton({
   onPress: () => void;
 }) {
   const { theme } = useAppTheme();
+  const tabInset = React.useContext(BottomTabBarHeightContext) ?? 0;
 
   return (
     <Pressable
@@ -21,7 +23,7 @@ export function FloatingActionButton({
         styles.button,
         {
           backgroundColor: theme.colors.primary,
-          bottom: theme.spacing.lg,
+          bottom: theme.spacing.lg + tabInset,
           right: theme.spacing.lg,
           opacity: pressed ? 0.8 : 1,
         },

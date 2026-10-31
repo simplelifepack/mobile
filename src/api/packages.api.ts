@@ -80,6 +80,16 @@ export const packagesApi = {
       body: { packageType, documentLabels: publicDocumentLabels(documentLabels) },
       requiresAuth: true,
     }),
+  refresh: (slug: string) =>
+    request<{
+      package: PackageSummary;
+      changed: boolean;
+      message: string;
+      refreshed?: boolean;
+    }>(`/api/packages/${encodeURIComponent(slug)}/refresh`, {
+      method: 'POST',
+      requiresAuth: true,
+    }),
   assignRequirementDocument: (
     slug: string,
     requirementId: string,

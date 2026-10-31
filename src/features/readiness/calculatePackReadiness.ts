@@ -115,7 +115,9 @@ export function calculatePackReadiness(
   const available = documents.filter(document => usable(document, now));
   const derived = requirements.map((requirement): DerivedRequirement => {
     const assigned = requirement.assignment
-      ? available.find(document => document.id === requirement.assignment?.documentId)
+      ? available.find(
+          document => document.id === requirement.assignment?.documentId,
+        )
       : undefined;
     if (assigned) {
       return {

@@ -6,6 +6,7 @@ export type RootStackParamList = {
   Family: undefined;
   Trust: undefined;
   Integrations: undefined;
+  DigiLocker: undefined;
   Invitation: { token: string };
   AppLock: undefined;
 };
