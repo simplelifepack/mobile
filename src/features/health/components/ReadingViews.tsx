@@ -18,6 +18,7 @@ import { useAppTheme } from '../../../design/theme/ThemeProvider';
 import { AppText } from '../../../components/primitives/AppText';
 import { Card } from '../../../components/primitives/Card';
 import { Row } from '../../../components/primitives/Row';
+import { StatusBadge } from '../../../components/feedback/StatusBadge';
 import { styles } from '../healthStyles';
 import { ReadingView } from '../healthTypes';
 
@@ -218,32 +219,10 @@ export function ReadingCard({
         </AppText>
 
         {reading.status !== 'no range on file' ? (
-          <View
-            style={[
-              styles.statusBadge,
-              {
-                backgroundColor: (reading.status === 'outside printed range'
-                  ? theme.colors.status.danger.icon
-                  : theme.colors.status.success.icon) + '14',
-                borderColor: (reading.status === 'outside printed range'
-                  ? theme.colors.status.danger.border
-                  : theme.colors.status.success.border) + '66',
-              },
-            ]}
-          >
-            <AppText
-              variant="caption"
-              style={{
-                color: reading.status === 'outside printed range'
-                  ? theme.colors.status.danger.text
-                  : theme.colors.status.success.text,
-                fontWeight:
-                  '600',
-              }}
-            >
-              {reading.status}
-            </AppText>
-          </View>
+          <StatusBadge
+            label={reading.status}
+            status={reading.status === 'outside printed range' ? 'danger' : 'success'}
+          />
         ) : (
           <AppText
             variant="caption"

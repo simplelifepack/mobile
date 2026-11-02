@@ -546,97 +546,42 @@ function LendingSection({
         </Pressable>
       </Row>
 
-      <View
-        style={[
-          styles.sectionDivider,
-          {
-            backgroundColor: theme.colors.border.default,
-          },
-        ]}
-      />
-
-      {items.map((item, index) => (
-        <View
-          key={item.id}
-          style={[
-            styles.lendingItem,
-            index !== items.length - 1 && {
-              borderBottomColor: theme.colors.border.default,
-              borderBottomWidth: 1,
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.lendingIcon,
-              {
-                backgroundColor:
-                  theme.colors.surface.raised,
-              },
-            ]}
-          >
-            <CircleDollarSign
-              size={23}
-              color={
-                item.direction === 'owedToYou'
-                  ? theme.colors.status.success.text
-                  : theme.colors.status.danger.text
-              }
-              strokeWidth={2}
-            />
-          </View>
-
-          <View style={styles.lendingMain}>
-            <AppText
-              variant="heading"
-              style={styles.lendingName}
-            >
-              {item.name}
-            </AppText>
-
-            <AppText
-              variant="body"
-              color="secondary"
-              style={styles.lendingDescription}
-            >
-              {item.description} · {item.followUp}
-            </AppText>
-          </View>
-
-          <View style={styles.amountColumn}>
-            <AppText
-              variant="heading"
-              color={
-                item.direction === 'owedToYou'
-                  ? 'success'
-                  : 'danger'
-              }
-              style={styles.amountText}
-            >
-              {formatMoney(item.amount)}
-            </AppText>
-
-            <AppText
-              variant="label"
-              color="secondary"
-              style={styles.amountLabel}
-            >
-              {item.direction === 'owedToYou'
-                ? 'owed to you'
-                : 'you owe'}
-            </AppText>
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Delete ${item.name}`}
-            onPress={() => onDelete(item.id)}
-            hitSlop={8}
-          >
-            <Trash2 size={18} color={theme.colors.status.danger.text} />
-          </Pressable>
-        </View>
-      ))}
+      <ListGroup>
+        {items.map(item => (
+          <ListRow
+            key={item.id}
+            icon={
+              <CircleDollarSign
+                size={sizes.icon.md}
+                color={item.direction === 'owedToYou' ? theme.colors.status.success.text : theme.colors.status.danger.text}
+                strokeWidth={2}
+              />
+            }
+            title={item.name}
+            subtitle={`${item.description} · ${item.followUp}`}
+            trailing={
+              <Row align="center" gap="sm">
+                <View style={styles.amountColumn}>
+                  <AppText variant="heading" color={item.direction === 'owedToYou' ? 'success' : 'danger'}>
+                    {formatMoney(item.amount)}
+                  </AppText>
+                  <AppText variant="caption" color="secondary">
+                    {item.direction === 'owedToYou' ? 'owed to you' : 'you owe'}
+                  </AppText>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete ${item.name}`}
+                  onPress={() => onDelete(item.id)}
+                  style={styles.deleteTarget}
+                >
+                  <Trash2 size={sizes.icon.md} color={theme.colors.status.danger.text} />
+                </Pressable>
+              </Row>
+            }
+          />
+        ))}
+      </ListGroup>
     </Card>
   );
 }
@@ -2039,40 +1984,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
 
-  lendingItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    columnGap: 8,
-    rowGap: 8,
-  },
 
-  lendingIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 
-  lendingMain: {
-    flex: 1,
-    minWidth: 100,
-  },
 
-  lendingName: {
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
-  },
 
-  lendingDescription: {
-    marginTop: 4,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
 
+  deleteTarget: { width: sizes.minimumTouchTarget, height: sizes.minimumTouchTarget, alignItems: 'center', justifyContent: 'center' },
   amountColumn: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -2081,16 +1998,7 @@ const styles = StyleSheet.create({
     maxWidth: 110,
   },
 
-  amountText: {
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
-    fontWeight: '700',
-  },
 
-  amountLabel: {
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
 
   lendingActions: {
     width: '100%',

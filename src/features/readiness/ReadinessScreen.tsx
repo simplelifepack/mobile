@@ -58,13 +58,14 @@ import {
   usePackagesQuery,
 } from '../../services/api';
 
+import { ListGroup, ListRow } from '../../components/primitives/ListRow';
+import { StatusBadge } from '../../components/feedback/StatusBadge';
 import { Screen } from '../../components/primitives/Screen';
 import { ActionSheet } from '../../components/primitives/ActionSheet';
 import { Stack } from '../../components/primitives/Stack';
 import { Row } from '../../components/primitives/Row';
 import { AppText } from '../../components/primitives/AppText';
 import { Button } from '../../components/primitives/Button';
-import { Card } from '../../components/primitives/Card';
 import { FloatingActionButton } from '../../components/primitives/FloatingActionButton';
 
 import { LoadingState } from '../../components/feedback/LoadingState';
@@ -306,105 +307,17 @@ function PackageCard({
   totalRequired: number;
   onPress: () => void;
 }) {
-  const { theme } = useAppTheme();
-
-  const Icon = getPackageIcon(item.title);
 
   const isReady = percentage >= 100;
 
   return (
-    <Pressable
+    <ListRow
+      leading={<ReadinessRing percentage={percentage} size={40} />}
+      title={item.title}
+      subtitle={isReady ? 'Everything in place' : `${satisfiedRequired} of ${totalRequired} ready`}
+      trailing={isReady ? <StatusBadge label="Ready" status="success" /> : undefined}
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`Open ${item.title}`}
-      style={({ pressed }) => [
-        styles.packagePressable,
-        {
-          opacity: pressed ? 0.82 : 1,
-        },
-      ]}
-    >
-      <Card
-        style={[
-          styles.packageCard,
-          {
-            borderRadius: theme.radius.surface,
-          },
-        ]}
-      >
-        {/* Readiness */}
-
-        <ReadinessRing percentage={percentage} size={48} />
-
-        {/* Package information */}
-
-        <View style={styles.packageContent}>
-          <Row align="center" gap="sm">
-            <View
-              style={[
-                styles.packageIcon,
-                {
-                  backgroundColor: theme.colors.surface.raised,
-
-                  borderRadius: theme.radius.control,
-                },
-              ]}
-            >
-              <Icon size={18} color={theme.colors.text.interactive} strokeWidth={2} />
-            </View>
-
-            <AppText
-              variant="heading"
-              numberOfLines={2}
-              style={styles.packageTitle}
-            >
-              {item.title}
-            </AppText>
-          </Row>
-
-          <AppText
-            variant="caption"
-            color="secondary"
-            numberOfLines={1}
-            style={styles.packageStatus}
-          >
-            {isReady
-              ? 'Everything in place'
-              : `${satisfiedRequired} of ${totalRequired} ready`}
-          </AppText>
-        </View>
-
-        {/* Trailing action */}
-
-        {isReady ? (
-          <View
-            style={[
-              styles.readyStamp,
-              {
-                borderColor: theme.colors.status.success.border,
-              },
-            ]}
-          >
-            <AppText
-              style={[
-                styles.readyText,
-                {
-                  color: theme.colors.status.success.text,
-                },
-              ]}
-            >
-              READY
-            </AppText>
-          </View>
-        ) : (
-          <ChevronRight
-            size={20}
-            color={theme.colors.text.secondary}
-            strokeWidth={2}
-          />
-        )}
-      </Card>
-    </Pressable>
+    />
   );
 }
 
@@ -1678,7 +1591,7 @@ export function ReadinessScreen() {
               ) : null}
             </Stack>
           ) : (
-            cards.map(({ item, readiness }) => (
+            <ListGroup>{cards.map(({ item, readiness }) => (
               <PackageCard
                 key={item.slug}
                 item={item}
@@ -1687,7 +1600,7 @@ export function ReadinessScreen() {
                 totalRequired={readiness.totalRequired}
                 onPress={() => setSelectedSlug(item.slug)}
               />
-            ))
+            ))}</ListGroup>
           )}
 
           {/* LOAD MORE */}

@@ -10,6 +10,8 @@ import { AppText } from './AppText';
 
 type ListRowProps = {
   icon?: React.ReactNode;
+  // Replaces the icon well, e.g. a readiness ring.
+  leading?: React.ReactNode;
   title: string;
   subtitle?: string;
   // Third line reserved for an exception, e.g. "No nominee named".
@@ -24,7 +26,7 @@ type ListRowProps = {
 };
 
 // Design System 3.2 list row. Dividers between rows come from ListGroup.
-export function ListRow({ icon, title, subtitle, extra, danger, disabled, trailing, selected, children, onPress }: ListRowProps) {
+export function ListRow({ icon, leading, title, subtitle, extra, danger, disabled, trailing, selected, children, onPress }: ListRowProps) {
   const { theme } = useAppTheme();
 
   return (
@@ -36,9 +38,9 @@ export function ListRow({ icon, title, subtitle, extra, danger, disabled, traili
         onPress={onPress}
         style={({ pressed }) => [styles.row, { opacity: disabled ? 0.55 : pressed ? 0.82 : 1 }]}
       >
-        {icon ? (
+        {leading ?? (icon ? (
           <View style={[styles.well, { backgroundColor: theme.colors.surface.brandTint }]}>{icon}</View>
-        ) : null}
+        ) : null)}
         <View style={styles.copy}>
           <AppText
             variant="label"

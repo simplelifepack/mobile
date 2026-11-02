@@ -304,30 +304,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  healthMedicationRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingVertical: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  healthMedicationIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  healthMedicationCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 8,
-  },
-  healthMedicationActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
   healthMedicationStatusButton: {
     minHeight: sizes.minimumTouchTarget,
     paddingHorizontal: 12,
@@ -335,6 +311,7 @@ export const styles = StyleSheet.create({
     borderRadius: radius.surface,
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     justifyContent: 'center',
     gap: 8,
   },
@@ -644,13 +621,6 @@ resultsCount: {
     flex: 1,
     fontSize: fontSize.bodySm,
     lineHeight: lineHeight.bodySm,
-  },
-
-  statusBadge: {
-    borderRadius: radius.tile,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
   },
 
   noRangeText: {

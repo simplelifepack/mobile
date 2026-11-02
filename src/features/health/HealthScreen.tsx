@@ -68,6 +68,9 @@ import { HealthTabs,PrepareVisit,QuickActions } from './components/HealthNavigat
 import { MedicalReadiness,Reminders } from './components/HealthPanels';
 import { Header,MemberProfile,MemberSelector } from './components/MemberComponents';
 import { ReadingCard } from './components/ReadingViews';
+import { ListGroup, ListRow } from '../../components/primitives/ListRow';
+import { StatusBadge } from '../../components/feedback/StatusBadge';
+import { sizes } from '../../design/tokens/sizes';
 import { styles } from './healthStyles';
 import { ReadingView } from './healthTypes';
 import { formatDate } from '../../utils/format';
@@ -830,88 +833,45 @@ floatingAction={
               </View>
 
               {timeline.filter(event => event.medication).length ? (
-                timeline
-                  .filter(event => event.medication)
-                  .map(event => {
-                    const medication = event.medication!;
-                    const stopped = medication.status === 'stopped';
+                <ListGroup>
+                  {timeline
+                    .filter(event => event.medication)
+                    .map(event => {
+                      const medication = event.medication!;
+                      const stopped = medication.status === 'stopped';
 
-                    return (
-                      <View
-                        key={event.id}
-                        style={[
-                          styles.healthMedicationRow,
-                          { borderTopColor: theme.colors.border.default },
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.healthMedicationIcon,
-                            { backgroundColor: theme.colors.surface.raised },
-                          ]}
+                      return (
+                        <ListRow
+                          key={event.id}
+                          icon={<Pill size={sizes.icon.md} color={theme.colors.icon.interactive} />}
+                          title={`${medication.name}${medication.dose ? ` ${medication.dose}` : ''}`}
+                          subtitle={medication.frequency || 'Schedule not set'}
+                          trailing={
+                            <StatusBadge
+                              label={stopped ? 'Stopped' : 'Not confirmed'}
+                              status={stopped ? 'info' : 'warning'}
+                            />
+                          }
                         >
-                          <Pill size={22} color={theme.colors.text.interactive} />
-                        </View>
-
-                        <View style={styles.healthMedicationCopy}>
-                          <AppText variant="label">
-                            {medication.name}
-                            {medication.dose ? ` ${medication.dose}` : ''}
-                          </AppText>
-
-                          <AppText variant="caption" color="secondary">
-                            {medication.frequency || 'Schedule not set'}
-                          </AppText>
-
-                          <AppText
-                            variant="caption"
-                            style={{
-                              color: stopped ? theme.colors.text.secondary : theme.colors.status.warning.text,
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => {
+                              void toggleMedication(medication);
                             }}
+                            style={[
+                              styles.healthMedicationStatusButton,
+                              { borderColor: theme.colors.border.default },
+                            ]}
                           >
-                            {stopped ? 'Stopped' : 'Not confirmed'}
-                          </AppText>
-
-                          <View style={styles.healthMedicationActions}>
-                            <Pressable
-                              accessibilityRole="button"
-                              onPress={() => {
-                                void toggleMedication(medication);
-                              }}
-                              style={[
-                                styles.healthMedicationStatusButton,
-                                {
-                                  borderColor: theme.colors.border.default,
-                                  backgroundColor: stopped
-                                    ? 'transparent'
-                                    : theme.colors.surface.raised,
-                                },
-                              ]}
-                            >
-                              <Check
-                                size={16}
-                                color={theme.colors.text.primary}
-                              />
-                              <AppText variant="caption">
-                                {stopped ? 'Resume' : 'Still taking'}
-                              </AppText>
-                            </Pressable>
-
-                            <View
-                              style={[
-                                styles.healthMedicationStatusButton,
-                                { borderColor: theme.colors.border.default },
-                              ]}
-                            >
-                              <AppText variant="caption" color="secondary">
-                                {stopped ? 'Stopped' : 'Active'}
-                              </AppText>
-                            </View>
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })
+                            <Check size={sizes.icon.sm} color={theme.colors.text.primary} />
+                            <AppText variant="caption">
+                              {stopped ? 'Resume' : 'Still taking'}
+                            </AppText>
+                          </Pressable>
+                        </ListRow>
+                      );
+                    })}
+                </ListGroup>
               ) : (
                 <AppText color="secondary" style={styles.healthEmptyText}>
                   No medication records yet.
