@@ -827,17 +827,16 @@ addHealthSheet: {
   borderTopLeftRadius: radius.overlay,
   borderTopRightRadius: radius.overlay,
   borderWidth: 1,
-  paddingHorizontal: 24,
-  paddingTop: 12,
-  paddingBottom: 20,
+  paddingHorizontal: 16,
+  paddingTop: 8,
 },
 
 addHealthGrabber: {
-  width: 76,
-  height: 7,
+  width: sizes.sheetHandle.width,
+  height: sizes.sheetHandle.height,
   borderRadius: radius.pill,
   alignSelf: 'center',
-  marginBottom: 32,
+  marginBottom: 16,
 },
 
 addHealthTitle: {
@@ -851,8 +850,7 @@ addHealthSubtitle: {
   lineHeight: lineHeight.body,
 },
 
-addHealthDivider: {
-  height: 1,
-  marginTop: 32,
+addHealthList: {
+  marginTop: 16,
 },
 });

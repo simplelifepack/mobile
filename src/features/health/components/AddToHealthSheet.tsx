@@ -21,6 +21,7 @@ type HealthAvailableMetric,
 type TrackedHealthMetric
 } from '../../../api/health.api';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../../design/theme/ThemeProvider';
 
 import { LoadingState } from '../../../components/feedback/LoadingState';
@@ -48,6 +49,7 @@ export function AddToHealthSheet({
   onFamilyMember: () => void;
 }) {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Modal
@@ -69,6 +71,7 @@ export function AddToHealthSheet({
           style={[
             styles.addHealthSheet,
             {
+              paddingBottom: insets.bottom + 16,
               backgroundColor:
                 theme.colors.surface.canvas,
               borderColor:
@@ -107,16 +110,7 @@ export function AddToHealthSheet({
             </AppText>
           </Stack>
 
-          <View
-            style={[
-              styles.addHealthDivider,
-              {
-                backgroundColor:
-                  theme.colors.border.default,
-              },
-            ]}
-          />
-
+          <View style={styles.addHealthList}>
           <ListGroup>
           {/* A record */}
 
@@ -193,6 +187,7 @@ export function AddToHealthSheet({
             onPress={onFamilyMember}
           />
           </ListGroup>
+          </View>
         </View>
       </View>
     </Modal>
