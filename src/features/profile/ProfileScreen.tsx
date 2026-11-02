@@ -18,7 +18,6 @@ import {
   ShieldCheck,
   Sparkles,
   Trash2,
-  Users,
 } from 'lucide-react-native';
 
 import { useNavigation } from '@react-navigation/native';
@@ -135,15 +134,6 @@ export function ProfileScreen() {
   };
 
   /**
-   * Emergency access currently maps to the
-   * existing Family screen because that is already
-   * available in RootStackParamList.
-   */
-  const openEmergencyAccess = () => {
-    navigation.navigate('Family');
-  };
-
-  /**
    * Support actions.
    *
    * These use Alert for now because the existing
@@ -252,21 +242,6 @@ export function ProfileScreen() {
               </AppText>
             </View>
           </View>
-
-
-          {/* Emergency access */}
-          <SettingsRow
-            icon={
-              <Users
-                size={25}
-                color={theme.colors.text.interactive}
-                strokeWidth={1.8}
-              />
-            }
-            title="Emergency access"
-            subtitle="Members, access levels, emergency contacts, and SOS handoff"
-            onPress={openEmergencyAccess}
-          />
 
 
           {/* Change email */}

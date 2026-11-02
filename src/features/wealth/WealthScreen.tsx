@@ -24,11 +24,6 @@ import {
   Trash2,
   X,
 } from 'lucide-react-native';
-import {
-  useNavigation,
-  type NavigationProp,
-} from '@react-navigation/native';
-import type { RootStackParamList } from '../../app/navigation/types';
 
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { Screen } from '../../components/primitives/Screen';
@@ -1291,7 +1286,6 @@ export function WealthScreen({
 
 function WealthHandoffModal({ onClose }: { onClose: () => void }) {
   const { theme } = useAppTheme();
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const [summary, setSummary] = useState<WealthHandoffSummary>();
   const [chosen, setChosen] = useState<string[]>([]);
@@ -1373,11 +1367,6 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
     } finally {
       setBusy(false);
     }
-  };
-
-  const manageFamily = () => {
-    onClose();
-    navigation.navigate('Family');
   };
 
   const sent = done?.results.filter(item => item.sent).length ?? 0;
@@ -1542,14 +1531,8 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
                 ) : (
                   <View style={styles.sosGroup}>
                     <AppText color="secondary">
-                      Nobody can step in yet. Give someone Emergency or Wealth
-                      download access and they will appear here.
+                      Nobody is set up to receive a handoff yet.
                     </AppText>
-                    <Button
-                      title="Manage family access"
-                      variant="secondary"
-                      onPress={manageFamily}
-                    />
                   </View>
                 )}
 

@@ -454,7 +454,6 @@ floatingAction={
         {/* HEADER */}
 
         <Header
-          onFamily={() => navigation.navigate('Family')}
           onSearch={() => setMetricPickerVisible(true)}
         />
         {healthError ? (
@@ -504,7 +503,6 @@ floatingAction={
         {/* QUICK ACTIONS */}
 
         <QuickActions
-  onEmergency={() => navigation.navigate('Trust')}
   onInsurance={() => navigation.navigate('Documents')}
 />
 

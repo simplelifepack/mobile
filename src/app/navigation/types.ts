@@ -3,11 +3,8 @@ export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
   Profile: undefined;
-  Family: undefined;
-  Trust: undefined;
   Integrations: undefined;
   DigiLocker: undefined;
-  Invitation: { token: string };
   AppLock: undefined;
 };
 export type OnboardingStackParamList = {

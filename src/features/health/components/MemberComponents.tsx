@@ -7,7 +7,6 @@ View
 
 import {
 Search,
-Users
 } from 'lucide-react-native';
 
 
@@ -48,10 +47,8 @@ export function memberColor(
 // ============================================================================
 
 export function Header({
-  onFamily,
   onSearch,
 }: {
-  onFamily: () => void;
   onSearch: () => void;
 }) {
   const { theme } = useAppTheme();
@@ -70,29 +67,6 @@ export function Header({
       </AppText>
 
       <Row gap="xs">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Family profiles"
-          onPress={onFamily}
-          style={[
-            styles.headerButton,
-            {
-              backgroundColor:
-                theme.colors.surface.raised,
-              borderColor:
-                theme.colors.border.default,
-            },
-          ]}
-        >
-          <Users
-            size={20}
-            color={
-              theme.colors.text.primary
-            }
-            strokeWidth={2}
-          />
-        </Pressable>
-
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Choose tracked tests"

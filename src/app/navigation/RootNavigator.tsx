@@ -9,11 +9,8 @@ import { AuthNavigator } from './AuthNavigator';
 import { MainTabs } from './MainTabs';
 import { AppLockScreen } from '../../components/security/AppLockScreen';
 import { ProfileScreen } from '../../features/profile/ProfileScreen';
-import { FamilyScreen } from '../../features/trust/FamilyScreen';
-import { TrustScreen } from '../../features/trust/TrustScreen';
 import { DigiLockerScreen } from '../../features/integrations/digilocker/DigiLockerScreen';
 import { IntegrationsScreen } from '../../features/profile/IntegrationsScreen';
-import { InvitationScreen } from '../../features/trust/InvitationScreen';
 import { PinSetupScreen } from '../../features/auth/screens/PinSetupScreen';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { View } from 'react-native';
@@ -25,7 +22,6 @@ import { useBootstrapQuery } from '../../services/api';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['readiness://'],
-  config: { screens: { Invitation: 'invite/:token' } },
 };
 export function RootNavigator() {
   const onboardingComplete = useAppSelector(
@@ -94,8 +90,6 @@ export function RootNavigator() {
             <>
               <Stack.Screen name="Main" component={MainTabs} />
               <Stack.Screen name="Profile" component={ProfileScreen} />
-              <Stack.Screen name="Family" component={FamilyScreen} />
-              <Stack.Screen name="Trust" component={TrustScreen} />
               <Stack.Screen name="Integrations" component={IntegrationsScreen} />
               <Stack.Screen name="DigiLocker" component={DigiLockerScreen} />
             </>
@@ -110,7 +104,6 @@ export function RootNavigator() {
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} />
         )}
-        <Stack.Screen name="Invitation" component={InvitationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

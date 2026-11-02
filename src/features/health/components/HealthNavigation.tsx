@@ -7,7 +7,6 @@ View
 
 import {
 CalendarDays,
-IdCard,
 Shield
 } from 'lucide-react-native';
 
@@ -64,40 +63,14 @@ export function PrepareVisit({ onPress }: { onPress: () => void }) {
 // ============================================================================
 
 export function QuickActions({
-  onEmergency,
   onInsurance,
 }: {
-  onEmergency: () => void;
   onInsurance: () => void;
 }) {
   const { theme } = useAppTheme();
 
   return (
     <View style={styles.quickActions}>
-      <Pressable
-        onPress={onEmergency}
-        style={[
-          styles.quickAction,
-          {
-            backgroundColor: theme.colors.surface.raised,
-            borderColor: theme.colors.border.default,
-          },
-        ]}
-      >
-        <IdCard
-          size={22}
-          color={theme.colors.text.primary}
-          strokeWidth={2}
-        />
-
-        <AppText
-          style={styles.quickActionText}
-          numberOfLines={1}
-        >
-          Emergency info
-        </AppText>
-      </Pressable>
-
       <Pressable
         onPress={onInsurance}
         style={[

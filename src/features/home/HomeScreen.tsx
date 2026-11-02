@@ -208,8 +208,6 @@ export function HomeScreen() {
     else if (segment === 'packages') navigation.navigate('Packages');
     else if (segment === 'health') navigation.navigate('Health');
     else if (segment === 'wealth') navigation.navigate('Wealth');
-    else if (segment === 'family') navigation.navigate('Family');
-    else if (segment === 'trust') navigation.navigate('Trust');
   };
   const [healthReminders, setHealthReminders] = useState<HealthHomeReminder[]>([]);
   const [reminderError, setReminderError] = useState<string>();
