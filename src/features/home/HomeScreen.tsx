@@ -217,7 +217,7 @@ export function HomeScreen() {
         onClose={() => setSearchOpen(false)}
         onOpenResult={openSearchResult}
       />
-      <Stack gap="md" style={styles.container}>
+      <Stack gap="lg" style={styles.container}>
         <Row align="center" justify="space-between" style={styles.appBar}>
           <Row align="center" gap="sm">
             <BrandLogo size={sizes.icon.lg} />
