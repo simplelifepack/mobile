@@ -887,7 +887,7 @@ export function WealthScreen({
       }
     >
       <Stack
-        gap="md"
+        gap="lg"
         style={[
           styles.container,
           {
@@ -896,6 +896,7 @@ export function WealthScreen({
           },
         ]}
       >
+        <Stack gap="md">
         <Header
           onSearch={() =>
             setSearchVisible(value => !value)
@@ -974,6 +975,9 @@ export function WealthScreen({
           <LoadingState label="Loading wealth records…" />
         ) : null}
 
+        </Stack>
+
+        <Stack gap="md">
         <ReadinessCard
           records={records}
           lendingItems={lendingItems}
@@ -1004,6 +1008,9 @@ export function WealthScreen({
           </AppText>
         </Pressable>
 
+        </Stack>
+
+        <Stack gap="md">
         <CategoryTabs
           selected={selectedCategory}
           onSelect={setSelectedCategory}
@@ -1036,6 +1043,7 @@ export function WealthScreen({
         ) : null}
 
         {hasVisibleRecords ? renderContent() : null}
+        </Stack>
 
         <WealthAddSheet
           visible={addSheetVisible}

@@ -475,7 +475,7 @@ export function DocumentsScreen() {
       }
     >
       <Stack
-        gap="md"
+        gap="lg"
         style={[
           styles.container,
           {
@@ -484,6 +484,7 @@ export function DocumentsScreen() {
           },
         ]}
       >
+        <Stack gap="md">
         {/* Header */}
         <Row
           align="center"
@@ -694,6 +695,8 @@ export function DocumentsScreen() {
             })}
           </ScrollView>
         ) : null}
+
+        </Stack>
 
         {/* Document list */}
         {documents.length > 0 ? (

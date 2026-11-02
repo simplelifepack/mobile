@@ -445,7 +445,7 @@ floatingAction={
   </>
 }    >
       <Stack
-        gap="xs"
+        gap="lg"
         style={[
           styles.container,
           {
@@ -454,6 +454,7 @@ floatingAction={
           },
         ]}
       >
+        <Stack gap="sm">
         {/* HEADER */}
 
         <Header
@@ -481,6 +482,9 @@ floatingAction={
           }
         />
 
+        </Stack>
+
+        <Stack gap="md">
         {/* MEMBER PROFILE */}
 
         {member ? (
@@ -509,6 +513,9 @@ floatingAction={
   onInsurance={() => navigation.navigate('Documents')}
 />
 
+        </Stack>
+
+        <Stack gap="md">
         {/* TABS */}
 
         <HealthTabs
@@ -522,7 +529,7 @@ floatingAction={
 
         {activeTab ===
         'Overview' ? (
-          <Stack gap="sm">
+          <Stack gap="lg">
             {/* RESULTS HEADER */}
 
            <Row
@@ -962,6 +969,7 @@ floatingAction={
             </View>
           </Stack>
         )}
+        </Stack>
         {memberFormVisible ? (
           <HealthMemberForm
             onClose={() => setMemberFormVisible(false)}

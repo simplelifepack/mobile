@@ -1369,7 +1369,7 @@ export function ReadinessScreen() {
       }
     >
       <Stack
-        gap="sm"
+        gap="lg"
         style={[
           styles.container,
           {
@@ -1379,6 +1379,7 @@ export function ReadinessScreen() {
           },
         ]}
       >
+        <Stack gap="sm">
         {/* ================================================================
             HEADER
         ================================================================ */}
@@ -1516,6 +1517,8 @@ export function ReadinessScreen() {
             ))}
           </Row>
         </ScrollView>
+
+        </Stack>
 
         {/* ================================================================
             SELECTED PACKAGE
