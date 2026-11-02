@@ -20,10 +20,10 @@ export function TextInput({
 }: TextInputProps & { label: string; error?: string }) {
   return (
     <Stack gap="xs">
-      <AppText variant="label">{label}</AppText>
+      <AppText variant="eyebrow">{label}</AppText>
       <Field {...props} />
       {error ? (
-        <AppText variant="caption" color="danger">
+        <AppText variant="bodySm" color="danger">
           {error}
         </AppText>
       ) : null}

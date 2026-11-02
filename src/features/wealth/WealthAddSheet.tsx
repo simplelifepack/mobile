@@ -203,7 +203,7 @@ export function LentBorrowedForm({
       <KeyboardAvoidingView behavior="padding" style={[styles.formBackdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
         <View style={[styles.formPanel, { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default }]}>
           <Row align="center" justify="space-between">
-            <AppText variant="title" style={styles.title}>Record money lent or borrowed</AppText>
+            <AppText variant="heading" style={styles.title}>Record money lent or borrowed</AppText>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={[styles.close, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
               <X size={sizes.icon.md} color={theme.colors.text.primary} strokeWidth={2} />
             </Pressable>

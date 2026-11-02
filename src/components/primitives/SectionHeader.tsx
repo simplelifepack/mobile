@@ -17,7 +17,7 @@ export function SectionHeader({ title, actionLabel, onAction }: Props) {
 
   return (
     <View style={styles.row}>
-      <AppText variant="heading" accessibilityRole="header">{title}</AppText>
+      <AppText variant="eyebrow" accessibilityRole="header">{title}</AppText>
       {actionLabel && onAction ? (
         <Pressable accessibilityRole="button" onPress={onAction} style={styles.action}>
           <AppText variant="label" style={{ color: theme.colors.text.link }}>{actionLabel}</AppText>

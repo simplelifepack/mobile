@@ -244,7 +244,7 @@ export function ReadingCard({
         gap="sm"
       >
         <AppText
-          variant="title"
+          variant="numeric"
           style={
             styles.readingValue
           }

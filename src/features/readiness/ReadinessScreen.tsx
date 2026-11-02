@@ -497,7 +497,7 @@ function PackageDetailBottomSheet({
             </View>
             <View style={styles.packageHeaderCopy}>
               <AppText
-                variant="title"
+                variant="heading"
                 numberOfLines={2}
                 style={styles.sheetTitle}
               >

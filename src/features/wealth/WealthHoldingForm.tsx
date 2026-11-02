@@ -310,7 +310,7 @@ export function WealthHoldingForm({
       <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
         <View style={[styles.panel, { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default }]}>
           <Row align="center" justify="space-between">
-            <AppText variant="title" style={styles.title}>Add holding</AppText>
+            <AppText variant="heading" style={styles.title}>Add holding</AppText>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={[styles.close, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
               <X size={sizes.icon.md} color={theme.colors.text.primary} strokeWidth={2} />
             </Pressable>

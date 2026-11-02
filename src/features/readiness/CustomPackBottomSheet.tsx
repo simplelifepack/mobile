@@ -684,7 +684,7 @@ export function CustomPackBottomSheet({
 
             {/* HEADER */}
             <View style={styles.header}>
-              <AppText variant="title" style={styles.title}>
+              <AppText variant="heading" style={styles.title}>
                 Create a custom pack
               </AppText>
 
