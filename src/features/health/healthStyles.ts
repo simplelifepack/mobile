@@ -567,10 +567,6 @@ prepareText: {
   // Tabs
   // --------------------------------------------------------------------------
 
-  tabsScroll: {
-    paddingRight: 12,
-  },
-
   tabs: {
     minHeight: 48,
     flexDirection: 'row',
@@ -578,8 +574,9 @@ prepareText: {
   },
 
   tab: {
+    flex: 1,
     minHeight: 48,
-    paddingHorizontal: 12,
+    paddingHorizontal: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
