@@ -1991,11 +1991,7 @@ const styles = StyleSheet.create({
 
   deleteTarget: { width: sizes.minimumTouchTarget, height: sizes.minimumTouchTarget, alignItems: 'center', justifyContent: 'center' },
   amountColumn: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-    marginLeft: 'auto',
-    maxWidth: 110,
+    alignItems: 'flex-end',
   },
 
 
