@@ -22,3 +22,10 @@ export const spacing = {
   xxl: space[48],
 } as const;
 export type SpacingToken = keyof typeof spacing;
+
+// Design System page layout tokens.
+export const layout = {
+  gutter: space[16],
+  sectionGap: space[24],
+  contentWidth: 600,
+} as const;

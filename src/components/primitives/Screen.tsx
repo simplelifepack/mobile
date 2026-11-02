@@ -9,20 +9,27 @@ import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
+import { layout } from '../../design/tokens/spacing';
 const Safe = styled(SafeAreaView)(({ theme }) => ({
   flex: 1,
   backgroundColor: theme.colors.surface.canvas,
 }));
-const Content = styled.View<{ padded: boolean }>(({ theme, padded }) => ({
+const Content = styled.View<{ padded: boolean }>(({ padded }) => ({
   flex: 1,
-  paddingHorizontal: padded ? theme.spacing.md : 0,
+  width: '100%',
+  maxWidth: layout.contentWidth,
+  alignSelf: 'center',
+  paddingHorizontal: padded ? layout.gutter : 0,
 }));
 const Scroll = styled.ScrollView.attrs<{
   contentContainerStyle?: StyleProp<ViewStyle>;
 }>(({ contentContainerStyle }) => ({
   contentContainerStyle: [{ flexGrow: 1 }, contentContainerStyle],
-}))<{ padded: boolean }>(({ theme, padded }) => ({
-  paddingHorizontal: padded ? theme.spacing.md : 0,
+}))<{ padded: boolean }>(({ padded }) => ({
+  width: '100%',
+  maxWidth: layout.contentWidth,
+  alignSelf: 'center',
+  paddingHorizontal: padded ? layout.gutter : 0,
 }));
 export function Screen({
   children,
