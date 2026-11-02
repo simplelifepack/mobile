@@ -33,6 +33,14 @@ const Item = styled.Pressable({
   gap: 2,
 });
 
+const IconPill = styled.View(({ theme }) => ({
+  width: 56,
+  height: 28,
+  borderRadius: theme.radius.pill,
+  alignItems: 'center',
+  justifyContent: 'center',
+}));
+
 const icons = {
   Home: LayoutGrid,
   Documents: FolderOpen,
@@ -73,7 +81,13 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 navigation.navigate(route.name, route.params);
             }}
           >
-            <Icon size={theme.sizes.icon.lg} color={tint} />
+            <IconPill
+              style={
+                focused && { backgroundColor: theme.colors.surface.brandTint }
+              }
+            >
+              <Icon size={theme.sizes.icon.lg} color={tint} />
+            </IconPill>
             <AppText
               variant="caption"
               numberOfLines={1}

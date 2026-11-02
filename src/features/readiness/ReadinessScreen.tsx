@@ -2255,6 +2255,6 @@ const styles = StyleSheet.create({
   },
   sheetDisclaimer: {
     paddingHorizontal: 8,
-    lineHeight: 18,
+    lineHeight: lineHeight.bodySm,
   },
 });

@@ -234,7 +234,7 @@ export const styles = StyleSheet.create({
   },
   healthEmptyText: {
     paddingVertical: 18,
-    lineHeight: 22,
+    lineHeight: lineHeight.headingSm,
   },
   healthMonthLabel: {
     marginTop: 18,
