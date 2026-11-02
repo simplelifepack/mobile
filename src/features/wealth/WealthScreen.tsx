@@ -503,23 +503,8 @@ function LendingSection({
             variant="heading"
             style={styles.lendingTitle}
           >
-            Lent and borrowed
+            {openCount} open
           </AppText>
-
-          <View
-            style={[
-              styles.openBadge,
-              {
-                backgroundColor:
-                  theme.colors.surface.raised,
-                borderColor: theme.colors.border.default,
-              },
-            ]}
-          >
-            <AppText variant="label" color="secondary">
-              {openCount} open
-            </AppText>
-          </View>
         </Row>
 
         <Pressable
@@ -558,7 +543,7 @@ function LendingSection({
               />
             }
             title={item.name}
-            subtitle={`${item.description} · ${item.followUp}`}
+            subtitle={[item.description !== item.name ? item.description : '', item.followUp].filter(Boolean).join(' · ')}
             trailing={
               <Row align="center" gap="sm">
                 <View style={styles.amountColumn}>
