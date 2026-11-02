@@ -3,7 +3,8 @@ import { Pressable, StyleSheet } from 'react-native';
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { Plus } from 'lucide-react-native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-import { staticColors } from '../../design/tokens/colors';
+import { sizes } from '../../design/tokens/sizes';
+import { shadows } from '../../design/tokens/shadows';
 import { radius } from '../../design/tokens/radius';
 
 export function FloatingActionButton({
@@ -39,15 +40,11 @@ export function FloatingActionButton({
 const styles = StyleSheet.create({
   button: {
     position: 'absolute',
-    width: 58,
-    height: 58,
+    width: sizes.fab,
+    height: sizes.fab,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6,
-    shadowColor: staticColors.shadow,
-    shadowOpacity: 0.24,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    ...shadows.floating,
   },
 });

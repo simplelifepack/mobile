@@ -1,18 +1,20 @@
-import type { ViewStyle } from 'react-native';
-export const shadows: Record<'none' | 'card' | 'floating', ViewStyle> = {
+// Design System 1.0 elevation: raised = y1/blur2, overlay = y8/blur24. Shadow base is the ink colour.
+const ink = '#17141F';
+
+export const shadows = {
   none: {},
   card: {
-    shadowColor: '#000000',
+    shadowColor: ink,
     shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   floating: {
-    shadowColor: '#000000',
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
+    shadowColor: ink,
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
     shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+    elevation: 8,
   },
-};
+} as const;

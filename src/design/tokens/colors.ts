@@ -276,7 +276,6 @@ export type ThemeColors = Widen<typeof lightColors>;
 
 // Theme-independent values for static StyleSheet blocks.
 export const staticColors = {
-  scrim: 'rgba(0, 0, 0, 0.5)',
-  shadow: 'rgba(23, 20, 31, 0.18)',
+  scrim: 'rgba(23, 20, 31, 0.45)',
   white: '#FFFFFF',
 } as const;

@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components/native';
 import { AppText } from '../primitives/AppText';
-import { staticColors } from '../../design/tokens/colors';
+import { shadows } from '../../design/tokens/shadows';
 const Box = styled.View(({ theme }) => ({
   position: 'absolute',
   left: theme.spacing.md,
@@ -10,11 +10,7 @@ const Box = styled.View(({ theme }) => ({
   padding: theme.spacing.md,
   borderRadius: theme.radius.control,
   backgroundColor: theme.colors.surface.raised,
-  shadowColor: staticColors.shadow,
-  shadowOpacity: 0.14,
-  shadowRadius: 18,
-  shadowOffset: { width: 0, height: 8 },
-  elevation: 5,
+  ...shadows.floating,
 }));
 export function Toast({ message }: { message: string }) {
   return (
