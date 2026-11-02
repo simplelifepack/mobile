@@ -39,10 +39,10 @@ const Wrapper = styled.View<{ $bottomInset: number }>(
 const Pill = styled.View(({ theme }) => ({
   flexDirection: 'row',
   alignItems: 'center',
-  width: '92%',
+  width: '94%',
   maxWidth: 400,
   height: PILL_HEIGHT,
-  paddingHorizontal: theme.spacing.sm,
+  paddingHorizontal: theme.spacing.xs,
   overflow: 'hidden',
   borderRadius: theme.radius.pill,
   borderWidth: 1,
