@@ -119,6 +119,9 @@ export const lightColors = {
     backdrop: 'rgba(23, 20, 31, 0.40)',
     scrim: 'rgba(23, 20, 31, 0.40)',
     highlight: 'rgba(23, 20, 31, 0.05)',
+    glass: 'rgba(255, 255, 255, 0.55)',
+    glassBorder: 'rgba(255, 255, 255, 0.70)',
+    glassEdge: 'rgba(23, 20, 31, 0.08)',
   },
   logo: {
     default: '#1B1626',
@@ -254,6 +257,9 @@ export const darkColors = {
     backdrop: 'rgba(0, 0, 0, 0.50)',
     scrim: 'rgba(0, 0, 0, 0.50)',
     highlight: 'rgba(255, 255, 255, 0.06)',
+    glass: 'rgba(255, 255, 255, 0.04)',
+    glassBorder: 'rgba(255, 255, 255, 0.22)',
+    glassEdge: 'rgba(255, 255, 255, 0.40)',
   },
   logo: {
     default: '#F5F3F9',
