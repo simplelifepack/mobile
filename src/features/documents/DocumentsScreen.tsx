@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ProfileAvatarButton } from '../../components/navigation/ProfileAvatarButton';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../app/navigation/types';
@@ -520,23 +521,7 @@ export function DocumentsScreen() {
               />
             </Pressable>
 
-            <View
-              style={[
-                styles.avatar,
-                {
-                  backgroundColor:
-                    theme.colors.surface.raised,
-                  borderColor: theme.colors.border.default,
-                },
-              ]}
-            >
-              <AppText
-                variant="heading"
-                color="secondary"
-              >
-                A
-              </AppText>
-            </View>
+            <ProfileAvatarButton />
           </Row>
         </Row>
 

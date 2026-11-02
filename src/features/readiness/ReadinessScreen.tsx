@@ -1,4 +1,5 @@
 import { sizes } from '../../design/tokens/sizes';
+import { ProfileAvatarButton } from '../../components/navigation/ProfileAvatarButton';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   useFocusEffect,
@@ -1439,28 +1440,7 @@ export function ReadinessScreen() {
 
             {/* Avatar */}
 
-            <View
-              style={[
-                styles.avatar,
-                {
-                  backgroundColor: theme.colors.surface.raised,
-
-                  borderColor: theme.colors.border.default,
-                },
-              ]}
-            >
-              <AppText
-                variant="label"
-                style={[
-                  styles.avatarText,
-                  {
-                    color: theme.colors.status.warning.text,
-                  },
-                ]}
-              >
-                A
-              </AppText>
-            </View>
+            <ProfileAvatarButton />
           </Row>
         </Row>
 

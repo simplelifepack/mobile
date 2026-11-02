@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ProfileAvatarButton } from '../../components/navigation/ProfileAvatarButton';
 import {
   Alert,
   Modal,
@@ -173,19 +174,7 @@ function Header({
           />
         </Pressable>
 
-        <View
-          style={[
-            styles.avatar,
-            {
-              backgroundColor: theme.colors.surface.raised,
-              borderColor: theme.colors.border.default,
-            },
-          ]}
-        >
-          <AppText variant="heading" color="secondary">
-            A
-          </AppText>
-        </View>
+        <ProfileAvatarButton />
       </Row>
     </Row>
   );

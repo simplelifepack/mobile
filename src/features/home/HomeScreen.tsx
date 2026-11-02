@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { ProfileAvatarButton } from '../../components/navigation/ProfileAvatarButton';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -22,7 +23,6 @@ import type { DocumentRecord } from '../../api/types';
 import { readinessTone } from '../readiness/readinessTone';
 import { calculatePackReadiness } from '../readiness/calculatePackReadiness';
 import type { MainTabParamList, RootStackParamList } from '../../app/navigation/types';
-import { parseHomeOverview } from './homeSelectors';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import type { GlobalSearchResult } from '../../api/search.api';
 
@@ -184,15 +184,6 @@ export function HomeScreen() {
     );
   }
 
-  // --------------------------------------------------------------------------
-  // Existing selector — unchanged
-  // --------------------------------------------------------------------------
-
-  const homeOverview =
-    parseHomeOverview(
-      bootstrap.data,
-    );
-
   const documents = bootstrap.data.documents ?? [];
   const now = Date.now();
   const recentDocuments = [...documents]
@@ -241,16 +232,7 @@ export function HomeScreen() {
             >
               <Search size={22} color={theme.colors.text.secondary} strokeWidth={2} />
             </Pressable>
-            <Pressable
-              onPress={() => navigation.navigate('Profile')}
-              accessibilityRole="button"
-              accessibilityLabel="Profile"
-              style={[styles.avatar, { borderColor: theme.colors.border.default, backgroundColor: theme.colors.surface.raised }]}
-            >
-              <AppText variant="heading" color="secondary" align="center">
-                {homeOverview.name.charAt(0).toUpperCase()}
-              </AppText>
-            </Pressable>
+            <ProfileAvatarButton />
           </Row>
         </Row>
 
@@ -375,7 +357,6 @@ const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingTop: 0, paddingBottom: 24 },
   appBar: { minHeight: sizes.header },
   headerButton: { width: 44, height: 44, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  avatar: { width: 44, height: 44, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   retryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
 
   section: { gap: 8 },
