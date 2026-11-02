@@ -24,22 +24,13 @@ import { styles } from '../healthStyles';
 import { humanizeLabel } from '../../../utils/format';
 import { sizes } from '../../../design/tokens/sizes';
 
+// Design System person palette: one colour per member, cycling person-1..5 by position.
 export function memberColor(
-  tone: string,
+  index: number,
   palette: ThemeColors['person'],
 ) {
-  switch (tone) {
-    case 'purple':
-      return palette[2];
-    case 'green':
-      return palette[3];
-    case 'pink':
-      return palette[4];
-    case 'gold':
-      return palette[5];
-    default:
-      return palette[1];
-  }
+  const slots = [1, 2, 3, 4, 5] as const;
+  return palette[slots[index % slots.length]];
 }
 
 
@@ -144,9 +135,9 @@ export function MemberSelector({
       }
     >
       <Row gap="sm">
-        {members.map(member => {
+        {members.map((member, index) => {
           const isSelected = selected === member.id;
-          const color = memberColor(member.relation.toLowerCase(), theme.colors.person);
+          const color = memberColor(index, theme.colors.person);
           const initials = member.name
             .trim()
             .split(/\s+/)
