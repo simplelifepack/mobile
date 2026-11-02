@@ -2,10 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import {
   AlertCircle,
-  ArrowRight,
   Folder,
   FileText,
   HeartPulse,
@@ -14,7 +13,6 @@ import {
   Search,
   WalletCards,
   ChevronRight,
-  type LucideIcon,
 } from 'lucide-react-native';
 
 import { useBootstrapQuery, usePackagesQuery } from '../../services/api';
@@ -33,12 +31,13 @@ import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { Row } from '../../components/primitives/Row';
+import { ListGroup, ListRow } from '../../components/primitives/ListRow';
+import { SectionHeader } from '../../components/primitives/SectionHeader';
 import { Tile, type StatusTone } from '../../components/primitives/Tile';
 import { AppText } from '../../components/primitives/AppText';
 import { BrandLogo } from '../../components/BrandLogo';
 import { radius } from '../../design/tokens/radius';
 import { sizes } from '../../design/tokens/sizes';
-import { shadows } from '../../design/tokens/shadows';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 
 import { LoadingState } from '../../components/feedback/LoadingState';
@@ -54,93 +53,6 @@ function daysUntil(value?: string | null, now = Date.now()) {
 
 function documentTitle(document: DocumentRecord) {
   return document.displayName ?? document.title ?? document.originalName ?? document.documentType;
-}
-
-function RecentDocumentCard({
-  document,
-  onPress,
-}: {
-  document: DocumentRecord;
-  onPress: () => void;
-}) {
-  const { theme } = useAppTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`View ${documentTitle(document)}`}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.recentCard,
-        shadows.card,
-        { backgroundColor: theme.colors.surface.raised, opacity: pressed ? 0.85 : 1 },
-      ]}
-    >
-      <View style={styles.recentTop}>
-        <View style={styles.recentCopy}>
-          <AppText variant="label" numberOfLines={1} style={styles.recentTitle}>
-            {documentTitle(document)}
-          </AppText>
-          <AppText variant="caption" numberOfLines={1} style={styles.recentSubtitle}>
-            {document.owner ?? document.originalName}
-          </AppText>
-        </View>
-      </View>
-      <View style={styles.recentBottom}>
-        <View style={[styles.thumb, { backgroundColor: theme.colors.surface.brandTint }]}>
-          <FileText size={26} color={theme.colors.icon.interactive} strokeWidth={1.8} />
-        </View>
-        <View style={styles.recentRight}>
-          <View style={[styles.badge, { backgroundColor: theme.colors.surface.brandTint, borderColor: theme.colors.border.subtle }]}>
-            <AppText style={[styles.badgeText, { color: theme.colors.text.interactive }]}>{document.category ?? 'Document'}</AppText>
-          </View>
-          <View style={[styles.viewButton, { borderColor: theme.colors.border.interactive }]}>
-            <AppText style={[styles.viewButtonText, { color: theme.colors.text.interactive }]}>View document</AppText>
-            <ArrowRight size={16} color={theme.colors.icon.interactive} strokeWidth={2} />
-          </View>
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
-
-function QuickAction({
-  Icon,
-  title,
-  subtitle,
-  onPress,
-}: {
-  Icon: LucideIcon;
-  title: string;
-  subtitle: string;
-  onPress: () => void;
-}) {
-  const { theme } = useAppTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.quickAction,
-        shadows.card,
-        {
-          backgroundColor: theme.colors.surface.raised,
-          opacity: pressed ? 0.85 : 1,
-        },
-      ]}
-    >
-      <View style={[styles.quickIcon, { backgroundColor: theme.colors.surface.brandTint }]}>
-        <Icon size={18} color={theme.colors.icon.interactive} strokeWidth={2} />
-      </View>
-      <View style={styles.quickCopy}>
-        <AppText style={styles.quickTitle} numberOfLines={1}>{title}</AppText>
-        <AppText style={[styles.quickSubtitle, { color: theme.colors.text.tertiary }]} numberOfLines={1}>
-          {subtitle}
-        </AppText>
-      </View>
-    </Pressable>
-  );
 }
 
 export function HomeScreen() {
@@ -342,27 +254,6 @@ export function HomeScreen() {
           </Row>
         </Row>
 
-        {recentDocuments.length ? (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <AppText style={styles.sectionTitle}>Recently viewed</AppText>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.recentRow}
-            >
-              {recentDocuments.map(document => (
-                <RecentDocumentCard
-                  key={document.id}
-                  document={document}
-                  onPress={() => navigation.navigate('Documents')}
-                />
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
-
         <View style={styles.grid}>
           <Tile
             icon={Folder}
@@ -437,26 +328,44 @@ export function HomeScreen() {
           <ChevronRight size={sizes.icon.sm} color={theme.colors.status[bannerTone].icon} strokeWidth={2} />
         </Pressable>
 
-        <View style={styles.quickSection}>
-          <View style={styles.quickHeader}>
-            <AppText style={styles.quickHeading}>Quick actions</AppText>
-            <AppText style={styles.quickHint}>Add or create</AppText>
-          </View>
-          <View style={styles.quickRow}>
-            <QuickAction
-              Icon={Plus}
+        <View style={styles.section}>
+          <SectionHeader title="Quick actions" />
+          <View style={styles.grid}>
+            <Tile
+              icon={Plus}
               title="Add document"
-              subtitle="Upload a new file"
+              status="Upload a new file"
               onPress={() => navigation.navigate('Documents')}
             />
-            <QuickAction
-              Icon={ListChecks}
+            <Tile
+              icon={ListChecks}
               title="Create package"
-              subtitle="Organize items"
+              status="Organise what you need"
               onPress={() => navigation.navigate('Packages')}
             />
           </View>
         </View>
+
+        {recentDocuments.length ? (
+          <View style={styles.section}>
+            <SectionHeader
+              title="Recently added"
+              actionLabel="See all"
+              onAction={() => navigation.navigate('Documents')}
+            />
+            <ListGroup>
+              {recentDocuments.slice(0, 3).map(document => (
+                <ListRow
+                  key={document.id}
+                  icon={<FileText size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
+                  title={documentTitle(document)}
+                  subtitle={document.category ?? document.documentType}
+                  onPress={() => navigation.navigate('Documents')}
+                />
+              ))}
+            </ListGroup>
+          </View>
+        ) : null}
       </Stack>
     </Screen>
   );
@@ -470,47 +379,6 @@ const styles = StyleSheet.create({
   retryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
 
   section: { gap: 8 },
-  sectionHeader: { paddingLeft: 4 },
-  sectionTitle: { fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: '600' },
-  recentRow: { gap: 12, paddingRight: 16 },
-  recentCard: {
-    width: 312,
-    height: 148,
-    padding: 16,
-    borderRadius: radius.overlay,
-    justifyContent: 'space-between',
-  },
-  recentTop: { flexDirection: 'row', justifyContent: 'space-between' },
-  recentCopy: { gap: 4, flex: 1 },
-  recentTitle: { fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: '600' },
-  recentSubtitle: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
-  recentBottom: { flexDirection: 'row', alignItems: 'flex-end', gap: 16 },
-  thumb: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.control,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  recentRight: { flex: 1, gap: 8, alignItems: 'flex-start' },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.control,
-    borderWidth: 1,
-  },
-  badgeText: { fontSize: fontSize.caption, lineHeight: lineHeight.caption, fontWeight: '500' },
-  viewButton: {
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderRadius: radius.control,
-  },
-  viewButtonText: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
 
@@ -528,24 +396,4 @@ const styles = StyleSheet.create({
   needsCopy: { flex: 1, gap: 2 },
   needsTitle: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: '600' },
   needsSubtitle: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
-
-  quickSection: { gap: 10 },
-  quickHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 4 },
-  quickHeading: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: '600' },
-  quickHint: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
-  quickRow: { flexDirection: 'row', gap: 12 },
-  quickAction: {
-    flex: 1,
-    height: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    borderRadius: radius.surface,
-  },
-  quickIcon: { width: 32, height: 32, borderRadius: radius.control, alignItems: 'center', justifyContent: 'center' },
-  quickCopy: { flex: 1, gap: 2 },
-  quickTitle: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: '600' },
-  quickSubtitle: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
-
 });
