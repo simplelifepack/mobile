@@ -84,7 +84,7 @@ import { calculatePackReadiness } from './calculatePackReadiness';
 
 import type { DocumentRecord, PackageSummary } from '../../api/types';
 import { readinessTone } from './readinessTone';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 import { formatDate } from '../../utils/format';
 
@@ -493,7 +493,7 @@ function PackageDetailBottomSheet({
                 { backgroundColor: theme.colors.surface.raised },
               ]}
             >
-              <Icon size={23} color={theme.colors.text.interactive} strokeWidth={2} />
+              <Icon size={sizes.icon.lg} color={theme.colors.text.interactive} strokeWidth={2} />
             </View>
             <View style={styles.packageHeaderCopy}>
               <AppText
@@ -525,7 +525,7 @@ function PackageDetailBottomSheet({
                 },
               ]}
             >
-              <X size={21} color={theme.colors.text.primary} strokeWidth={2} />
+              <X size={sizes.icon.md} color={theme.colors.text.primary} strokeWidth={2} />
             </Pressable>
           </View>
 
@@ -600,7 +600,7 @@ function PackageDetailBottomSheet({
                         <ActivityIndicator color={theme.colors.text.interactive} />
                       ) : (
                         <RefreshCw
-                          size={20}
+                          size={sizes.icon.md}
                           color={theme.colors.text.secondary}
                           strokeWidth={2}
                         />
@@ -663,7 +663,7 @@ function PackageDetailBottomSheet({
                     ]}
                   >
                     <Check
-                      size={20}
+                      size={sizes.icon.md}
                       color={theme.colors.status.success.text}
                       strokeWidth={2.5}
                     />
@@ -710,13 +710,13 @@ function PackageDetailBottomSheet({
                           >
                             {ready ? (
                               <Check
-                                size={17}
+                                size={sizes.icon.sm}
                                 color={theme.colors.status.success.text}
                                 strokeWidth={2.5}
                               />
                             ) : (
                               <Shield
-                                size={17}
+                                size={sizes.icon.sm}
                                 color={theme.colors.status.warning.text}
                                 strokeWidth={2}
                               />
@@ -733,7 +733,7 @@ function PackageDetailBottomSheet({
                               </AppText>
 
                               <ChevronRight
-                                size={18}
+                                size={sizes.icon.md}
                                 color={theme.colors.text.secondary}
                                 strokeWidth={2}
                               />
@@ -791,7 +791,7 @@ function PackageDetailBottomSheet({
                       ]}
                     >
                       <Shield
-                        size={20}
+                        size={sizes.icon.md}
                         color={theme.colors.status.warning.text}
                         strokeWidth={2}
                       />
@@ -815,7 +815,7 @@ function PackageDetailBottomSheet({
                           ]}
                         >
                           <X
-                            size={17}
+                            size={sizes.icon.sm}
                             color={theme.colors.status.warning.text}
                             strokeWidth={2.5}
                           />
@@ -870,7 +870,7 @@ function PackageDetailBottomSheet({
                       ]}
                     >
                       <X
-                        size={20}
+                        size={sizes.icon.md}
                         color={theme.colors.text.secondary}
                         strokeWidth={2}
                       />
@@ -931,7 +931,7 @@ function PackageDetailBottomSheet({
                     ]}
                   >
                     <Download
-                      size={20}
+                      size={sizes.icon.md}
                       color={theme.colors.text.secondary}
                       strokeWidth={2}
                     />
@@ -951,7 +951,7 @@ function PackageDetailBottomSheet({
                       ]}
                     >
                       <View style={[styles.downloadCheckbox, { backgroundColor: theme.colors.action.primary.default }]}>
-                        <Check size={17} color={theme.colors.text.onBrand} strokeWidth={3} />
+                        <Check size={sizes.icon.sm} color={theme.colors.text.onBrand} strokeWidth={3} />
                       </View>
                       <View style={styles.downloadDocumentCopy}>
                         <AppText variant="body">{requirement.title}</AppText>
@@ -976,7 +976,7 @@ function PackageDetailBottomSheet({
                       { backgroundColor: theme.colors.action.primary.default },
                     ]}
                   >
-                    <Download size={20} color={theme.colors.text.onBrand} strokeWidth={2.5} />
+                    <Download size={sizes.icon.md} color={theme.colors.text.onBrand} strokeWidth={2.5} />
                     <AppText variant="label" style={[styles.downloadActionText, { color: theme.colors.text.onBrand }]}>
                       Download
                     </AppText>
@@ -1032,7 +1032,7 @@ function PackageDetailBottomSheet({
                           </AppText>
                         </View>
                         <ChevronRight
-                          size={18}
+                          size={sizes.icon.md}
                           color={theme.colors.text.secondary}
                         />
                       </Pressable>
@@ -1432,7 +1432,7 @@ export function ReadinessScreen() {
               ]}
             >
               <Search
-                size={20}
+                size={sizes.icon.md}
                 color={theme.colors.text.secondary}
                 strokeWidth={2}
               />
@@ -1464,7 +1464,7 @@ export function ReadinessScreen() {
             ]}
           >
             <Search
-              size={19}
+              size={sizes.icon.md}
               color={theme.colors.text.secondary}
               strokeWidth={2}
             />
@@ -1700,7 +1700,7 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: fontSize.headingLg,
     lineHeight: lineHeight.headingLg,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   countBadge: {
@@ -1716,7 +1716,7 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: fontSize.bodySm,
     lineHeight: lineHeight.bodySm,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   headerButton: {
@@ -1740,7 +1740,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: fontSize.bodySm,
     lineHeight: lineHeight.bodySm,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   // --------------------------------------------------------------------------
@@ -1761,7 +1761,7 @@ const styles = StyleSheet.create({
     height: 46,
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '400',
+    fontWeight: fontWeights.regular,
     padding: 0,
   },
 
@@ -1786,7 +1786,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: fontSize.bodySm,
     lineHeight: lineHeight.bodySm,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   // --------------------------------------------------------------------------
@@ -1824,7 +1824,7 @@ const styles = StyleSheet.create({
   readinessNumber: {
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   // --------------------------------------------------------------------------
@@ -1850,7 +1850,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   packageStatus: {
@@ -1882,7 +1882,7 @@ const styles = StyleSheet.create({
   readyText: {
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
     letterSpacing: 0,
   },
 
@@ -1893,7 +1893,7 @@ const styles = StyleSheet.create({
   detailTitle: {
     fontSize: fontSize.headingMd,
     lineHeight: lineHeight.headingMd,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   detailDescription: {
@@ -1908,13 +1908,13 @@ const styles = StyleSheet.create({
   detailPercentage: {
     fontSize: fontSize.headingSm,
     lineHeight: lineHeight.headingSm,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   requirementsHeading: {
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   requirementGroupHeading: {
@@ -1922,7 +1922,7 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   requirementRow: {
@@ -2026,16 +2026,16 @@ const styles = StyleSheet.create({
   checkedRow: {
     minHeight: 28,
   },
-  packageHeaderCopy: { flex: 1, minWidth: 0, gap: 3 },
+  packageHeaderCopy: { flex: 1, minWidth: 0, gap: 4 },
   packageSubtitle: { fontSize: fontSize.body, lineHeight: lineHeight.body },
-  sourceProvider: { fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: '700' },
-  sourceCheckedDate: { fontWeight: '600' },
+  sourceProvider: { fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: fontWeights.bold },
+  sourceCheckedDate: { fontWeight: fontWeights.semibold },
   sourceLinks: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   sourcesNote: { padding: 12 },
   readinessSummaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 18,
+    gap: 16,
     paddingVertical: 8,
     marginBottom: 4,
   },
@@ -2043,9 +2043,9 @@ const styles = StyleSheet.create({
   missingRequirementRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   missingRequirementCopy: { flex: 1, minWidth: 0, gap: 2 },
@@ -2063,7 +2063,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
@@ -2074,7 +2074,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  downloadDocumentCopy: { flex: 1, minWidth: 0, gap: 3 },
+  downloadDocumentCopy: { flex: 1, minWidth: 0, gap: 4 },
   downloadAction: {
     minHeight: 58,
     margin: 12,
@@ -2082,9 +2082,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 8,
   },
-  downloadActionText: { fontSize: fontSize.body, fontWeight: '700' },
+  downloadActionText: { fontSize: fontSize.body, fontWeight: fontWeights.bold },
   actionPill: {
     alignSelf: 'flex-start',
     minHeight: sizes.minimumTouchTarget,
@@ -2105,7 +2105,7 @@ const styles = StyleSheet.create({
   readyTextLarge: {
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     letterSpacing: 0,
   },
   vaultCard: {

@@ -51,7 +51,7 @@ export function Reminders({
           gap="sm"
         >
           <Bell
-            size={19}
+            size={sizes.icon.md}
             color={
               theme.colors.text.secondary
             }
@@ -81,7 +81,7 @@ export function Reminders({
           ]}
         >
           <Plus
-            size={16}
+            size={sizes.icon.sm}
             color={
               theme.colors.status.warning.text
             }
@@ -151,7 +151,7 @@ export function MedicalReadiness({
           gap="sm"
         >
           <Shield
-            size={19}
+            size={sizes.icon.md}
             color={
               theme.colors.text.secondary
             }

@@ -26,7 +26,7 @@ import {
   loginWithPin,
 } from '../authSlice';
 import { cleanPin, validateLoginInput } from '../auth.validators';
-import { fontSize, lineHeight } from '../../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../../design/tokens/typography';
 import { radius } from '../../../design/tokens/radius';
 
 export function LoginScreen({
@@ -224,9 +224,9 @@ export function LoginScreen({
                   style={styles.passwordToggle}
                 >
                   {showPassword ? (
-                    <EyeOff size={20} color={theme.colors.text.secondary} />
+                    <EyeOff size={sizes.icon.md} color={theme.colors.text.secondary} />
                   ) : (
-                    <Eye size={20} color={theme.colors.text.secondary} />
+                    <Eye size={sizes.icon.md} color={theme.colors.text.secondary} />
                   )}
                 </Pressable>
               </View>
@@ -257,7 +257,7 @@ export function LoginScreen({
                     <AppText variant="heading" color="onPrimary" style={styles.primaryButtonText}>
                       Sign in
                     </AppText>
-                    <ArrowRight size={21} color={theme.colors.text.onBrand} strokeWidth={2} />
+                    <ArrowRight size={sizes.icon.md} color={theme.colors.text.onBrand} strokeWidth={2} />
                   </>
                 )}
               </Pressable>
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   brandName: {
     fontSize: fontSize.displayMd,
     lineHeight: lineHeight.displayMd,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   tagline: {
     marginTop: 8,
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   secondaryButton: {
     minHeight: 48,

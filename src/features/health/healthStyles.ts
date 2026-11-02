@@ -1,6 +1,6 @@
 import { sizes } from '../../design/tokens/sizes';
 import { StyleSheet } from 'react-native';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
 
@@ -85,7 +85,7 @@ export const styles = StyleSheet.create({
   },
 
   formBody: {
-    gap: 18,
+    gap: 16,
     paddingBottom: 24,
   },
 
@@ -97,7 +97,7 @@ export const styles = StyleSheet.create({
 
   chip: {
     minHeight: 44,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -107,9 +107,9 @@ export const styles = StyleSheet.create({
   metricPickerSheet: {
     height: '94%',
     maxHeight: '94%',
-    paddingTop: 28,
-    paddingHorizontal: 18,
-    paddingBottom: 18,
+    paddingTop: 24,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     borderTopLeftRadius: radius.pill,
     borderTopRightRadius: radius.pill,
     borderWidth: StyleSheet.hairlineWidth,
@@ -125,7 +125,7 @@ export const styles = StyleSheet.create({
   metricPickerTitle: {
     fontSize: fontSize.headingMd,
     lineHeight: lineHeight.headingMd,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     marginBottom: 16,
   },
   metricPickerSubtitle: {
@@ -144,7 +144,7 @@ export const styles = StyleSheet.create({
     minHeight: 94,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 24,
@@ -170,7 +170,7 @@ export const styles = StyleSheet.create({
   metricPickerMetricName: {
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
   metricPickerMetricDetail: {
     fontSize: fontSize.bodySm,
@@ -203,13 +203,13 @@ export const styles = StyleSheet.create({
   healthTabCard: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.overlay,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 16,
     overflow: 'hidden',
   },
   healthSectionEyebrow: {
     letterSpacing: 1.5,
-    paddingBottom: 14,
+    paddingBottom: 12,
   },
   healthReminderRow: {
     minHeight: 86,
@@ -232,11 +232,11 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   healthEmptyText: {
-    paddingVertical: 18,
+    paddingVertical: 16,
     lineHeight: lineHeight.headingSm,
   },
   healthMonthLabel: {
-    marginTop: 18,
+    marginTop: 16,
     marginBottom: 8,
     marginLeft: 8,
     letterSpacing: 2,
@@ -252,7 +252,7 @@ export const styles = StyleSheet.create({
     alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingTop: 28,
+    paddingTop: 24,
   },
   healthTimelineDot: {
     width: 12,
@@ -275,7 +275,7 @@ export const styles = StyleSheet.create({
   healthTimelineCopy: {
     flex: 1,
     minWidth: 0,
-    gap: 5,
+    gap: 4,
   },
   healthTimelineDate: {
     maxWidth: 104,
@@ -286,13 +286,13 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
-    paddingBottom: 14,
+    gap: 8,
+    paddingBottom: 12,
   },
   healthSectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     flex: 1,
   },
   healthAddButton: {
@@ -415,7 +415,7 @@ export const styles = StyleSheet.create({
 headerTitle: {
   fontSize: fontSize.headingLg,
   lineHeight: lineHeight.headingLg,
-  fontWeight: '700',
+  fontWeight: fontWeights.bold,
 },
 
 headerButton: {
@@ -438,7 +438,7 @@ profileButton: {
   profileInitial: {
     fontSize: fontSize.bodySm,
     lineHeight: lineHeight.bodySm,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   // --------------------------------------------------------------------------
@@ -467,13 +467,13 @@ memberItem: {
   memberInitial: {
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   memberName: {
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   // --------------------------------------------------------------------------
@@ -498,7 +498,7 @@ memberItem: {
   profileAvatarText: {
     fontSize: fontSize.headingLg,
     lineHeight: lineHeight.headingLg,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   profileContent: {
@@ -509,7 +509,7 @@ memberItem: {
 profileName: {
   fontSize: fontSize.headingSm,
   lineHeight: lineHeight.headingSm,
-  fontWeight: '700',
+  fontWeight: fontWeights.bold,
 },
 profileMeta: {
   fontSize: fontSize.bodySm,
@@ -533,7 +533,7 @@ prepareText: {
   flex: 1,
   fontSize: fontSize.body,
   lineHeight: lineHeight.body,
-  fontWeight: '700',
+  fontWeight: fontWeights.bold,
 },
 
   // --------------------------------------------------------------------------
@@ -560,7 +560,7 @@ prepareText: {
   flex: 1,
   fontSize: fontSize.bodySm,
   lineHeight: lineHeight.bodySm,
-  fontWeight: '600',
+  fontWeight: fontWeights.semibold,
 },
 
   // --------------------------------------------------------------------------
@@ -591,7 +591,7 @@ prepareText: {
   tabText: {
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   // --------------------------------------------------------------------------
@@ -626,13 +626,13 @@ resultsCount: {
   noRangeText: {
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   readingValue: {
     fontSize: fontSize.headingLg,
     lineHeight: lineHeight.headingLg,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   rangeText: {
@@ -696,7 +696,7 @@ resultsCount: {
   sectionTitle: {
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   addReminder: {
@@ -756,7 +756,7 @@ resultsCount: {
   medicalPercentage: {
     fontSize: fontSize.headingXl,
     lineHeight: lineHeight.headingXl,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   medicalDescription: {
@@ -797,7 +797,7 @@ resultsCount: {
   medicalValue: {
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 
   // --------------------------------------------------------------------------
@@ -843,7 +843,7 @@ addHealthGrabber: {
 addHealthTitle: {
   fontSize: fontSize.headingMd,
   lineHeight: lineHeight.headingMd,
-  fontWeight: '700',
+  fontWeight: fontWeights.bold,
 },
 
 addHealthSubtitle: {

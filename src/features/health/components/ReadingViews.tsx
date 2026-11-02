@@ -21,6 +21,7 @@ import { Row } from '../../../components/primitives/Row';
 import { StatusBadge } from '../../../components/feedback/StatusBadge';
 import { styles } from '../healthStyles';
 import { ReadingView } from '../healthTypes';
+import { sizes } from '../../../design/tokens/sizes';
 
 export function TrendChart({
   values,
@@ -298,7 +299,7 @@ export function ReadingCard({
           }
         >
           <FileText
-            size={16}
+            size={sizes.icon.sm}
             color={
               theme.colors.text.tertiary
             }

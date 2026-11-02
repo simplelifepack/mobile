@@ -17,6 +17,7 @@ import {
 } from './lockerState';
 import { useDigiLocker } from './useDigiLocker';
 import { radius } from '../../../design/tokens/radius';
+import { sizes } from '../../../design/tokens/sizes';
 
 export function DigiLockerCard({ onImported }: { onImported: () => void }) {
   const { theme } = useAppTheme();
@@ -42,7 +43,7 @@ export function DigiLockerCard({ onImported }: { onImported: () => void }) {
     <Card>
       <Stack gap="md">
         <Row align="center" gap="sm">
-          <FileCheck2 size={21} color={theme.colors.text.interactive} />
+          <FileCheck2 size={sizes.icon.md} color={theme.colors.text.interactive} />
           <Stack gap="xs" style={styles.grow}>
             <AppText variant="heading">DigiLocker</AppText>
             <AppText variant="caption" color="secondary">

@@ -5,7 +5,7 @@ import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { authApi } from '../../api/auth.api';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
 type CredentialKind = 'email' | 'password';
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.headingLg,
     lineHeight: lineHeight.headingLg,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   field: {
     gap: 8,
@@ -298,6 +298,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: fontSize.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 });

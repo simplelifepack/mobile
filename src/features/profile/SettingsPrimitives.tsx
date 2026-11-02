@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/primitives/AppText';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { ListGroup, ListRow } from '../../components/primitives/ListRow';
 
 export function SectionTitle({
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: fontSize.bodySm,
     lineHeight: lineHeight.bodySm,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     letterSpacing: 0,
     marginLeft: 4,
     marginBottom: 8,

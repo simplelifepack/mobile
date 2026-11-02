@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { AppText } from './AppText';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
 export type ActionSheetOption = {
@@ -143,6 +143,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: radius.control,
   },
-  optionText: { flex: 1, fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: '500' },
+  optionText: { flex: 1, fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: fontWeights.medium },
   pressed: { opacity: 0.7 },
 });

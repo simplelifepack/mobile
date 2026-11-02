@@ -12,6 +12,7 @@ import { Stack } from '../../../components/primitives/Stack';
 import { useAppTheme } from '../../../design/theme/ThemeProvider';
 import { api } from '../../../services/api';
 import { DigiLockerCard } from './DigiLockerCard';
+import { sizes } from '../../../design/tokens/sizes';
 
 export function DigiLockerScreen() {
   const { theme } = useAppTheme();
@@ -23,7 +24,7 @@ export function DigiLockerScreen() {
       <Stack gap="md" style={styles.container}>
         <Row align="center" gap="sm">
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => navigation.goBack()}>
-            <ArrowLeft size={22} color={theme.colors.text.primary} />
+            <ArrowLeft size={sizes.icon.md} color={theme.colors.text.primary} />
           </Pressable>
           <AppText variant="title">Import from DigiLocker</AppText>
         </Row>

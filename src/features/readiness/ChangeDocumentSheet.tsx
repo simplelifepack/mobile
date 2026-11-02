@@ -19,6 +19,8 @@ import {
   type DerivedRequirement,
 } from './calculatePackReadiness';
 import { radius } from '../../design/tokens/radius';
+import { sizes } from '../../design/tokens/sizes';
+import { fontWeights } from '../../design/tokens/typography';
 
 const documentName = (document: DocumentRecord) =>
   document.displayName ?? document.originalName;
@@ -114,9 +116,9 @@ export function ChangeDocumentSheet({
           ) : null}
         </View>
         {isCurrent ? (
-          <Check size={16} color={theme.colors.status.success.text} />
+          <Check size={sizes.icon.sm} color={theme.colors.status.success.text} />
         ) : (
-          <FileText size={16} color={theme.colors.text.secondary} />
+          <FileText size={sizes.icon.sm} color={theme.colors.text.secondary} />
         )}
         <View style={styles.optionCopy}>
           <AppText variant="body" numberOfLines={2}>
@@ -167,7 +169,7 @@ export function ChangeDocumentSheet({
               accessibilityLabel="Close"
               hitSlop={8}
             >
-              <X size={22} color={theme.colors.text.secondary} />
+              <X size={sizes.icon.md} color={theme.colors.text.secondary} />
             </Pressable>
           </View>
 
@@ -294,13 +296,13 @@ const styles = StyleSheet.create({
   },
   headCopy: { flex: 1, gap: 2 },
   body: { paddingHorizontal: 20, gap: 12 },
-  bold: { fontWeight: '700' },
+  bold: { fontWeight: fontWeights.bold },
   list: { flexGrow: 0 },
-  listContent: { paddingHorizontal: 20, gap: 10, paddingBottom: 12 },
+  listContent: { paddingHorizontal: 20, gap: 8, paddingBottom: 12 },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     minHeight: 52,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -317,5 +319,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   radioDot: { width: 10, height: 10, borderRadius: radius.control },
-  actions: { paddingHorizontal: 20, paddingTop: 8, gap: 10 },
+  actions: { paddingHorizontal: 20, paddingTop: 8, gap: 8 },
 });

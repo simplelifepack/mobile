@@ -19,6 +19,7 @@ import { Button } from '../../components/primitives/Button';
 import { useAppDispatch } from '../store/hooks';
 import { restoreSession } from '../../features/auth/authSlice';
 import { useBootstrapQuery } from '../../services/api';
+import { fontWeights } from '../../design/tokens/typography';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['readiness://'],
@@ -48,10 +49,10 @@ export function RootNavigator() {
       notification: theme.colors.status.danger.text,
     },
     fonts: {
-      regular: { fontFamily: 'System', fontWeight: '400' },
-      medium: { fontFamily: 'System', fontWeight: '500' },
-      bold: { fontFamily: 'System', fontWeight: '700' },
-      heavy: { fontFamily: 'System', fontWeight: '700' },
+      regular: { fontFamily: 'System', fontWeight: fontWeights.regular },
+      medium: { fontFamily: 'System', fontWeight: fontWeights.medium },
+      bold: { fontFamily: 'System', fontWeight: fontWeights.bold },
+      heavy: { fontFamily: 'System', fontWeight: fontWeights.bold },
     },
   };
   return (

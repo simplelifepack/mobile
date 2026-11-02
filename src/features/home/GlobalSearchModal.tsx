@@ -19,6 +19,7 @@ import {
 } from '../../api/search.api';
 import { fontSize } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
+import { sizes } from '../../design/tokens/sizes';
 
 export function GlobalSearchModal({
   visible,
@@ -91,7 +92,7 @@ export function GlobalSearchModal({
             },
           ]}
         >
-          <Search size={20} color={theme.colors.text.secondary} />
+          <Search size={sizes.icon.md} color={theme.colors.text.secondary} />
           <TextInput
             autoFocus
             value={query}
@@ -109,7 +110,7 @@ export function GlobalSearchModal({
             hitSlop={8}
             onPress={close}
           >
-            <X size={20} color={theme.colors.text.secondary} />
+            <X size={sizes.icon.md} color={theme.colors.text.secondary} />
           </Pressable>
         </View>
 
@@ -159,7 +160,7 @@ export function GlobalSearchModal({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, paddingTop: 56, paddingHorizontal: 16 },
+  root: { flex: 1, paddingTop: 48, paddingHorizontal: 16 },
   bar: {
     minHeight: 50,
     borderWidth: 1,
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   input: { flex: 1, fontSize: fontSize.body, minHeight: 48 },
   list: { paddingVertical: 16, gap: 16 },

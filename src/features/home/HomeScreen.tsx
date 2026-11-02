@@ -38,7 +38,7 @@ import { AppText } from '../../components/primitives/AppText';
 import { BrandLogo } from '../../components/BrandLogo';
 import { radius } from '../../design/tokens/radius';
 import { sizes } from '../../design/tokens/sizes';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
@@ -220,7 +220,7 @@ export function HomeScreen() {
       <Stack gap="md" style={styles.container}>
         <Row align="center" justify="space-between" style={styles.appBar}>
           <Row align="center" gap="sm">
-            <BrandLogo size={26} />
+            <BrandLogo size={sizes.icon.lg} />
             <AppText variant="heading">ReadiNes</AppText>
           </Row>
           <Row gap="sm">
@@ -230,7 +230,7 @@ export function HomeScreen() {
               accessibilityLabel="Search"
               style={[styles.headerButton, { borderColor: theme.colors.border.default, backgroundColor: theme.colors.surface.default }]}
             >
-              <Search size={22} color={theme.colors.text.secondary} strokeWidth={2} />
+              <Search size={sizes.icon.md} color={theme.colors.text.secondary} strokeWidth={2} />
             </Pressable>
             <ProfileAvatarButton />
           </Row>
@@ -366,15 +366,15 @@ const styles = StyleSheet.create({
   needsBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     minHeight: 56,
     paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderRadius: radius.surface,
   },
   needsIcon: { width: 32, height: 32, borderRadius: radius.control, alignItems: 'center', justifyContent: 'center' },
   needsCopy: { flex: 1, gap: 2 },
-  needsTitle: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: '600' },
+  needsTitle: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: fontWeights.semibold },
   needsSubtitle: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
 });

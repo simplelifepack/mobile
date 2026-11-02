@@ -46,7 +46,7 @@ import { AccountDataSection } from './AccountDataSection';
 import { DeleteAccountModal } from './ProfileDialogs';
 import { PreferencesSection } from './PreferencesSection';
 import { accountApi } from '../../api/account.api';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
 export function ProfileScreen() {
@@ -197,7 +197,7 @@ export function ProfileScreen() {
             style={styles.backButton}
           >
             <ArrowLeft
-              size={22}
+              size={sizes.icon.md}
               strokeWidth={2}
               color={theme.colors.text.primary}
             />
@@ -249,7 +249,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon={
               <Mail
-                size={25}
+                size={sizes.icon.lg}
                 color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
@@ -269,7 +269,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon={
               <LockKeyhole
-                size={25}
+                size={sizes.icon.lg}
                 color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
@@ -286,7 +286,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon={
               <LockKeyhole
-                size={25}
+                size={sizes.icon.lg}
                 color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
@@ -315,7 +315,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon={
               <Sparkles
-                size={25}
+                size={sizes.icon.lg}
                 color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
@@ -332,7 +332,7 @@ export function ProfileScreen() {
                 </AppText>
 
                 <ChevronRight
-                  size={21}
+                  size={sizes.icon.md}
                   color={theme.colors.text.secondary}
                   strokeWidth={2}
                 />
@@ -346,7 +346,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon={
               <CircleHelp
-                size={25}
+                size={sizes.icon.lg}
                 color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
@@ -361,7 +361,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon={
               <MessageSquare
-                size={25}
+                size={sizes.icon.lg}
                 color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
@@ -376,7 +376,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon={
               <ShieldCheck
-                size={25}
+                size={sizes.icon.lg}
                 color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
@@ -391,7 +391,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon={
               <Info
-                size={25}
+                size={sizes.icon.lg}
                 color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
@@ -429,7 +429,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon={
               <LogOut
-                size={25}
+                size={sizes.icon.lg}
                 color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
@@ -445,7 +445,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon={
               <LogOut
-                size={25}
+                size={sizes.icon.lg}
                 color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
@@ -461,7 +461,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon={
               <Trash2
-                size={25}
+                size={sizes.icon.lg}
                 color={theme.colors.status.danger.text}
                 strokeWidth={1.8}
               />
@@ -550,13 +550,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: fontSize.headingLg,
     lineHeight: lineHeight.headingLg,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   sectionTitle: {
     fontSize: fontSize.bodySm,
     lineHeight: lineHeight.bodySm,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     letterSpacing: 0,
     marginLeft: 4,
     marginBottom: 8,
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: fontSize.headingXl,
     lineHeight: lineHeight.headingXl,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   profileContent: {
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: fontSize.headingSm,
     lineHeight: lineHeight.headingSm,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   profileDivider: {
@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   rowSubtitle: {

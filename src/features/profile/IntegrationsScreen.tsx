@@ -18,6 +18,7 @@ import { Stack } from '../../components/primitives/Stack';
 import { DigiLockerCard } from '../integrations/digilocker/DigiLockerCard';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { radius } from '../../design/tokens/radius';
+import { sizes } from '../../design/tokens/sizes';
 
 type DuplicateAction = 'ignore' | 'keep_both' | 'replace';
 
@@ -116,7 +117,7 @@ export function IntegrationsScreen() {
       <Stack gap="md" style={styles.container}>
         <Row align="center" gap="sm">
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => navigation.goBack()}>
-            <ArrowLeft size={22} color={theme.colors.text.primary} />
+            <ArrowLeft size={sizes.icon.md} color={theme.colors.text.primary} />
           </Pressable>
           <AppText variant="title">Connections</AppText>
         </Row>
@@ -126,7 +127,7 @@ export function IntegrationsScreen() {
         <Card>
           <Stack gap="md">
             <Row align="center" gap="sm">
-              <Mail size={21} color={theme.colors.text.interactive} />
+              <Mail size={sizes.icon.md} color={theme.colors.text.interactive} />
               <Stack gap="xs" style={styles.grow}>
                 <AppText variant="heading">Gmail</AppText>
                 <AppText variant="caption" color="secondary">
@@ -176,7 +177,7 @@ export function IntegrationsScreen() {
         <Card>
           <Stack gap="md">
             <Row align="center" gap="sm">
-              <Cloud size={21} color={theme.colors.text.interactive} />
+              <Cloud size={sizes.icon.md} color={theme.colors.text.interactive} />
               <Stack gap="xs" style={styles.grow}>
                 <AppText variant="heading">Google Drive</AppText>
                 <AppText variant="caption" color="secondary">

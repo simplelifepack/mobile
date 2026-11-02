@@ -49,7 +49,7 @@ import {
   type WealthRecord,
 } from '../../api/wealth.api';
 import { readinessTone } from '../readiness/readinessTone';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 import { formatDate } from '../../utils/format';
 import { humanizeLabel } from '../../utils/format';
@@ -168,7 +168,7 @@ function Header({
           ]}
         >
           <Search
-            size={22}
+            size={sizes.icon.md}
             color={theme.colors.text.secondary}
             strokeWidth={2}
           />
@@ -220,7 +220,7 @@ function ReadinessCard({
           style={styles.readinessTitleRow}
         >
           <KeyRound
-            size={22}
+            size={sizes.icon.md}
             color={theme.colors.text.secondary}
             strokeWidth={2}
           />
@@ -298,7 +298,7 @@ function ReadinessCard({
         style={styles.debtSummary}
       >
         <CircleDollarSign
-          size={20}
+          size={sizes.icon.md}
           color={theme.colors.text.secondary}
           strokeWidth={2}
         />
@@ -324,7 +324,7 @@ function ReadinessCard({
         </AppText>
 
         <ChevronRight
-          size={18}
+          size={sizes.icon.md}
           color={theme.colors.text.secondary}
           strokeWidth={2}
         />
@@ -483,7 +483,7 @@ function LendingSection({
           style={styles.lendingTitleRow}
         >
           <HandCoins
-            size={21}
+            size={sizes.icon.md}
             color={theme.colors.text.secondary}
             strokeWidth={2}
           />
@@ -515,7 +515,7 @@ function LendingSection({
           ]}
         >
           <Plus
-            size={19}
+            size={sizes.icon.md}
             color={theme.colors.text.primary}
             strokeWidth={2}
           />
@@ -934,7 +934,7 @@ export function WealthScreen({
             ]}
           >
             <Search
-              size={19}
+              size={sizes.icon.md}
               color={theme.colors.text.secondary}
               strokeWidth={2}
             />
@@ -991,7 +991,7 @@ export function WealthScreen({
           ]}
         >
           <Siren
-            size={24}
+            size={sizes.icon.lg}
             color={theme.colors.text.onBrand}
             strokeWidth={2}
           />
@@ -1193,7 +1193,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
 
           <Row align="center" justify="space-between">
             <Row align="center" gap="sm">
-              <Siren size={22} color={theme.colors.status.danger.text} strokeWidth={2} />
+              <Siren size={sizes.icon.md} color={theme.colors.status.danger.text} strokeWidth={2} />
               <AppText variant="heading">SOS handoff</AppText>
             </Row>
             <Pressable
@@ -1202,7 +1202,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
               onPress={onClose}
               style={styles.sosCloseButton}
             >
-              <X size={20} color={theme.colors.text.secondary} />
+              <X size={sizes.icon.md} color={theme.colors.text.secondary} />
             </Pressable>
           </Row>
 
@@ -1318,7 +1318,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
                             ]}
                           >
                             {isSelected ? (
-                              <Check size={14} color={theme.colors.text.onBrand} />
+                              <Check size={sizes.icon.sm} color={theme.colors.text.onBrand} />
                             ) : null}
                           </View>
                         </Pressable>
@@ -1375,7 +1375,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
                     ]}
                   >
                     {ack ? (
-                      <Check size={14} color={theme.colors.text.onBrand} />
+                      <Check size={sizes.icon.sm} color={theme.colors.text.onBrand} />
                     ) : null}
                   </View>
                   <View style={styles.sosRecipientDetails}>
@@ -1415,8 +1415,8 @@ const styles = StyleSheet.create({
 
   sosPanel: {
     maxHeight: '92%',
-    paddingHorizontal: 18,
-    paddingTop: 10,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 24,
     borderTopLeftRadius: radius.overlay,
     borderTopRightRadius: radius.overlay,
@@ -1447,13 +1447,13 @@ const styles = StyleSheet.create({
 
   sosInfoCard: {
     gap: 4,
-    padding: 14,
+    padding: 12,
     borderWidth: 1,
     borderRadius: radius.surface,
   },
 
   sosGroup: {
-    gap: 10,
+    gap: 8,
   },
 
   sosRecipient: {
@@ -1462,7 +1462,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: radius.surface,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     gap: 12,
   },
@@ -1497,7 +1497,7 @@ const styles = StyleSheet.create({
   },
 
   sosActions: {
-    gap: 10,
+    gap: 8,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
@@ -1583,7 +1583,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   headerButton: {
@@ -1681,7 +1681,7 @@ const styles = StyleSheet.create({
   readinessPercentage: {
     fontSize: fontSize.headingXl,
     lineHeight: lineHeight.headingXl,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   progressTrack: {
@@ -1720,7 +1720,7 @@ const styles = StyleSheet.create({
   },
 
   moneyText: {
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
     fontSize: fontSize.caption,
   },
 
@@ -1899,7 +1899,7 @@ const styles = StyleSheet.create({
   sosText: {
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   groupCard: {

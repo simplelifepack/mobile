@@ -25,8 +25,9 @@ import {
   pickAndSaveDocument,
   type SavedWealthDocument,
 } from './wealthDocumentImport';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
+import { sizes } from '../../design/tokens/sizes';
 
 const currencies = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD'];
 const isoDate = /^\d{4}-\d{2}-\d{2}$/;
@@ -166,7 +167,7 @@ export function LentBorrowedForm({
   const select = (text: string, onPress: () => void) => (
     <Pressable accessibilityRole="button" onPress={onPress} style={[styles.select, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
       <AppText variant="body" style={styles.selectText} numberOfLines={1}>{text}</AppText>
-      <ChevronDown size={18} color={theme.colors.text.primary} />
+      <ChevronDown size={sizes.icon.md} color={theme.colors.text.primary} />
     </Pressable>
   );
   const field = (label: string, child: React.ReactNode, flex = false) => (
@@ -204,7 +205,7 @@ export function LentBorrowedForm({
           <Row align="center" justify="space-between">
             <AppText variant="title" style={styles.title}>Record money lent or borrowed</AppText>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={[styles.close, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
-              <X size={22} color={theme.colors.text.primary} strokeWidth={2} />
+              <X size={sizes.icon.md} color={theme.colors.text.primary} strokeWidth={2} />
             </Pressable>
           </Row>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.formContent}>
@@ -217,7 +218,7 @@ export function LentBorrowedForm({
               onPress={() => setPicker('proof')}
               style={[styles.proof, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}
             >
-              <Paperclip size={20} color={theme.colors.text.interactive} />
+              <Paperclip size={sizes.icon.md} color={theme.colors.text.interactive} />
               <View style={styles.flex}>
                 <AppText variant="label">Photo · screenshot · receipt · PDF</AppText>
                 <AppText variant="caption" color="secondary">
@@ -239,7 +240,7 @@ export function LentBorrowedForm({
               {field('Date', dateInput(date, setDate), true)}
             </Row>
             <Pressable accessibilityRole="button" onPress={() => setMore(value => !value)} style={styles.moreToggle}>
-              {more ? <ChevronUp size={14} color={theme.colors.text.interactive} /> : <ChevronDown size={14} color={theme.colors.text.interactive} />}
+              {more ? <ChevronUp size={sizes.icon.sm} color={theme.colors.text.interactive} /> : <ChevronDown size={sizes.icon.sm} color={theme.colors.text.interactive} />}
               <AppText variant="label" style={{ color: theme.colors.text.interactive }}>{more ? 'Fewer details' : 'More details'}</AppText>
             </Pressable>
             {more ? (
@@ -281,15 +282,15 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     gap: 12,
   },
-  title: { flex: 1, fontSize: fontSize.headingSm, lineHeight: lineHeight.headingSm, fontWeight: '700' },
+  title: { flex: 1, fontSize: fontSize.headingSm, lineHeight: lineHeight.headingSm, fontWeight: fontWeights.bold },
   close: { width: 40, height: 40, borderRadius: radius.surface, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  formContent: { gap: 14, paddingBottom: 8 },
+  formContent: { gap: 12, paddingBottom: 8 },
   proof: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderWidth: 1, borderRadius: radius.surface },
   field: { gap: 6, minWidth: 0 },
   flex: { flex: 1 },
-  label: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: '600' },
-  input: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 14, fontSize: fontSize.body },
-  select: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  label: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: fontWeights.semibold },
+  input: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 12, fontSize: fontSize.body },
+  select: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
   selectText: { flex: 1, fontSize: fontSize.body },
   moreToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
   submit: { minHeight: 52, borderRadius: radius.surface, alignItems: 'center', justifyContent: 'center', marginTop: 4 },

@@ -6,7 +6,7 @@ import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { authApi } from '../../api/auth.api';
 import { cleanPin } from '../auth/auth.validators';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
 type Mode = 'change' | 'reset';
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.overlay,
     borderTopRightRadius: radius.overlay,
   },
-  title: { fontSize: fontSize.headingLg, lineHeight: lineHeight.headingLg, fontWeight: '700' },
+  title: { fontSize: fontSize.headingLg, lineHeight: lineHeight.headingLg, fontWeight: fontWeights.bold },
   field: { gap: 8 },
   fieldLabel: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm },
   input: {
@@ -229,5 +229,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 12,
   },
-  buttonText: { fontSize: fontSize.body, fontWeight: '700' },
+  buttonText: { fontSize: fontSize.body, fontWeight: fontWeights.bold },
 });

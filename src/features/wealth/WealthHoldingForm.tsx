@@ -19,8 +19,9 @@ import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { pickAndSaveDocument, type SavedWealthDocument } from './wealthDocumentImport';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
+import { sizes } from '../../design/tokens/sizes';
 
 type Kind = 'asset' | 'liability' | 'cover';
 
@@ -249,7 +250,7 @@ export function WealthHoldingForm({
   const select = (text: string, onPress: () => void) => (
     <Pressable accessibilityRole="button" onPress={onPress} style={[styles.select, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
       <AppText variant="body" style={styles.selectText} numberOfLines={1}>{text}</AppText>
-      <ChevronDown size={18} color={theme.colors.text.primary} />
+      <ChevronDown size={sizes.icon.md} color={theme.colors.text.primary} />
     </Pressable>
   );
   const field = (label: string, child: React.ReactNode, flex = false) => (
@@ -311,12 +312,12 @@ export function WealthHoldingForm({
           <Row align="center" justify="space-between">
             <AppText variant="title" style={styles.title}>Add holding</AppText>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={[styles.close, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
-              <X size={22} color={theme.colors.text.primary} strokeWidth={2} />
+              <X size={sizes.icon.md} color={theme.colors.text.primary} strokeWidth={2} />
             </Pressable>
           </Row>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
             <View style={[styles.banner, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
-              <FileText size={18} color={theme.colors.text.secondary} />
+              <FileText size={sizes.icon.md} color={theme.colors.text.secondary} />
               <AppText variant="caption" color="secondary" style={styles.flex}>
                 {attached
                   ? note ?? `${attached.title} is linked.`
@@ -362,7 +363,7 @@ export function WealthHoldingForm({
               <View style={styles.field}>
                 <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: f.nominee }} onPress={() => set('nominee', !f.nominee)} style={styles.nomineeRow}>
                   <View style={[styles.checkbox, { borderColor: f.nominee ? theme.colors.action.primary.default : theme.colors.text.tertiary, backgroundColor: f.nominee ? theme.colors.action.primary.default : 'transparent' }]}>
-                    {f.nominee ? <Check size={16} color={theme.colors.text.onBrand} /> : null}
+                    {f.nominee ? <Check size={sizes.icon.sm} color={theme.colors.text.onBrand} /> : null}
                   </View>
                   <AppText variant="body">Nominee named</AppText>
                 </Pressable>
@@ -400,16 +401,16 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     gap: 12,
   },
-  title: { fontSize: fontSize.headingMd, lineHeight: lineHeight.headingMd, fontWeight: '700' },
+  title: { fontSize: fontSize.headingMd, lineHeight: lineHeight.headingMd, fontWeight: fontWeights.bold },
   close: { width: 40, height: 40, borderRadius: radius.surface, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { gap: 14, paddingBottom: 8 },
-  banner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderRadius: radius.surface },
+  content: { gap: 12, paddingBottom: 8 },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, borderRadius: radius.surface },
   field: { gap: 6, minWidth: 0 },
   flex: { flex: 1 },
-  label: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: '600' },
-  input: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 14, fontSize: fontSize.body },
+  label: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: fontWeights.semibold },
+  input: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 12, fontSize: fontSize.body },
   textarea: { minHeight: 90, paddingTop: 12, textAlignVertical: 'top' },
-  select: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  select: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
   selectText: { flex: 1, fontSize: fontSize.body },
   nomineeRow: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 12 },
   checkbox: { width: 24, height: 24, borderWidth: 1, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },

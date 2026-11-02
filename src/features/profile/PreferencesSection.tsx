@@ -7,8 +7,9 @@ import { AppText } from '../../components/primitives/AppText';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { CurrencyPickerModal } from './ProfileDialogs';
 import { SectionTitle, SettingsCard } from './SettingsPrimitives';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
+import { sizes } from '../../design/tokens/sizes';
 
 const currencies = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD'];
 
@@ -73,7 +74,7 @@ export function PreferencesSection() {
           style={[styles.row, !preferences && styles.disabledRow]}
         >
           <View style={styles.icon}>
-            <Coins size={22} color={theme.colors.text.interactive} strokeWidth={1.8} />
+            <Coins size={sizes.icon.md} color={theme.colors.text.interactive} strokeWidth={1.8} />
           </View>
           <View style={styles.content}>
             <AppText style={styles.rowTitle}>Home currency</AppText>
@@ -85,13 +86,13 @@ export function PreferencesSection() {
             <AppText style={styles.currencyText}>
               {preferences?.homeCurrency ?? '…'}
             </AppText>
-            <ChevronDown size={18} color={theme.colors.text.primary} />
+            <ChevronDown size={sizes.icon.md} color={theme.colors.text.primary} />
           </View>
         </Pressable>
 
         <View style={styles.row}>
           <View style={styles.icon}>
-            <Moon size={22} color={theme.colors.text.interactive} strokeWidth={1.8} />
+            <Moon size={sizes.icon.md} color={theme.colors.text.interactive} strokeWidth={1.8} />
           </View>
           <View style={styles.content}>
             <AppText style={styles.rowTitle}>Appearance</AppText>
@@ -137,7 +138,7 @@ export function PreferencesSection() {
 
         <View style={styles.row}>
           <View style={styles.icon}>
-            <Bell size={22} color={theme.colors.text.secondary} strokeWidth={1.8} />
+            <Bell size={sizes.icon.md} color={theme.colors.text.secondary} strokeWidth={1.8} />
           </View>
           <View style={styles.content}>
             <AppText style={styles.rowTitle}>Notifications</AppText>
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   rowSubtitle: {
     fontSize: fontSize.caption,
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
   },
   currencyText: {
     fontSize: fontSize.bodySm,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   appearanceControl: {
     height: 36,
@@ -237,7 +238,7 @@ const styles = StyleSheet.create({
   appearanceText: {
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   divider: {
     height: 1,

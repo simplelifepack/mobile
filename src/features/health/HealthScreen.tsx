@@ -656,7 +656,7 @@ floatingAction={
                         ]}
                       >
                         <CalendarClock
-                          size={20}
+                          size={sizes.icon.md}
                           color={theme.colors.text.secondary}
                         />
                       </View>
@@ -747,15 +747,15 @@ floatingAction={
                           ]}
                         >
                           {event.medication ? (
-                            <Pill size={22} color={theme.colors.text.interactive} />
+                            <Pill size={sizes.icon.md} color={theme.colors.text.interactive} />
                           ) : event.title.toLowerCase().includes('report') ? (
                             <FlaskConical
-                              size={22}
+                              size={sizes.icon.md}
                               color={theme.colors.text.interactive}
                             />
                           ) : (
                             <Activity
-                              size={22}
+                              size={sizes.icon.md}
                               color={theme.colors.status.info.icon}
                             />
                           )}
@@ -810,7 +810,7 @@ floatingAction={
             >
               <View style={styles.healthSectionHeader}>
                 <View style={styles.healthSectionTitleRow}>
-                  <Pill size={22} color={theme.colors.text.secondary} />
+                  <Pill size={sizes.icon.md} color={theme.colors.text.secondary} />
                   <AppText variant="label">Current medications</AppText>
                 </View>
 
@@ -825,7 +825,7 @@ floatingAction={
                     },
                   ]}
                 >
-                  <Plus size={18} color={theme.colors.text.interactive} />
+                  <Plus size={sizes.icon.md} color={theme.colors.text.interactive} />
                   <AppText variant="label" color="primary">
                     Add
                   </AppText>
@@ -901,7 +901,7 @@ floatingAction={
                   },
                 ]}
               >
-                <Upload size={22} color={theme.colors.text.interactive} />
+                <Upload size={sizes.icon.md} color={theme.colors.text.interactive} />
                 <AppText variant="label">Upload medical record</AppText>
               </Pressable>
 
@@ -931,10 +931,10 @@ floatingAction={
                         ]}
                       >
                         {record.type.toLowerCase().includes('prescription') ? (
-                          <Pill size={22} color={theme.colors.text.interactive} />
+                          <Pill size={sizes.icon.md} color={theme.colors.text.interactive} />
                         ) : (
                           <FlaskConical
-                            size={22}
+                            size={sizes.icon.md}
                             color={theme.colors.text.interactive}
                           />
                         )}

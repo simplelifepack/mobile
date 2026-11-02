@@ -8,8 +8,9 @@ import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { SectionTitle, SettingsCard, SettingsRow } from './SettingsPrimitives';
-import { fontSize } from '../../design/tokens/typography';
+import { fontSize, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
+import { sizes } from '../../design/tokens/sizes';
 
 export function AccountDataSection() {
   const { theme } = useAppTheme();
@@ -150,7 +151,7 @@ export function AccountDataSection() {
       <SectionTitle title="ACCOUNT DATA" />
       <SettingsCard>
         <SettingsRow
-          icon={<Download size={22} color={theme.colors.text.interactive} />}
+          icon={<Download size={sizes.icon.md} color={theme.colors.text.interactive} />}
           title={exporting ? 'Preparing export…' : 'Export all data'}
           subtitle="Prepare a ZIP containing your account data and uploaded files."
           onPress={() => Alert.alert(
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
   },
   usageTitle: {
     fontSize: fontSize.bodySm,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   usageTrack: {
     height: 7,

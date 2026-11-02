@@ -17,6 +17,8 @@ import { CalendarDays, X } from 'lucide-react-native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { AppText } from './AppText';
 import { radius } from '../../design/tokens/radius';
+import { sizes } from '../../design/tokens/sizes';
+import { fontWeights } from '../../design/tokens/typography';
 
 export type DateFormat = 'iso' | 'us';
 
@@ -123,10 +125,10 @@ export function DatePickerInput({
             hitSlop={10}
             onPress={() => onChangeText('')}
           >
-            <X size={16} color={theme.colors.text.secondary} />
+            <X size={sizes.icon.sm} color={theme.colors.text.secondary} />
           </Pressable>
         ) : (
-          <CalendarDays size={18} color={theme.colors.text.secondary} />
+          <CalendarDays size={sizes.icon.md} color={theme.colors.text.secondary} />
         )}
       </Pressable>
 
@@ -146,7 +148,7 @@ export function DatePickerInput({
                   }}
                   hitSlop={10}
                 >
-                  <AppText style={{ color: theme.colors.text.interactive, fontWeight: '700' }}>Done</AppText>
+                  <AppText style={{ color: theme.colors.text.interactive, fontWeight: fontWeights.bold }}>Done</AppText>
                 </Pressable>
               </View>
               <DateTimePicker
@@ -170,6 +172,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   text: { flex: 1 },
   backdrop: { flex: 1, justifyContent: 'flex-end', },
-  sheet: { borderTopLeftRadius: radius.overlay, borderTopRightRadius: radius.overlay, padding: 16, paddingBottom: 28 },
+  sheet: { borderTopLeftRadius: radius.overlay, borderTopRightRadius: radius.overlay, padding: 16, paddingBottom: 24 },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
 });

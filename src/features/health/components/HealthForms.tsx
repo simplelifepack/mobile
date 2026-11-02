@@ -25,6 +25,7 @@ import { DatePickerInput } from '../../../components/primitives/DatePickerInput'
 import { Row } from '../../../components/primitives/Row';
 import { Stack } from '../../../components/primitives/Stack';
 import { styles } from '../healthStyles';
+import { sizes } from '../../../design/tokens/sizes';
 
 export const COMMON_TESTS = [
   { label: 'HbA1c', unit: '%' },
@@ -285,7 +286,7 @@ export function FormSheet({
           <Row align="center" justify="space-between">
             <AppText variant="heading">{title}</AppText>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.formClose}>
-              <X size={20} color={theme.colors.text.secondary} />
+              <X size={sizes.icon.md} color={theme.colors.text.secondary} />
             </Pressable>
           </Row>
           <ScrollView

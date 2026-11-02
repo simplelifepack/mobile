@@ -32,7 +32,7 @@ export function FloatingActionButton({
         },
       ]}
     >
-      <Plus size={24} color={theme.colors.text.onBrand} strokeWidth={2.5} />
+      <Plus size={sizes.icon.lg} color={theme.colors.text.onBrand} strokeWidth={2.5} />
     </Pressable>
   );
 }

@@ -30,7 +30,7 @@ import type {
   PackageSummary,
   VerificationSource,
 } from '../../api/types';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
 /* ============================================================================
@@ -699,7 +699,7 @@ export function CustomPackBottomSheet({
                   },
                 ]}
               >
-                <X size={18} color={theme.colors.text.primary} strokeWidth={2} />
+                <X size={sizes.icon.md} color={theme.colors.text.primary} strokeWidth={2} />
               </Pressable>
             </View>
 
@@ -823,7 +823,7 @@ function LookupStep({
             <ActivityIndicator size="small" color={theme.colors.text.onBrand} />
           ) : (
             <Search
-              size={16}
+              size={sizes.icon.sm}
               color={theme.colors.text.onBrand}
               strokeWidth={2.2}
             />
@@ -864,7 +864,7 @@ function LookupStep({
           ]}
         >
           <Pencil
-            size={16}
+            size={sizes.icon.sm}
             color={theme.colors.text.primary}
             strokeWidth={2.2}
           />
@@ -1094,7 +1094,7 @@ function ResultStep({
                 ]}
               />
               {hasDocument ? (
-                <Check size={20} color={theme.colors.status.success.text} strokeWidth={3} />
+                <Check size={sizes.icon.md} color={theme.colors.status.success.text} strokeWidth={3} />
               ) : null}
               <Pressable
                 onPress={() => removeRequirement(index)}
@@ -1107,7 +1107,7 @@ function ResultStep({
                 ]}
               >
                 <Trash2
-                  size={17}
+                  size={sizes.icon.sm}
                   color={theme.colors.text.primary}
                   strokeWidth={2}
                 />
@@ -1127,7 +1127,7 @@ function ResultStep({
           },
         ]}
       >
-        <Plus size={17} color={theme.colors.text.primary} strokeWidth={2} />
+        <Plus size={sizes.icon.sm} color={theme.colors.text.primary} strokeWidth={2} />
         <AppText variant="label" style={styles.addRequirementText}>
           Add requirement
         </AppText>
@@ -1168,7 +1168,7 @@ function ResultStep({
                   ]}
                 >
                   <Plus
-                    size={13}
+                    size={sizes.icon.sm}
                     color={theme.colors.text.interactive}
                     strokeWidth={2.4}
                   />
@@ -1390,7 +1390,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
 
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   closeButton: {
@@ -1434,7 +1434,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
 
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
 
     letterSpacing: 0.6,
   },
@@ -1561,7 +1561,7 @@ const styles = StyleSheet.create({
   generationState: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     paddingVertical: 8,
   },
   generationText: { flex: 1 },
@@ -1599,7 +1599,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
 
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
 
   /* ------------------------------------------------------------
@@ -1626,7 +1626,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.bodySm,
     lineHeight: lineHeight.bodySm,
 
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
 
   requirementMatched: {
@@ -1687,7 +1687,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
 
-    fontWeight: '500',
+    fontWeight: fontWeights.medium,
   },
 
   /* ------------------------------------------------------------
@@ -1720,7 +1720,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
 
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   estimateMeta: {
@@ -1767,7 +1767,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.bodySm,
     lineHeight: lineHeight.bodySm,
 
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 });
 ('=');

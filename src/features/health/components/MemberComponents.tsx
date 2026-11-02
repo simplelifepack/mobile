@@ -22,6 +22,7 @@ import type { ThemeColors } from '../../../design/tokens/colors';
 import { Stack } from '../../../components/primitives/Stack';
 import { styles } from '../healthStyles';
 import { humanizeLabel } from '../../../utils/format';
+import { sizes } from '../../../design/tokens/sizes';
 
 export function memberColor(
   tone: string,
@@ -82,7 +83,7 @@ export function Header({
           ]}
         >
           <Search
-            size={20}
+            size={sizes.icon.md}
             color={
               theme.colors.text.secondary
             }

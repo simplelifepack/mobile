@@ -4,7 +4,7 @@ import { Modal, Pressable, StyleSheet, TextInput, View, KeyboardAvoidingView } f
 import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
 type CurrencyPickerModalProps = {
@@ -184,11 +184,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.headingLg,
     lineHeight: lineHeight.headingLg,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
   close: {
     fontSize: fontSize.body,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   description: {
     fontSize: fontSize.body,
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   },
   currencyText: {
     fontSize: fontSize.headingSm,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
   selectedDot: {
     width: 10,
@@ -243,6 +243,6 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: fontSize.body,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 });

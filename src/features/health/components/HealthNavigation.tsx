@@ -17,6 +17,7 @@ import { useAppTheme } from '../../../design/theme/ThemeProvider';
 import { AppText } from '../../../components/primitives/AppText';
 import { styles } from '../healthStyles';
 import { tabs } from '../healthTypes';
+import { sizes } from '../../../design/tokens/sizes';
 
 export function PrepareVisit({ onPress }: { onPress: () => void }) {
   const { theme } = useAppTheme();
@@ -33,7 +34,7 @@ export function PrepareVisit({ onPress }: { onPress: () => void }) {
       ]}
     >
       <CalendarDays
-        size={22}
+        size={sizes.icon.md}
         color={
           theme.colors.text.onBrand
         }
@@ -82,7 +83,7 @@ export function QuickActions({
         ]}
       >
         <Shield
-          size={22}
+          size={sizes.icon.md}
           color={theme.colors.text.primary}
           strokeWidth={2}
         />

@@ -69,7 +69,7 @@ import { EmptyState } from '../../components/feedback/EmptyState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 import { formatDate } from '../../utils/format';
 
@@ -515,7 +515,7 @@ export function DocumentsScreen() {
               ]}
             >
               <Search
-                size={23}
+                size={sizes.icon.lg}
                 color={theme.colors.text.secondary}
                 strokeWidth={2}
               />
@@ -537,7 +537,7 @@ export function DocumentsScreen() {
           ]}
         >
           <Search
-            size={23}
+            size={sizes.icon.lg}
             color={theme.colors.text.secondary}
             strokeWidth={2}
           />
@@ -577,7 +577,7 @@ export function DocumentsScreen() {
             >
               {selectionMode ? (
                 <Check
-                  size={19}
+                  size={sizes.icon.md}
                   color={theme.colors.text.interactive}
                   strokeWidth={2.5}
                 />
@@ -606,7 +606,7 @@ export function DocumentsScreen() {
               ]}
             >
               <SlidersHorizontal
-                size={20}
+                size={sizes.icon.md}
                 color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
@@ -641,7 +641,7 @@ export function DocumentsScreen() {
                 )}
                 style={styles.toolbarButton}
               >
-                <Trash2 size={19} color={theme.colors.status.danger.text} />
+                <Trash2 size={sizes.icon.md} color={theme.colors.status.danger.text} />
                 <AppText variant="label" color="danger">
                   Delete ({selectedIds.length})
                 </AppText>
@@ -798,7 +798,7 @@ export function DocumentsScreen() {
                       style={styles.previewPageButton}
                     >
                       <ChevronLeft
-                        size={22}
+                        size={sizes.icon.md}
                         color={
                           previewPageIndex === 0
                             ? theme.colors.text.tertiary
@@ -820,7 +820,7 @@ export function DocumentsScreen() {
                     onPress={closePreview}
                     style={styles.previewClose}
                   >
-                    <X size={22} color={theme.colors.text.primary} />
+                    <X size={sizes.icon.md} color={theme.colors.text.primary} />
                   </Pressable>
                 </View>
 
@@ -868,7 +868,7 @@ export function DocumentsScreen() {
                       style={styles.previewPageButton}
                     >
                       <ChevronRight
-                        size={22}
+                        size={sizes.icon.md}
                         color={
                           previewPageIndex >= previewPages.length - 1
                             ? theme.colors.text.tertiary
@@ -938,7 +938,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: fontSize.headingLg,
     lineHeight: lineHeight.headingLg,
-    fontWeight: '700',
+    fontWeight: fontWeights.bold,
   },
 
   headerButton: {
