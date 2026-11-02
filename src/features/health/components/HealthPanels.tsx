@@ -22,7 +22,8 @@ import { useAppTheme } from '../../../design/theme/ThemeProvider';
 import { AppText } from '../../../components/primitives/AppText';
 import { Card } from '../../../components/primitives/Card';
 import { Row } from '../../../components/primitives/Row';
-import { Stack } from '../../../components/primitives/Stack';
+import { ListGroup, ListRow } from '../../../components/primitives/ListRow';
+import { sizes } from '../../../design/tokens/sizes';
 import { styles } from '../healthStyles';
 import { formatDate } from '../../../utils/format';
 
@@ -98,78 +99,20 @@ export function Reminders({
         </Pressable>
       </Row>
 
-      <View
-        style={[
-          styles.divider,
-          {
-            backgroundColor:
-              theme.colors.border.default,
-          },
-        ]}
-      />
-
-      {reminderItems.map(
-        (reminder, index) => (
-          <View
-            key={
-              reminder.title
+      <ListGroup>
+        {reminderItems.map(reminder => (
+          <ListRow
+            key={reminder.title}
+            icon={<CalendarClock size={sizes.icon.md} color={theme.colors.icon.interactive} />}
+            title={reminder.title}
+            subtitle={
+              reminder.dueDate
+                ? formatDate(reminder.dueDate)
+                : `${reminder.memberName} · no due date`
             }
-            style={[
-              styles.reminderRow,
-              index > 0 && {
-                borderTopWidth: 1,
-                borderTopColor:
-                  theme.colors.border.default,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.reminderIcon,
-                {
-                  backgroundColor:
-                    theme.colors.status.warning.surface,
-                },
-              ]}
-            >
-              <CalendarClock
-                size={18}
-                color={
-                  theme.colors.status.warning.text
-                }
-              />
-            </View>
-
-            <Stack
-              gap="xs"
-              style={
-                styles.reminderContent
-              }
-            >
-              <AppText
-                variant="label"
-                style={
-                  styles.reminderTitle
-                }
-              >
-                {
-                  reminder.title
-                }
-              </AppText>
-
-              <AppText
-                variant="caption"
-                color="secondary"
-              >
-                {reminder.dueDate
-                  ? formatDate(reminder.dueDate)
-                  : `${reminder.memberName} · no due date`}
-              </AppText>
-            </Stack>
-
-          </View>
-        ),
-      )}
+          />
+        ))}
+      </ListGroup>
     </Card>
   );
 }

@@ -8,7 +8,6 @@ View
 
 import {
 Bell,
-ChevronRight,
 Pill,
 Plus,
 Upload,
@@ -27,6 +26,8 @@ import { useAppTheme } from '../../../design/theme/ThemeProvider';
 import { LoadingState } from '../../../components/feedback/LoadingState';
 import { AppText } from '../../../components/primitives/AppText';
 import { Stack } from '../../../components/primitives/Stack';
+import { ListGroup, ListRow } from '../../../components/primitives/ListRow';
+import { sizes } from '../../../design/tokens/sizes';
 import { styles } from '../healthStyles';
 
 export function AddToHealthSheet({
@@ -116,12 +117,13 @@ export function AddToHealthSheet({
             ]}
           />
 
+          <ListGroup>
           {/* A record */}
 
           <AddHealthRow
             icon={
               <Upload
-                size={24}
+                size={sizes.icon.md}
                 color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
@@ -136,7 +138,7 @@ export function AddToHealthSheet({
           <AddHealthRow
             icon={
               <Plus
-                size={25}
+                size={sizes.icon.md}
                 color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
@@ -151,7 +153,7 @@ export function AddToHealthSheet({
           <AddHealthRow
             icon={
               <Bell
-                size={24}
+                size={sizes.icon.md}
                 color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
@@ -166,7 +168,7 @@ export function AddToHealthSheet({
           <AddHealthRow
             icon={
               <Pill
-                size={24}
+                size={sizes.icon.md}
                 color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
@@ -181,7 +183,7 @@ export function AddToHealthSheet({
           <AddHealthRow
             icon={
               <Users
-                size={25}
+                size={sizes.icon.md}
                 color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
@@ -189,8 +191,8 @@ export function AddToHealthSheet({
             title="A family member"
             description="Someone else whose records you keep"
             onPress={onFamilyMember}
-            last
           />
+          </ListGroup>
         </View>
       </View>
     </Modal>
@@ -201,60 +203,13 @@ export function AddHealthRow({
   title,
   description,
   onPress,
-  last = false,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   onPress: () => void;
-  last?: boolean;
 }) {
-  const { theme } = useAppTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.addHealthRow,
-        {
-          borderBottomColor:
-            theme.colors.border.default,
-          borderBottomWidth: last ? 0 : 1,
-          opacity: pressed ? 0.72 : 1,
-        },
-      ]}
-    >
-      <View style={styles.addHealthIcon}>
-        {icon}
-      </View>
-
-      <View style={styles.addHealthRowContent}>
-        <AppText
-          variant="body"
-          style={styles.addHealthRowTitle}
-        >
-          {title}
-        </AppText>
-
-        <AppText
-          variant="body"
-          color="secondary"
-          numberOfLines={2}
-          style={styles.addHealthRowDescription}
-        >
-          {description}
-        </AppText>
-      </View>
-
-      <ChevronRight
-        size={22}
-        color={theme.colors.text.tertiary}
-        strokeWidth={2}
-      />
-    </Pressable>
-  );
+  return <ListRow icon={icon} title={title} subtitle={description} onPress={onPress} />;
 }
 
 export function MetricPickerModal({

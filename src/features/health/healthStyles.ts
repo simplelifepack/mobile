@@ -744,32 +744,6 @@ resultsCount: {
     marginVertical: 4,
   },
 
-  reminderRow: {
-    minHeight: 68,
-    paddingVertical: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-
-  reminderIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  reminderContent: {
-    flex: 1,
-  },
-
-  reminderTitle: {
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
-    fontWeight: '600',
-  },
-
   reminderAction: {
     width: 36,
     height: 36,
@@ -909,37 +883,5 @@ addHealthSubtitle: {
 addHealthDivider: {
   height: 1,
   marginTop: 32,
-},
-
-addHealthRow: {
-  minHeight: 82,
-  flexDirection: 'row',
-  alignItems: 'center',
-  paddingVertical: 12,
-  gap: 16,
-},
-
-addHealthIcon: {
-  width: 36,
-  alignItems: 'center',
-  justifyContent: 'center',
-  flexShrink: 0,
-},
-
-addHealthRowContent: {
-  flex: 1,
-  minWidth: 0,
-},
-
-addHealthRowTitle: {
-  fontSize: fontSize.body,
-  lineHeight: lineHeight.body,
-  fontWeight: '700',
-},
-
-addHealthRowDescription: {
-  marginTop: 4,
-  fontSize: fontSize.bodySm,
-  lineHeight: lineHeight.bodySm,
 },
 });
