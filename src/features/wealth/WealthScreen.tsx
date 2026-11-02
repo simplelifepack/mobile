@@ -28,6 +28,8 @@ import {
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
+import { sizes } from '../../design/tokens/sizes';
+import { ListGroup, ListRow } from '../../components/primitives/ListRow';
 import { Row } from '../../components/primitives/Row';
 import { ProcessingOverlay } from '../../components/feedback/ProcessingOverlay';
 import { LoadingState } from '../../components/feedback/LoadingState';
@@ -351,196 +353,67 @@ function WealthGroupCard({
   records: WealthRecord[];
   total: number;
 }) {
-  const { theme } = useAppTheme();
-
   if (!records.length) {
     return null;
   }
 
   return (
-    <Card style={styles.groupCard}>
-      <Row
-        align="center"
-        justify="space-between"
-        style={styles.groupHeader}
-      >
-        <AppText variant="heading" style={styles.groupTitle}>
-          {title}
-        </AppText>
-
-        <AppText
-          variant="heading"
-          color="secondary"
-          style={styles.groupTotal}
-        >
-          {formatMoney(total)}
-        </AppText>
+    <View style={styles.groupCard}>
+      <Row align="center" justify="space-between" style={styles.groupHeader}>
+        <AppText variant="heading">{title}</AppText>
+        <AppText variant="heading" color="secondary">{formatMoney(total)}</AppText>
       </Row>
-
-      <View
-        style={[
-          styles.sectionDivider,
-          { backgroundColor: theme.colors.border.default },
-        ]}
-      />
-
-      {records.map((record, index) => (
-        <WealthRecordRow
-          key={record.id}
-          record={record}
-          last={index === records.length - 1}
-        />
-      ))}
-    </Card>
+      <ListGroup>
+        {records.map(record => (
+          <WealthRecordRow key={record.id} record={record} />
+        ))}
+      </ListGroup>
+    </View>
   );
 }
 
-function WealthRecordRow({
-  record,
-  last,
-}: {
-  record: WealthRecord;
-  last: boolean;
-}) {
+function WealthRecordRow({ record }: { record: WealthRecord }) {
   const { theme } = useAppTheme();
   const details = record.details;
-  const amount = recordAmount(record);
-
-  const isLoan =
-    record.type === 'LOAN_GIVEN' ||
-    record.type === 'LOAN_TAKEN';
-
-  const isInsurance = record.type === 'INSURANCE';
-
-  const Icon = isLoan
-    ? Landmark
-    : isInsurance
-      ? ShieldCheck
-      : Building2;
-
-  const iconColor = isLoan
-    ? theme.colors.status.danger.text
-    : isInsurance
-      ? theme.colors.text.interactive
-      : theme.colors.status.warning.text;
-
-  const iconBackground = isLoan
-    ? `${theme.colors.status.danger.text}20`
-    : isInsurance
-      ? `${theme.colors.text.interactive}20`
-      : `${theme.colors.status.warning.text}20`;
+  const isLoan = record.type === 'LOAN_GIVEN' || record.type === 'LOAN_TAKEN';
+  const Icon = isLoan ? Landmark : record.type === 'INSURANCE' ? ShieldCheck : Building2;
+  const metaLabel =
+    record.type === 'ASSET' ? 'Bank account' : record.type === 'INSURANCE' ? 'Insurance' : 'Mortgage';
 
   const institution = String(
-    details.institution ??
-      details.bank ??
-      details.provider ??
-      details.company ??
-      '',
+    details.institution ?? details.bank ?? details.provider ?? details.company ?? '',
   );
-
   const accountNumber = String(
-    details.accountNumber ??
-      details.account ??
-      details.policyNumber ??
-      details.number ??
-      '',
+    details.accountNumber ?? details.account ?? details.policyNumber ?? details.number ?? '',
   );
+  const originalAmount = details.originalAmount ?? details.principal ?? details.value ?? '';
 
-  const originalAmount =
-    details.originalAmount ??
-    details.principal ??
-    details.value ??
-    '';
-
-  const metaLabel =
-    record.type === 'ASSET'
-      ? 'Bank account'
-      : record.type === 'INSURANCE'
-        ? 'Insurance'
-        : 'Mortgage';
+  const subtitle = [
+    `${metaLabel}${institution ? ` · ${institution}` : ''}`,
+    [accountNumber && `·${accountNumber}`, originalAmount !== '' && formatMoney(Number(originalAmount))]
+      .filter(Boolean)
+      .join(' · '),
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   return (
-    <View
-      style={[
-        styles.wealthRow,
-        !last && {
-          borderBottomWidth: 1,
-          borderBottomColor: theme.colors.border.default,
-        },
-      ]}
-    >
-      <View
-        style={[
-          styles.wealthIcon,
-          { backgroundColor: iconBackground },
-        ]}
-      >
-        <Icon
-          size={25}
-          color={iconColor}
-          strokeWidth={2}
-        />
-      </View>
-
-      <View style={styles.wealthCopy}>
+    <ListRow
+      icon={<Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
+      title={record.title}
+      subtitle={subtitle}
+      extra={record.notes || undefined}
+      trailing={
         <AppText
           variant="heading"
-          style={styles.wealthName}
-          numberOfLines={2}
+          color={record.type === 'LOAN_TAKEN' ? 'danger' : 'primary'}
+          numberOfLines={1}
         >
-          {record.title}
+          {record.type === 'LOAN_TAKEN' ? '−' : ''}
+          {formatMoney(recordAmount(record))}
         </AppText>
-
-        <AppText
-          variant="body"
-          color="secondary"
-          style={styles.wealthMeta}
-          numberOfLines={2}
-        >
-          {metaLabel}{institution ? ` · ${institution}` : ''}
-        </AppText>
-
-        {(accountNumber || originalAmount) ? (
-          <AppText
-            variant="body"
-            color="secondary"
-            style={styles.wealthSecondary}
-            numberOfLines={2}
-          >
-            {accountNumber ? `·${accountNumber}` : ''}
-            {originalAmount !== ''
-              ? ` · ${formatMoney(Number(originalAmount))} at 95.40`
-              : ''}
-          </AppText>
-        ) : null}
-
-        {record.notes ? (
-          <AppText
-            variant="body"
-            color="danger"
-            style={styles.wealthWarning}
-          >
-            {record.notes}
-          </AppText>
-        ) : null}
-      </View>
-
-      <AppText
-        variant="heading"
-        color={record.type === 'LOAN_TAKEN' ? 'danger' : 'primary'}
-        style={styles.wealthAmount}
-        numberOfLines={1}
-      >
-        {record.type === 'LOAN_TAKEN' ? '−' : ''}
-        {formatMoney(amount)}
-      </AppText>
-
-      <ChevronRight
-        size={22}
-        color={theme.colors.text.secondary}
-        strokeWidth={2}
-      />
-    </View>
+      }
+    />
   );
 }
 
@@ -2105,83 +1978,22 @@ const styles = StyleSheet.create({
   },
 
   groupCard: {
-    padding: 0,
-    overflow: 'hidden',
-    borderRadius: radius.surface,
-  },
-
-  groupHeader: {
-    minHeight: 54,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-
-  groupTitle: {
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
-    flex: 1,
-  },
-
-  groupTotal: {
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
-    fontWeight: '500',
-  },
-
-  wealthRow: {
-    minHeight: 92,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
   },
 
-  wealthIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
+  groupHeader: {
+    paddingHorizontal: 4,
   },
 
-  wealthCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
 
-  wealthName: {
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
-  },
 
-  wealthMeta: {
-    marginTop: 2,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
 
-  wealthSecondary: {
-    marginTop: 2,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
 
-  wealthWarning: {
-    marginTop: 4,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
 
-  wealthAmount: {
-    maxWidth: 78,
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
-    fontWeight: '700',
-    textAlign: 'right',
-    flexShrink: 0,
-  },
+
+
+
+
 
   /* Lent and borrowed */
 

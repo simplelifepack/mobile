@@ -12,6 +12,8 @@ type ListRowProps = {
   icon?: React.ReactNode;
   title: string;
   subtitle?: string;
+  // Third line reserved for an exception, e.g. "No nominee named".
+  extra?: string;
   danger?: boolean;
   disabled?: boolean;
   trailing?: React.ReactNode;
@@ -22,7 +24,7 @@ type ListRowProps = {
 };
 
 // Design System 3.2 list row. Dividers between rows come from ListGroup.
-export function ListRow({ icon, title, subtitle, danger, disabled, trailing, selected, children, onPress }: ListRowProps) {
+export function ListRow({ icon, title, subtitle, extra, danger, disabled, trailing, selected, children, onPress }: ListRowProps) {
   const { theme } = useAppTheme();
 
   return (
@@ -47,6 +49,9 @@ export function ListRow({ icon, title, subtitle, danger, disabled, trailing, sel
           </AppText>
           {subtitle ? (
             <AppText variant="caption" color="secondary" numberOfLines={3}>{subtitle}</AppText>
+          ) : null}
+          {extra ? (
+            <AppText variant="caption" style={{ color: theme.colors.status.danger.text }} numberOfLines={2}>{extra}</AppText>
           ) : null}
         </View>
         {trailing ??
