@@ -16,12 +16,12 @@ const StyledText = styled.Text<{
 }>(({ theme, variant, colorName, align }) => ({
   ...theme.typography[variant],
   color: {
-    primary: theme.colors.textPrimary,
-    secondary: theme.colors.textSecondary,
-    muted: theme.colors.textMuted,
-    danger: theme.colors.danger,
-    success: theme.colors.success,
-    onPrimary: theme.colors.onPrimary,
+    primary: theme.colors.text.primary,
+    secondary: theme.colors.text.secondary,
+    muted: theme.colors.text.tertiary,
+    danger: theme.colors.status.danger.text,
+    success: theme.colors.status.success.text,
+    onPrimary: theme.colors.text.onBrand,
   }[colorName],
   textAlign: align,
 }));

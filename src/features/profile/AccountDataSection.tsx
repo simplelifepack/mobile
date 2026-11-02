@@ -8,6 +8,8 @@ import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { SectionTitle, SettingsCard, SettingsRow } from './SettingsPrimitives';
+import { fontSize } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 export function AccountDataSection() {
   const { theme } = useAppTheme();
@@ -112,7 +114,7 @@ export function AccountDataSection() {
           <View
             style={[
               styles.usageTrack,
-              { backgroundColor: theme.colors.surfaceElevated },
+              { backgroundColor: theme.colors.surface.raised },
             ]}
           >
             <View
@@ -120,7 +122,7 @@ export function AccountDataSection() {
                 styles.usageFill,
                 {
                   width: `${usage?.storage.unlimited ? 100 : storagePercent}%`,
-                  backgroundColor: theme.colors.primary,
+                  backgroundColor: theme.colors.action.primary.default,
                 },
               ]}
             />
@@ -148,7 +150,7 @@ export function AccountDataSection() {
       <SectionTitle title="ACCOUNT DATA" />
       <SettingsCard>
         <SettingsRow
-          icon={<Download size={22} color={theme.colors.primary} />}
+          icon={<Download size={22} color={theme.colors.text.interactive} />}
           title={exporting ? 'Preparing export…' : 'Export all data'}
           subtitle="Prepare a ZIP containing your account data and uploaded files."
           onPress={() => Alert.alert(
@@ -173,16 +175,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   usageTitle: {
-    fontSize: 13,
+    fontSize: fontSize.bodySm,
     fontWeight: '600',
   },
   usageTrack: {
     height: 7,
-    borderRadius: 4,
+    borderRadius: radius.pill,
     overflow: 'hidden',
   },
   usageFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: radius.pill,
   },
 });

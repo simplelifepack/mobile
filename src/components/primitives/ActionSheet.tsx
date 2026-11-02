@@ -1,14 +1,19 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import type { LucideIcon } from 'lucide-react-native';
+import { Check, type LucideIcon } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { AppText } from './AppText';
+import { staticColors } from '../../design/tokens/colors';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 export type ActionSheetOption = {
   label: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
+  // When defined the option is part of a single-choice list: only the chosen row shows a check.
+  selected?: boolean;
   onPress: () => void;
   accessibilityLabel?: string;
 };
@@ -47,14 +52,14 @@ export function ActionSheet({
           style={[
             styles.sheet,
             {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface.default,
+              borderColor: theme.colors.border.default,
               paddingBottom: Math.max(theme.spacing.md, insets.bottom + 8),
             },
           ]}
         >
           <View
-            style={[styles.handle, { backgroundColor: theme.colors.border }]}
+            style={[styles.handle, { backgroundColor: theme.colors.border.default }]}
           />
           <View style={styles.header}>
             <AppText variant="heading">{title}</AppText>
@@ -64,15 +69,16 @@ export function ActionSheet({
               hitSlop={12}
               onPress={onClose}
             >
-              <AppText variant="label" style={{ color: theme.colors.primary }}>
+              <AppText variant="label" style={{ color: theme.colors.text.interactive }}>
                 Done
               </AppText>
             </Pressable>
           </View>
-          {options.map(({ label, icon: Icon, onPress, accessibilityLabel }) => (
+          {options.map(({ label, icon: Icon, selected, onPress, accessibilityLabel }) => (
             <Pressable
               key={label}
               accessibilityRole="button"
+              accessibilityState={selected === undefined ? undefined : { selected }}
               accessibilityLabel={accessibilityLabel ?? label}
               onPress={onPress}
               style={({ pressed }) => [
@@ -80,12 +86,21 @@ export function ActionSheet({
                 pressed && styles.pressed,
               ]}
             >
-              <Icon
-                size={20}
-                color={theme.colors.textSecondary}
-                strokeWidth={2}
-              />
+              {Icon ? (
+                <Icon
+                  size={theme.sizes.icon.md}
+                  color={theme.colors.icon.secondary}
+                  strokeWidth={2}
+                />
+              ) : null}
               <AppText style={styles.optionText}>{label}</AppText>
+              {selected ? (
+                <Check
+                  size={theme.sizes.icon.md}
+                  color={theme.colors.selection.icon}
+                  strokeWidth={2.5}
+                />
+              ) : null}
             </Pressable>
           ))}
         </View>
@@ -98,11 +113,11 @@ const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0, 0, 0, 0.58)',
+    backgroundColor: staticColors.scrim,
   },
   sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -111,7 +126,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    borderRadius: 3,
+    borderRadius: radius.pill,
     alignSelf: 'center',
     marginBottom: 12,
   },
@@ -128,8 +143,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: radius.control,
   },
-  optionText: { fontSize: 15, lineHeight: 20, fontWeight: '500' },
+  optionText: { flex: 1, fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: '500' },
   pressed: { opacity: 0.7 },
 });

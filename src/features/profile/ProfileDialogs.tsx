@@ -4,6 +4,9 @@ import { Modal, Pressable, StyleSheet, TextInput, View, KeyboardAvoidingView } f
 import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
+import { staticColors } from '../../design/tokens/colors';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 type CurrencyPickerModalProps = {
   visible: boolean;
@@ -25,7 +28,7 @@ export function CurrencyPickerModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
-        <View style={[styles.currencyPanel, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.currencyPanel, { backgroundColor: theme.colors.surface.canvas }]}>
           <View style={styles.header}>
             <AppText style={styles.title}>Home currency</AppText>
             <Pressable onPress={onClose} hitSlop={10}>
@@ -44,10 +47,10 @@ export function CurrencyPickerModal({
                 style={[
                   styles.currencyOption,
                   {
-                    borderColor: theme.colors.border,
+                    borderColor: theme.colors.border.default,
                     backgroundColor: selected
-                      ? theme.colors.surfaceElevated
-                      : theme.colors.surface,
+                      ? theme.colors.surface.raised
+                      : theme.colors.surface.default,
                   },
                 ]}
               >
@@ -56,7 +59,7 @@ export function CurrencyPickerModal({
                   <View
                     style={[
                       styles.selectedDot,
-                      { backgroundColor: theme.colors.primary },
+                      { backgroundColor: theme.colors.action.primary.default },
                     ]}
                   />
                 ) : null}
@@ -92,7 +95,7 @@ export function DeleteAccountModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
-        <View style={[styles.deletePanel, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.deletePanel, { backgroundColor: theme.colors.surface.canvas }]}>
           <AppText style={styles.title}>Schedule account deletion</AppText>
           <AppText style={styles.description} color="secondary">
             Your account and data will be permanently deleted after 30 days. Sign in again during that period to cancel.
@@ -105,13 +108,13 @@ export function DeleteAccountModal({
             onChangeText={onPhraseChange}
             autoCapitalize="none"
             placeholder="delete my account"
-            placeholderTextColor={theme.colors.textMuted}
+            placeholderTextColor={theme.colors.text.tertiary}
             style={[
               styles.input,
               {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
-                color: theme.colors.textPrimary,
+                backgroundColor: theme.colors.surface.default,
+                borderColor: theme.colors.border.default,
+                color: theme.colors.text.primary,
               },
             ]}
           />
@@ -124,8 +127,8 @@ export function DeleteAccountModal({
               style={[
                 styles.actionButton,
                 {
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border.default,
+                  backgroundColor: theme.colors.surface.default,
                 },
               ]}
             >
@@ -136,11 +139,14 @@ export function DeleteAccountModal({
               onPress={onSchedule}
               style={[
                 styles.actionButton,
-                styles.deleteButton,
-                { opacity: valid ? 1 : 0.45 },
+                {
+                  backgroundColor: theme.colors.action.destructive.default,
+                  borderColor: theme.colors.action.destructive.default,
+                  opacity: valid ? 1 : 0.45,
+                },
               ]}
             >
-              <AppText style={[styles.actionText, styles.deleteText]}>
+              <AppText style={[styles.actionText, { color: theme.colors.text.onBrand }]}>
                 Schedule deletion
               </AppText>
             </Pressable>
@@ -155,22 +161,22 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.58)',
+    backgroundColor: staticColors.scrim,
   },
   currencyPanel: {
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 32,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
   },
   deletePanel: {
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 32,
     gap: 16,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
   },
   header: {
     flexDirection: 'row',
@@ -178,23 +184,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 22,
-    lineHeight: 30,
+    fontSize: fontSize.headingLg,
+    lineHeight: lineHeight.headingLg,
     fontWeight: '700',
   },
   close: {
-    fontSize: 15,
+    fontSize: fontSize.body,
     fontWeight: '600',
   },
   description: {
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     marginBottom: 8,
   },
   currencyOption: {
     minHeight: 52,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.surface,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
@@ -202,28 +208,28 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   currencyText: {
-    fontSize: 17,
+    fontSize: fontSize.headingSm,
     fontWeight: '600',
   },
   selectedDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: radius.control,
   },
   confirmLabel: {
-    fontSize: 13,
+    fontSize: fontSize.bodySm,
     marginTop: 2,
   },
   input: {
     minHeight: 46,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 11,
-    fontSize: 15,
+    borderRadius: radius.surface,
+    fontSize: fontSize.body,
   },
   error: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
   actions: {
     marginTop: 4,
@@ -231,21 +237,14 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     minHeight: 46,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
   },
   actionText: {
-    fontSize: 15,
+    fontSize: fontSize.body,
     fontWeight: '700',
-  },
-  deleteButton: {
-    borderColor: '#F4776E',
-    backgroundColor: '#F4776E',
-  },
-  deleteText: {
-    color: '#1A0B0A',
   },
 });

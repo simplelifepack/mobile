@@ -7,6 +7,8 @@ import { AppText } from '../../components/primitives/AppText';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { CurrencyPickerModal } from './ProfileDialogs';
 import { SectionTitle, SettingsCard } from './SettingsPrimitives';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 const currencies = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD'];
 
@@ -71,7 +73,7 @@ export function PreferencesSection() {
           style={[styles.row, !preferences && styles.disabledRow]}
         >
           <View style={styles.icon}>
-            <Coins size={22} color={theme.colors.primary} strokeWidth={1.8} />
+            <Coins size={22} color={theme.colors.text.interactive} strokeWidth={1.8} />
           </View>
           <View style={styles.content}>
             <AppText style={styles.rowTitle}>Home currency</AppText>
@@ -79,17 +81,17 @@ export function PreferencesSection() {
               Indicative rate, bundled with the app
             </AppText>
           </View>
-          <View style={[styles.currencyButton, { backgroundColor: theme.colors.surfaceElevated }]}>
+          <View style={[styles.currencyButton, { backgroundColor: theme.colors.surface.raised }]}>
             <AppText style={styles.currencyText}>
               {preferences?.homeCurrency ?? '…'}
             </AppText>
-            <ChevronDown size={18} color={theme.colors.textPrimary} />
+            <ChevronDown size={18} color={theme.colors.text.primary} />
           </View>
         </Pressable>
 
         <View style={styles.row}>
           <View style={styles.icon}>
-            <Moon size={22} color={theme.colors.primary} strokeWidth={1.8} />
+            <Moon size={22} color={theme.colors.text.interactive} strokeWidth={1.8} />
           </View>
           <View style={styles.content}>
             <AppText style={styles.rowTitle}>Appearance</AppText>
@@ -98,8 +100,8 @@ export function PreferencesSection() {
             style={[
               styles.appearanceControl,
               {
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.background,
+                borderColor: theme.colors.border.default,
+                backgroundColor: theme.colors.surface.canvas,
               },
             ]}
           >
@@ -113,13 +115,14 @@ export function PreferencesSection() {
                   onPress={() => updatePreferences({ appearance })}
                   style={[
                     styles.appearanceOption,
-                    selected && { backgroundColor: theme.colors.primary },
+                    selected && { backgroundColor: theme.colors.action.primary.default },
                   ]}
                 >
                   <AppText
                     style={[
                       styles.appearanceText,
-                      selected && { color: theme.colors.onPrimary },
+                      { color: theme.colors.text.secondary },
+                      selected && { color: theme.colors.text.onBrand },
                     ]}
                   >
                     {appearance === 'dark' ? 'Dark' : 'Light'}
@@ -130,11 +133,11 @@ export function PreferencesSection() {
           </View>
         </View>
 
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+        <View style={[styles.divider, { backgroundColor: theme.colors.border.default }]} />
 
         <View style={styles.row}>
           <View style={styles.icon}>
-            <Bell size={22} color={theme.colors.textSecondary} strokeWidth={1.8} />
+            <Bell size={22} color={theme.colors.text.secondary} strokeWidth={1.8} />
           </View>
           <View style={styles.content}>
             <AppText style={styles.rowTitle}>Notifications</AppText>
@@ -146,11 +149,11 @@ export function PreferencesSection() {
             value={notificationsEnabled}
             onValueChange={setNotificationsEnabled}
             trackColor={{
-              false: theme.colors.surfaceElevated,
-              true: theme.colors.primary,
+              false: theme.colors.surface.raised,
+              true: theme.colors.text.interactive,
             }}
-            thumbColor={notificationsEnabled ? '#FFFFFF' : theme.colors.textSecondary}
-            ios_backgroundColor={theme.colors.surfaceElevated}
+            thumbColor={notificationsEnabled ? theme.colors.text.onBrand : theme.colors.icon.secondary}
+            ios_backgroundColor={theme.colors.surface.raised}
           />
         </View>
 
@@ -186,7 +189,7 @@ const styles = StyleSheet.create({
   icon: {
     width: 42,
     height: 42,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -196,32 +199,32 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   rowTitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
   },
   rowSubtitle: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     marginTop: 2,
   },
   currencyButton: {
     minWidth: 78,
     height: 38,
-    borderRadius: 9,
+    borderRadius: radius.surface,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 8,
   },
   currencyText: {
-    fontSize: 13,
+    fontSize: fontSize.bodySm,
     fontWeight: '600',
   },
   appearanceControl: {
     height: 36,
     width: 132,
-    borderRadius: 9,
+    borderRadius: radius.surface,
     borderWidth: 1,
     flexDirection: 'row',
     overflow: 'hidden',
@@ -232,10 +235,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   appearanceText: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     fontWeight: '700',
-    color: '#8A97AE',
   },
   divider: {
     height: 1,

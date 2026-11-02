@@ -23,7 +23,7 @@ export function DigiLockerScreen() {
       <Stack gap="md" style={styles.container}>
         <Row align="center" gap="sm">
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => navigation.goBack()}>
-            <ArrowLeft size={22} color={theme.colors.textPrimary} />
+            <ArrowLeft size={22} color={theme.colors.text.primary} />
           </Pressable>
           <AppText variant="title">Import from DigiLocker</AppText>
         </Row>

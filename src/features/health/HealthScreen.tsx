@@ -16,7 +16,10 @@ Check,
 FlaskConical,
 Pill,
 Plus,
-Upload
+Upload,
+Image as ImageIcon,
+Camera,
+FileText,
 } from 'lucide-react-native';
 
 
@@ -52,6 +55,7 @@ import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ProcessingOverlay } from '../../components/feedback/ProcessingOverlay';
 import { AppText } from '../../components/primitives/AppText';
+import { ActionSheet } from '../../components/primitives/ActionSheet';
 import { Button } from '../../components/primitives/Button';
 import { Card } from '../../components/primitives/Card';
 import { FloatingActionButton } from '../../components/primitives/FloatingActionButton';
@@ -66,6 +70,7 @@ import { Header,MemberProfile,MemberSelector } from './components/MemberComponen
 import { ReadingCard } from './components/ReadingViews';
 import { styles } from './healthStyles';
 import { ReadingView } from './healthTypes';
+import { formatDate } from '../../utils/format';
 
 export function HealthScreen() {
   const { theme } = useAppTheme();
@@ -86,6 +91,7 @@ export function HealthScreen() {
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [loadingOverview, setLoadingOverview] = useState(false);
   const [healthError, setHealthError] = useState<string>();
+  const [recordSourceVisible, setRecordSourceVisible] = useState(false);
   const [memberFormVisible, setMemberFormVisible] = useState(false);
   const [reminderFormVisible, setReminderFormVisible] = useState(false);
   const [metricPickerVisible, setMetricPickerVisible] = useState(false);
@@ -356,17 +362,9 @@ export function HealthScreen() {
       selectionErrorTitle: 'Unable to select file',
     });
 
-  const chooseRecordSource = () => {
-    Alert.alert(
-      'Add health record',
-      'Upload a lab report, medical report or prescription.',
-      [
-        { text: 'Choose file', onPress: () => startRecordImport(selectDocumentFile) },
-        { text: 'Photo library', onPress: () => startRecordImport(selectImageFromGallery) },
-        { text: 'Camera', onPress: () => startRecordImport(captureDocumentPhoto) },
-      ],
-      { cancelable: true },
-    );
+  const importRecord = (select: Parameters<typeof startRecordImport>[0]) => {
+    setRecordSourceVisible(false);
+    startRecordImport(select);
   };
 
   const confirmResolution = async (memberId: string) => {
@@ -405,13 +403,23 @@ floatingAction={
       accessibilityLabel="Add to Health"
       onPress={() => setAddHealthVisible(true)}
     />
+    <ActionSheet
+      visible={recordSourceVisible}
+      title="Add health record"
+      onClose={() => setRecordSourceVisible(false)}
+      options={[
+        { label: 'Camera', icon: Camera, onPress: () => importRecord(captureDocumentPhoto) },
+        { label: 'Photo library', icon: ImageIcon, onPress: () => importRecord(selectImageFromGallery) },
+        { label: 'Choose file', icon: FileText, onPress: () => importRecord(selectDocumentFile) },
+      ]}
+    />
     {addHealthVisible ? (
       <AddToHealthSheet
         memberName={member?.name ?? 'your profile'}
         onClose={() => setAddHealthVisible(false)}
         onRecord={() => {
           setAddHealthVisible(false);
-          chooseRecordSource();
+          setRecordSourceVisible(true);
         }}
         onReading={() => {
           setAddHealthVisible(false);
@@ -600,8 +608,8 @@ floatingAction={
               style={[
                 styles.healthTabCard,
                 {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface.default,
+                  borderColor: theme.colors.border.default,
                 },
               ]}
             >
@@ -627,7 +635,7 @@ floatingAction={
                       key={reminder.id}
                       style={[
                         styles.healthReminderRow,
-                        { borderTopColor: theme.colors.border },
+                        { borderTopColor: theme.colors.border.default },
                       ]}
                     >
                       <View style={styles.healthReminderCopy}>
@@ -636,26 +644,19 @@ floatingAction={
                         </AppText>
                         <AppText variant="caption" color="secondary">
                           {reminder.dueDate
-                            ? new Date(reminder.dueDate).toLocaleDateString(
-                                'en-US',
-                                {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                },
-                              )
+                            ? formatDate(reminder.dueDate)
                             : 'Date not set'}
                         </AppText>
                       </View>
                       <View
                         style={[
                           styles.healthSmallAction,
-                          { borderColor: theme.colors.border },
+                          { borderColor: theme.colors.border.default },
                         ]}
                       >
                         <CalendarClock
                           size={20}
-                          color={theme.colors.textSecondary}
+                          color={theme.colors.text.secondary}
                         />
                       </View>
                     </View>
@@ -672,8 +673,8 @@ floatingAction={
               style={[
                 styles.healthTabCard,
                 {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface.default,
+                  borderColor: theme.colors.border.default,
                 },
               ]}
             >
@@ -723,15 +724,15 @@ floatingAction={
                               styles.healthTimelineDot,
                               {
                                 backgroundColor: event.medication
-                                  ? '#B895EA'
-                                  : '#82AFFF',
+                                  ? theme.colors.icon.interactive
+                                  : theme.colors.status.info.icon,
                               },
                             ]}
                           />
                           <View
                             style={[
                               styles.healthTimelineLine,
-                              { backgroundColor: theme.colors.border },
+                              { backgroundColor: theme.colors.border.default },
                             ]}
                           />
                         </View>
@@ -740,21 +741,21 @@ floatingAction={
                           style={[
                             styles.healthTimelineIcon,
                             {
-                              backgroundColor: theme.colors.surfaceElevated,
+                              backgroundColor: theme.colors.surface.raised,
                             },
                           ]}
                         >
                           {event.medication ? (
-                            <Pill size={22} color={theme.colors.primary} />
+                            <Pill size={22} color={theme.colors.text.interactive} />
                           ) : event.title.toLowerCase().includes('report') ? (
                             <FlaskConical
                               size={22}
-                              color={theme.colors.primary}
+                              color={theme.colors.text.interactive}
                             />
                           ) : (
                             <Activity
                               size={22}
-                              color="#82AFFF"
+                              color={theme.colors.status.info.icon}
                             />
                           )}
                         </View>
@@ -801,14 +802,14 @@ floatingAction={
               style={[
                 styles.healthTabCard,
                 {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface.default,
+                  borderColor: theme.colors.border.default,
                 },
               ]}
             >
               <View style={styles.healthSectionHeader}>
                 <View style={styles.healthSectionTitleRow}>
-                  <Pill size={22} color={theme.colors.textSecondary} />
+                  <Pill size={22} color={theme.colors.text.secondary} />
                   <AppText variant="label">Current medications</AppText>
                 </View>
 
@@ -818,12 +819,12 @@ floatingAction={
                   style={[
                     styles.healthAddButton,
                     {
-                      borderColor: theme.colors.border,
-                      backgroundColor: theme.colors.surfaceElevated,
+                      borderColor: theme.colors.border.default,
+                      backgroundColor: theme.colors.surface.raised,
                     },
                   ]}
                 >
-                  <Plus size={18} color={theme.colors.primary} />
+                  <Plus size={18} color={theme.colors.text.interactive} />
                   <AppText variant="label" color="primary">
                     Add
                   </AppText>
@@ -842,16 +843,16 @@ floatingAction={
                         key={event.id}
                         style={[
                           styles.healthMedicationRow,
-                          { borderTopColor: theme.colors.border },
+                          { borderTopColor: theme.colors.border.default },
                         ]}
                       >
                         <View
                           style={[
                             styles.healthMedicationIcon,
-                            { backgroundColor: theme.colors.surfaceElevated },
+                            { backgroundColor: theme.colors.surface.raised },
                           ]}
                         >
-                          <Pill size={22} color={theme.colors.primary} />
+                          <Pill size={22} color={theme.colors.text.interactive} />
                         </View>
 
                         <View style={styles.healthMedicationCopy}>
@@ -867,7 +868,7 @@ floatingAction={
                           <AppText
                             variant="caption"
                             style={{
-                              color: stopped ? theme.colors.textSecondary : '#E6A52E',
+                              color: stopped ? theme.colors.text.secondary : theme.colors.status.warning.text,
                             }}
                           >
                             {stopped ? 'Stopped' : 'Not confirmed'}
@@ -882,16 +883,16 @@ floatingAction={
                               style={[
                                 styles.healthMedicationStatusButton,
                                 {
-                                  borderColor: theme.colors.border,
+                                  borderColor: theme.colors.border.default,
                                   backgroundColor: stopped
                                     ? 'transparent'
-                                    : theme.colors.surfaceElevated,
+                                    : theme.colors.surface.raised,
                                 },
                               ]}
                             >
                               <Check
                                 size={16}
-                                color={theme.colors.textPrimary}
+                                color={theme.colors.text.primary}
                               />
                               <AppText variant="caption">
                                 {stopped ? 'Resume' : 'Still taking'}
@@ -901,7 +902,7 @@ floatingAction={
                             <View
                               style={[
                                 styles.healthMedicationStatusButton,
-                                { borderColor: theme.colors.border },
+                                { borderColor: theme.colors.border.default },
                               ]}
                             >
                               <AppText variant="caption" color="secondary">
@@ -926,23 +927,23 @@ floatingAction={
               style={[
                 styles.healthTabCard,
                 {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface.default,
+                  borderColor: theme.colors.border.default,
                 },
               ]}
             >
               <Pressable
                 accessibilityRole="button"
-                onPress={chooseRecordSource}
+                onPress={() => setRecordSourceVisible(true)}
                 style={[
                   styles.healthUploadButton,
                   {
-                    backgroundColor: theme.colors.surfaceElevated,
-                    borderColor: theme.colors.border,
+                    backgroundColor: theme.colors.surface.raised,
+                    borderColor: theme.colors.border.default,
                   },
                 ]}
               >
-                <Upload size={22} color={theme.colors.primary} />
+                <Upload size={22} color={theme.colors.text.interactive} />
                 <AppText variant="label">Upload medical record</AppText>
               </Pressable>
 
@@ -953,14 +954,14 @@ floatingAction={
                       key={record.id}
                       style={[
                         styles.healthRecordRow,
-                        { borderTopColor: theme.colors.border },
+                        { borderTopColor: theme.colors.border.default },
                       ]}
                     >
                       <View style={styles.healthTimelineRail}>
                         <View
                           style={[
                             styles.healthTimelineDot,
-                            { backgroundColor: '#B895EA' },
+                            { backgroundColor: theme.colors.icon.interactive },
                           ]}
                         />
                       </View>
@@ -968,15 +969,15 @@ floatingAction={
                       <View
                         style={[
                           styles.healthRecordIcon,
-                          { backgroundColor: theme.colors.surfaceElevated },
+                          { backgroundColor: theme.colors.surface.raised },
                         ]}
                       >
                         {record.type.toLowerCase().includes('prescription') ? (
-                          <Pill size={22} color={theme.colors.primary} />
+                          <Pill size={22} color={theme.colors.text.interactive} />
                         ) : (
                           <FlaskConical
                             size={22}
-                            color={theme.colors.primary}
+                            color={theme.colors.text.interactive}
                           />
                         )}
                       </View>
@@ -1018,7 +1019,7 @@ floatingAction={
         {resolution && !memberFormVisible ? (
           <Modal visible transparent animationType="slide" onRequestClose={() => setResolution(undefined)}>
             <View style={styles.modalBackdrop}>
-              <View style={[styles.modalPanel, { backgroundColor: theme.colors.background }]}>
+              <View style={[styles.modalPanel, { backgroundColor: theme.colors.surface.canvas }]}>
                 <AppText variant="heading">Choose a profile</AppText>
                 <AppText variant="caption" color="secondary">
                   {resolutionMessage(resolution)}

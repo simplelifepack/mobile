@@ -27,6 +27,8 @@ import { Row } from '../../components/primitives/Row';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
+import { staticColors } from '../../design/tokens/colors';
+import { radius } from '../../design/tokens/radius';
 
 const accessTypes: TrustMemberPayload['accessTypeCode'][] = [
   'VIEW_ONLY',
@@ -177,7 +179,7 @@ export function TrustScreen({ familyOnly = false }: { familyOnly?: boolean }) {
         {!familyOnly && data ? (
           <Card>
             <Row align="center" gap="sm">
-              <UserRound size={20} color={theme.colors.primary} />
+              <UserRound size={20} color={theme.colors.text.interactive} />
               <Stack gap="xs" style={styles.memberCopy}>
                 <AppText variant="label">{data.owner.name} · Owner</AppText>
                 <AppText variant="caption" color="secondary">
@@ -221,7 +223,7 @@ export function TrustScreen({ familyOnly = false }: { familyOnly?: boolean }) {
           ) : (
             <Card>
               <Stack gap="sm" align="center">
-                <Users size={24} color={theme.colors.textSecondary} />
+                <Users size={24} color={theme.colors.text.secondary} />
                 <AppText variant="label">No family members yet</AppText>
                 <AppText variant="caption" color="secondary" align="center">
                   Add a family profile and choose its access level.
@@ -343,7 +345,7 @@ function MemberCard({
           <View
             style={[
               styles.avatar,
-              { backgroundColor: theme.colors.surfaceElevated },
+              { backgroundColor: theme.colors.surface.raised },
             ]}
           >
             <AppText variant="label">
@@ -367,7 +369,7 @@ function MemberCard({
               onPress={onRemove}
               hitSlop={8}
             >
-              <X size={19} color={theme.colors.danger} />
+              <X size={19} color={theme.colors.status.danger.text} />
             </Pressable>
           ) : null}
         </Row>
@@ -388,11 +390,11 @@ function MemberCard({
                     {
                       borderColor:
                         member.accessType.code === accessType
-                          ? theme.colors.primary
-                          : theme.colors.border,
+                          ? theme.colors.border.interactive
+                          : theme.colors.border.default,
                       backgroundColor:
                         member.accessType.code === accessType
-                          ? theme.colors.surfaceElevated
+                          ? theme.colors.surface.raised
                           : 'transparent',
                       opacity: pressed || busy ? 0.65 : 1,
                     },
@@ -424,7 +426,7 @@ function MemberCard({
                   onPress={onResetPin}
                   style={styles.iconButton}
                 >
-                  <KeyRound size={18} color={theme.colors.textSecondary} />
+                  <KeyRound size={18} color={theme.colors.text.secondary} />
                 </Pressable>
               </Row>
             ) : null}
@@ -506,11 +508,11 @@ function MemberForm({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <KeyboardAvoidingView behavior="padding" style={styles.modalBackdrop}>
-        <View style={[styles.modalPanel, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.modalPanel, { backgroundColor: theme.colors.surface.canvas }]}>
           <Row align="center" justify="space-between">
             <AppText variant="heading">Add family member</AppText>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close}>
-              <X size={22} color={theme.colors.textPrimary} />
+              <X size={22} color={theme.colors.text.primary} />
             </Pressable>
           </Row>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.formContent}>
@@ -531,8 +533,8 @@ function MemberForm({
                   style={[
                     styles.accessChoice,
                     {
-                      borderColor: accessTypeCode === accessType ? theme.colors.primary : theme.colors.border,
-                      backgroundColor: accessTypeCode === accessType ? theme.colors.surfaceElevated : 'transparent',
+                      borderColor: accessTypeCode === accessType ? theme.colors.border.interactive : theme.colors.border.default,
+                      backgroundColor: accessTypeCode === accessType ? theme.colors.surface.raised : 'transparent',
                     },
                   ]}
                 >
@@ -605,7 +607,7 @@ function PinResetModal({
         <View
           style={[
             styles.modalPanel,
-            { backgroundColor: theme.colors.background },
+            { backgroundColor: theme.colors.surface.canvas },
           ]}
         >
           <AppText variant="heading">Reset invitation PIN</AppText>
@@ -655,7 +657,7 @@ function FormDateInput({
         maximumDate={new Date()}
         style={[
           styles.input,
-          { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+          { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default },
         ]}
       />
     </Stack>
@@ -672,13 +674,13 @@ function FormInput({
       <AppText variant="caption" color="secondary">{label}</AppText>
       <TextInput
         {...props}
-        placeholderTextColor={theme.colors.textMuted}
+        placeholderTextColor={theme.colors.text.tertiary}
         style={[
           styles.input,
           {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            color: theme.colors.textPrimary,
+            backgroundColor: theme.colors.surface.default,
+            borderColor: theme.colors.border.default,
+            color: theme.colors.text.primary,
           },
         ]}
       />
@@ -692,7 +694,7 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 42,
     height: 42,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -700,7 +702,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 42,
     height: 42,
-    borderRadius: 21,
+    borderRadius: radius.overlay,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -709,18 +711,18 @@ const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: 4,
     borderWidth: 1,
-    borderRadius: 9,
+    borderRadius: radius.surface,
     justifyContent: 'center',
   },
   modalBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: staticColors.scrim,
   },
   modalPanel: {
     maxHeight: '90%',
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
     padding: 20,
     gap: 16,
   },
@@ -729,6 +731,6 @@ const styles = StyleSheet.create({
     minHeight: 46,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: radius.surface,
   },
 });

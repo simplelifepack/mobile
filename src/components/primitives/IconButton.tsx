@@ -25,7 +25,7 @@ export function IconButton({
       accessibilityLabel={label}
       onPress={onPress}
     >
-      <Icon size={theme.sizes.icon.md} color={theme.colors.textPrimary} />
+      <Icon size={theme.sizes.icon.md} color={theme.colors.text.primary} />
     </Touch>
   );
 }

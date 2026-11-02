@@ -4,24 +4,25 @@ import styled from 'styled-components/native';
 import { AppText } from './AppText';
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 const Pressable = styled.Pressable<{ variant: Variant; disabled?: boolean }>(
-  ({ theme, variant, disabled }) => ({
-    height: theme.sizes.button.md,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: disabled ? 0.5 : 1,
-    backgroundColor:
-      variant === 'primary'
-        ? theme.colors.primary
-        : variant === 'danger'
-          ? theme.colors.danger
-          : variant === 'secondary'
-            ? theme.colors.surfaceElevated
-            : 'transparent',
-    borderWidth: variant === 'secondary' ? 1 : 0,
-    borderColor: theme.colors.border,
-  }),
+  ({ theme, variant, disabled }) => {
+    const { action, border } = theme.colors;
+    return {
+      height: theme.sizes.button.md,
+      borderRadius: theme.radius.control,
+      paddingHorizontal: theme.spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      opacity: disabled ? 0.5 : 1,
+      backgroundColor: {
+        primary: action.primary.default,
+        danger: action.destructive.default,
+        secondary: action.secondary.default,
+        ghost: action.tertiary.default,
+      }[variant],
+      borderWidth: variant === 'secondary' ? 1 : 0,
+      borderColor: border.default,
+    };
+  },
 );
 export function Button({
   title,
@@ -29,7 +30,7 @@ export function Button({
   ...props
 }: PressableProps & { title: string; variant?: Variant }) {
   const textColor =
-    variant === 'primary' || variant === 'danger' ? 'onPrimary' : 'secondary';
+    variant === 'primary' || variant === 'danger' ? 'onPrimary' : 'primary';
   return (
     <Pressable accessibilityRole="button" variant={variant} {...props}>
       <AppText variant="label" color={textColor}>

@@ -8,7 +8,7 @@ const Backdrop = styled.View(({ theme }) => ({
   flex: 1,
   justifyContent: 'center',
   padding: theme.spacing.lg,
-  backgroundColor: theme.colors.overlay,
+  backgroundColor: theme.colors.overlay.backdrop,
 }));
 export function AppModal({
   visible,

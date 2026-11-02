@@ -17,6 +17,8 @@ import {
   type GlobalSearchGroup,
   type GlobalSearchResult,
 } from '../../api/search.api';
+import { fontSize } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 export function GlobalSearchModal({
   visible,
@@ -79,27 +81,27 @@ export function GlobalSearchModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={close}>
-      <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.root, { backgroundColor: theme.colors.surface.canvas }]}>
         <View
           style={[
             styles.bar,
             {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface.default,
+              borderColor: theme.colors.border.default,
             },
           ]}
         >
-          <Search size={20} color={theme.colors.textSecondary} />
+          <Search size={20} color={theme.colors.text.secondary} />
           <TextInput
             autoFocus
             value={query}
             onChangeText={setQuery}
             placeholder="Search documents, packs, health, wealth…"
-            placeholderTextColor={theme.colors.textMuted}
+            placeholderTextColor={theme.colors.text.tertiary}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
-            style={[styles.input, { color: theme.colors.textPrimary }]}
+            style={[styles.input, { color: theme.colors.text.primary }]}
           />
           <Pressable
             accessibilityRole="button"
@@ -107,12 +109,12 @@ export function GlobalSearchModal({
             hitSlop={8}
             onPress={close}
           >
-            <X size={20} color={theme.colors.textSecondary} />
+            <X size={20} color={theme.colors.text.secondary} />
           </Pressable>
         </View>
 
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list}>
-          {status === 'loading' ? <ActivityIndicator color={theme.colors.primary} /> : null}
+          {status === 'loading' ? <ActivityIndicator color={theme.colors.text.interactive} /> : null}
           {status === 'failed' ? <AppText color="danger">{error}</AppText> : null}
           {status === 'done' && !groups.length ? (
             <AppText color="secondary">No results for “{query.trim()}”.</AppText>
@@ -133,8 +135,8 @@ export function GlobalSearchModal({
                   style={[
                     styles.result,
                     {
-                      backgroundColor: theme.colors.surface,
-                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surface.default,
+                      borderColor: theme.colors.border.default,
                     },
                   ]}
                 >
@@ -161,14 +163,14 @@ const styles = StyleSheet.create({
   bar: {
     minHeight: 50,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  input: { flex: 1, fontSize: 15, minHeight: 48 },
+  input: { flex: 1, fontSize: fontSize.body, minHeight: 48 },
   list: { paddingVertical: 16, gap: 16 },
   group: { gap: 8 },
-  result: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 2 },
+  result: { borderWidth: 1, borderRadius: radius.surface, padding: 12, gap: 2 },
 });

@@ -25,6 +25,8 @@ import {
   loginWithPin,
 } from '../authSlice';
 import { cleanPin, validateLoginInput } from '../auth.validators';
+import { fontSize, lineHeight } from '../../../design/tokens/typography';
+import { radius } from '../../../design/tokens/radius';
 
 export function LoginScreen({
   navigation,
@@ -75,7 +77,7 @@ export function LoginScreen({
           <View style={styles.container}>
             <View style={styles.brandSection}>
               <View style={styles.logoMark}>
-                <BrandMark size={70} color={theme.colors.textPrimary} />
+                <BrandMark size={70} color={theme.colors.text.primary} />
               </View>
               <AppText variant="title" style={styles.brandName}>
                 ReadiNes
@@ -94,22 +96,22 @@ export function LoginScreen({
               style={[
                 styles.modeContainer,
                 {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface.default,
+                  borderColor: theme.colors.border.default,
                 },
               ]}
             >
               <View
                 style={[
                   styles.modeButton,
-                  { backgroundColor: theme.colors.surfaceElevated },
+                  { backgroundColor: theme.colors.surface.raised },
                 ]}
               >
                 <AppText variant="heading" color="primary" style={styles.modeText}>
                   Sign in
                 </AppText>
               </View>
-              <View style={[styles.modeDivider, { backgroundColor: theme.colors.border }]} />
+              <View style={[styles.modeDivider, { backgroundColor: theme.colors.border.default }]} />
               <Pressable
                 accessibilityRole="button"
                 disabled={submitting}
@@ -127,8 +129,8 @@ export function LoginScreen({
                 style={[
                   styles.inputContainer,
                   {
-                    backgroundColor: theme.colors.surfaceElevated,
-                    borderColor: emailFocused ? theme.colors.primary : theme.colors.border,
+                    backgroundColor: theme.colors.surface.raised,
+                    borderColor: emailFocused ? theme.colors.border.interactive : theme.colors.border.default,
                   },
                 ]}
               >
@@ -142,14 +144,14 @@ export function LoginScreen({
                   onFocus={() => setEmailFocused(true)}
                   onBlur={() => setEmailFocused(false)}
                   placeholder="Email"
-                  placeholderTextColor={theme.colors.textMuted}
+                  placeholderTextColor={theme.colors.text.tertiary}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
                   textContentType="emailAddress"
                   editable={!submitting}
                   returnKeyType="next"
-                  style={[styles.input, { color: theme.colors.textPrimary }]}
+                  style={[styles.input, { color: theme.colors.text.primary }]}
                 />
               </View>
 
@@ -158,8 +160,8 @@ export function LoginScreen({
                 style={[
                   styles.inputContainer,
                   {
-                    backgroundColor: theme.colors.surfaceElevated,
-                    borderColor: passwordFocused ? theme.colors.primary : theme.colors.border,
+                    backgroundColor: theme.colors.surface.raised,
+                    borderColor: passwordFocused ? theme.colors.border.interactive : theme.colors.border.default,
                   },
                 ]}
               >
@@ -173,14 +175,14 @@ export function LoginScreen({
                   onFocus={() => setPasswordFocused(true)}
                   onBlur={() => setPasswordFocused(false)}
                   placeholder="6-digit R-pin"
-                  placeholderTextColor={theme.colors.textMuted}
+                  placeholderTextColor={theme.colors.text.tertiary}
                   keyboardType="number-pad"
                   secureTextEntry
                   maxLength={6}
                   editable={!submitting}
                   returnKeyType="done"
                   onSubmitEditing={submitLogin}
-                  style={[styles.input, { color: theme.colors.textPrimary }]}
+                  style={[styles.input, { color: theme.colors.text.primary }]}
                 />
               </View>
               ) : (
@@ -188,8 +190,8 @@ export function LoginScreen({
                 style={[
                   styles.inputContainer,
                   {
-                    backgroundColor: theme.colors.surfaceElevated,
-                    borderColor: passwordFocused ? theme.colors.primary : theme.colors.border,
+                    backgroundColor: theme.colors.surface.raised,
+                    borderColor: passwordFocused ? theme.colors.border.interactive : theme.colors.border.default,
                   },
                 ]}
               >
@@ -203,7 +205,7 @@ export function LoginScreen({
                   onFocus={() => setPasswordFocused(true)}
                   onBlur={() => setPasswordFocused(false)}
                   placeholder="Password"
-                  placeholderTextColor={theme.colors.textMuted}
+                  placeholderTextColor={theme.colors.text.tertiary}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -211,7 +213,7 @@ export function LoginScreen({
                   editable={!submitting}
                   returnKeyType="done"
                   onSubmitEditing={submitLogin}
-                  style={[styles.input, styles.passwordInput, { color: theme.colors.textPrimary }]}
+                  style={[styles.input, styles.passwordInput, { color: theme.colors.text.primary }]}
                 />
                 <Pressable
                   accessibilityRole="button"
@@ -221,9 +223,9 @@ export function LoginScreen({
                   style={styles.passwordToggle}
                 >
                   {showPassword ? (
-                    <EyeOff size={20} color={theme.colors.textSecondary} />
+                    <EyeOff size={20} color={theme.colors.text.secondary} />
                   ) : (
-                    <Eye size={20} color={theme.colors.textSecondary} />
+                    <Eye size={20} color={theme.colors.text.secondary} />
                   )}
                 </Pressable>
               </View>
@@ -242,19 +244,19 @@ export function LoginScreen({
                 onPress={submitLogin}
                 style={({ pressed }) => [
                   styles.primaryButton,
-                  { backgroundColor: theme.colors.primary },
+                  { backgroundColor: theme.colors.action.primary.default },
                   pressed && styles.pressed,
                   submitting && styles.disabled,
                 ]}
               >
                 {submitting ? (
-                  <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+                  <ActivityIndicator size="small" color={theme.colors.text.onBrand} />
                 ) : (
                   <>
                     <AppText variant="heading" color="onPrimary" style={styles.primaryButtonText}>
                       Sign in
                     </AppText>
-                    <ArrowRight size={21} color={theme.colors.onPrimary} strokeWidth={2} />
+                    <ArrowRight size={21} color={theme.colors.text.onBrand} strokeWidth={2} />
                   </>
                 )}
               </Pressable>
@@ -266,8 +268,8 @@ export function LoginScreen({
                 style={[
                   styles.secondaryButton,
                   {
-                    backgroundColor: theme.colors.surface,
-                    borderColor: theme.colors.border,
+                    backgroundColor: theme.colors.surface.default,
+                    borderColor: theme.colors.border.default,
                   },
                 ]}
               >
@@ -341,20 +343,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   brandName: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: fontSize.displayMd,
+    lineHeight: lineHeight.displayMd,
     fontWeight: '700',
   },
   tagline: {
     marginTop: 8,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
   modeContainer: {
     minHeight: 54,
     width: '100%',
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     flexDirection: 'row',
     overflow: 'hidden',
     marginBottom: 20,
@@ -369,15 +371,15 @@ const styles = StyleSheet.create({
     width: 1,
   },
   modeText: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
   form: {
     width: '100%',
   },
   inputContainer: {
     minHeight: 54,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     borderWidth: 1,
     marginBottom: 12,
     flexDirection: 'row',
@@ -387,8 +389,8 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minHeight: 52,
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     paddingVertical: 0,
   },
   passwordInput: {
@@ -406,7 +408,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     minHeight: 54,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -414,13 +416,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   primaryButtonText: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
   },
   secondaryButton: {
     minHeight: 48,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -433,8 +435,8 @@ const styles = StyleSheet.create({
   },
   securityText: {
     marginTop: 20,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
   pressed: {
     opacity: 0.78,

@@ -3,6 +3,8 @@ import { Pressable, StyleSheet } from 'react-native';
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { Plus } from 'lucide-react-native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
+import { staticColors } from '../../design/tokens/colors';
+import { radius } from '../../design/tokens/radius';
 
 export function FloatingActionButton({
   accessibilityLabel,
@@ -22,14 +24,14 @@ export function FloatingActionButton({
       style={({ pressed }) => [
         styles.button,
         {
-          backgroundColor: theme.colors.primary,
+          backgroundColor: theme.colors.action.primary.default,
           bottom: theme.spacing.lg + tabInset,
           right: theme.spacing.lg,
           opacity: pressed ? 0.8 : 1,
         },
       ]}
     >
-      <Plus size={24} color={theme.colors.onPrimary} strokeWidth={2.5} />
+      <Plus size={24} color={theme.colors.text.onBrand} strokeWidth={2.5} />
     </Pressable>
   );
 }
@@ -39,11 +41,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 58,
     height: 58,
-    borderRadius: 29,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 6,
-    shadowColor: '#000000',
+    shadowColor: staticColors.shadow,
     shadowOpacity: 0.24,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },

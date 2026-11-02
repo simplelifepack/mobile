@@ -5,11 +5,11 @@ import { AppText } from './AppText';
 import { Stack } from './Stack';
 const Field = styled.TextInput(({ theme }) => ({
   height: theme.sizes.input,
-  color: theme.colors.textPrimary,
-  backgroundColor: theme.colors.surface,
+  color: theme.colors.text.primary,
+  backgroundColor: theme.colors.surface.default,
   borderWidth: 1,
-  borderColor: theme.colors.border,
-  borderRadius: theme.radius.md,
+  borderColor: theme.colors.border.default,
+  borderRadius: theme.radius.control,
   paddingHorizontal: theme.spacing.md,
   ...theme.typography.body,
 }));

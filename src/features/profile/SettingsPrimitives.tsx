@@ -4,6 +4,8 @@ import { ChevronRight } from 'lucide-react-native';
 
 import { AppText } from '../../components/primitives/AppText';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 export function SectionTitle({
   title,
@@ -20,8 +22,8 @@ export function SectionTitle({
         styles.sectionTitle,
         {
           color: danger
-            ? theme.colors.danger
-            : theme.colors.textSecondary,
+            ? theme.colors.status.danger.text
+            : theme.colors.text.secondary,
         },
       ]}
     >
@@ -40,8 +42,8 @@ export function SettingsCard({
       style={[
         styles.card,
         {
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.surface.default,
+          borderColor: theme.colors.border.default,
         },
       ]}
     >
@@ -81,7 +83,7 @@ export function SettingsRow({
       <View
         style={[
           styles.iconBox,
-          { backgroundColor: theme.colors.surfaceElevated },
+          { backgroundColor: theme.colors.surface.raised },
         ]}
       >
         {icon}
@@ -91,7 +93,7 @@ export function SettingsRow({
         <AppText
           style={[
             styles.rowTitle,
-            titleDanger && { color: theme.colors.danger },
+            titleDanger && { color: theme.colors.status.danger.text },
           ]}
         >
           {title}
@@ -111,7 +113,7 @@ export function SettingsRow({
       {rightContent ?? (
         <ChevronRight
           size={21}
-          color={theme.colors.textSecondary}
+          color={theme.colors.text.secondary}
           strokeWidth={2}
         />
       )}
@@ -121,8 +123,8 @@ export function SettingsRow({
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     fontWeight: '700',
     letterSpacing: 0,
     marginLeft: 4,
@@ -132,7 +134,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.surface,
     overflow: 'hidden',
     marginBottom: 16,
   },
@@ -146,7 +148,7 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -157,13 +159,13 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   rowTitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
   },
   rowSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     marginTop: 4,
   },
 });

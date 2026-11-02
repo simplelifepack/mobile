@@ -18,6 +18,8 @@ import {
   documentMatchesRequirement,
   type DerivedRequirement,
 } from './calculatePackReadiness';
+import { staticColors } from '../../design/tokens/colors';
+import { radius } from '../../design/tokens/radius';
 
 const documentName = (document: DocumentRecord) =>
   document.displayName ?? document.originalName;
@@ -90,8 +92,8 @@ export function ChangeDocumentSheet({
         style={[
           styles.option,
           {
-            borderColor: active ? theme.colors.primary : theme.colors.border,
-            backgroundColor: theme.colors.surfaceElevated,
+            borderColor: active ? theme.colors.border.interactive : theme.colors.border.default,
+            backgroundColor: theme.colors.surface.raised,
           },
         ]}
       >
@@ -99,7 +101,7 @@ export function ChangeDocumentSheet({
           style={[
             styles.radio,
             {
-              borderColor: active ? theme.colors.primary : theme.colors.border,
+              borderColor: active ? theme.colors.border.interactive : theme.colors.border.default,
             },
           ]}
         >
@@ -107,15 +109,15 @@ export function ChangeDocumentSheet({
             <View
               style={[
                 styles.radioDot,
-                { backgroundColor: theme.colors.primary },
+                { backgroundColor: theme.colors.action.primary.default },
               ]}
             />
           ) : null}
         </View>
         {isCurrent ? (
-          <Check size={16} color={theme.colors.success} />
+          <Check size={16} color={theme.colors.status.success.text} />
         ) : (
-          <FileText size={16} color={theme.colors.textSecondary} />
+          <FileText size={16} color={theme.colors.text.secondary} />
         )}
         <View style={styles.optionCopy}>
           <AppText variant="body" numberOfLines={2}>
@@ -142,8 +144,8 @@ export function ChangeDocumentSheet({
           style={[
             styles.sheet,
             {
-              backgroundColor: theme.colors.background,
-              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface.canvas,
+              borderColor: theme.colors.border.default,
             },
           ]}
         >
@@ -166,7 +168,7 @@ export function ChangeDocumentSheet({
               accessibilityLabel="Close"
               hitSlop={8}
             >
-              <X size={22} color={theme.colors.textSecondary} />
+              <X size={22} color={theme.colors.text.secondary} />
             </Pressable>
           </View>
 
@@ -275,12 +277,12 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.58)',
+    backgroundColor: staticColors.scrim,
   },
   sheet: {
     maxHeight: '88%',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
     borderWidth: 1,
     paddingTop: 16,
     paddingBottom: 24,
@@ -305,17 +307,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.surface,
   },
   optionCopy: { flex: 1, minWidth: 0 },
   radio: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioDot: { width: 10, height: 10, borderRadius: 5 },
+  radioDot: { width: 10, height: 10, borderRadius: radius.control },
   actions: { paddingHorizontal: 20, paddingTop: 8, gap: 10 },
 });

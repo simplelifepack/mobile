@@ -78,8 +78,13 @@ import type {
 } from '../../app/navigation/types';
 
 import { calculatePackReadiness } from './calculatePackReadiness';
+import { staticColors } from '../../design/tokens/colors';
 
 import type { DocumentRecord, PackageSummary } from '../../api/types';
+import { readinessTone } from './readinessTone';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
+import { formatDate } from '../../utils/format';
 
 // ============================================================================
 // Categories
@@ -115,27 +120,11 @@ function readinessColor(
   percentage: number,
   theme: ReturnType<typeof useAppTheme>['theme'],
 ) {
-  if (percentage < 40) {
-    return theme.colors.danger;
-  }
-
-  if (percentage < 80) {
-    return theme.colors.warning;
-  }
-
-  return theme.colors.success;
+  return theme.colors.status[readinessTone(percentage)].text;
 }
 
 function formatPackageDate(value?: string) {
-  if (!value) return undefined;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? undefined
-    : date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
+  return formatDate(value) || undefined;
 }
 
 function isPackageSourceStale(value?: string) {
@@ -228,7 +217,7 @@ function ReadinessRing({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={theme.colors.surfaceElevated}
+          stroke={theme.colors.surface.raised}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -280,10 +269,10 @@ function CategoryChip({
         styles.categoryChip,
         {
           backgroundColor: selected
-            ? theme.colors.surfaceElevated
+            ? theme.colors.surface.raised
             : 'transparent',
 
-          borderColor: selected ? theme.colors.primary : theme.colors.border,
+          borderColor: selected ? theme.colors.border.interactive : theme.colors.border.default,
 
           opacity: pressed ? 0.7 : 1,
         },
@@ -339,7 +328,7 @@ function PackageCard({
         style={[
           styles.packageCard,
           {
-            borderRadius: theme.radius.lg,
+            borderRadius: theme.radius.surface,
           },
         ]}
       >
@@ -355,13 +344,13 @@ function PackageCard({
               style={[
                 styles.packageIcon,
                 {
-                  backgroundColor: theme.colors.surfaceElevated,
+                  backgroundColor: theme.colors.surface.raised,
 
-                  borderRadius: theme.radius.md,
+                  borderRadius: theme.radius.control,
                 },
               ]}
             >
-              <Icon size={18} color={theme.colors.primary} strokeWidth={2} />
+              <Icon size={18} color={theme.colors.text.interactive} strokeWidth={2} />
             </View>
 
             <AppText
@@ -392,7 +381,7 @@ function PackageCard({
             style={[
               styles.readyStamp,
               {
-                borderColor: theme.colors.success,
+                borderColor: theme.colors.status.success.border,
               },
             ]}
           >
@@ -400,7 +389,7 @@ function PackageCard({
               style={[
                 styles.readyText,
                 {
-                  color: theme.colors.success,
+                  color: theme.colors.status.success.text,
                 },
               ]}
             >
@@ -410,7 +399,7 @@ function PackageCard({
         ) : (
           <ChevronRight
             size={20}
-            color={theme.colors.textSecondary}
+            color={theme.colors.text.secondary}
             strokeWidth={2}
           />
         )}
@@ -566,8 +555,8 @@ function PackageDetailBottomSheet({
           style={[
             styles.sheet,
             {
-              backgroundColor: theme.colors.background,
-              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface.canvas,
+              borderColor: theme.colors.border.default,
             },
           ]}
         >
@@ -575,7 +564,7 @@ function PackageDetailBottomSheet({
               Grabber
           ================================================================ */}
 
-          <View style={styles.sheetGrabber} />
+          <View style={[styles.sheetGrabber, { backgroundColor: theme.colors.border.emphasis }]} />
 
           {/* ================================================================
               Header
@@ -587,10 +576,10 @@ function PackageDetailBottomSheet({
             <View
               style={[
                 styles.sheetPackageIcon,
-                { backgroundColor: theme.colors.surfaceElevated },
+                { backgroundColor: theme.colors.surface.raised },
               ]}
             >
-              <Icon size={23} color={theme.colors.primary} strokeWidth={2} />
+              <Icon size={23} color={theme.colors.text.interactive} strokeWidth={2} />
             </View>
             <View style={styles.packageHeaderCopy}>
               <AppText
@@ -617,12 +606,12 @@ function PackageDetailBottomSheet({
               style={[
                 styles.sheetCloseButton,
                 {
-                  backgroundColor: theme.colors.surfaceElevated,
-                  borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface.raised,
+                  borderColor: theme.colors.border.default,
                 },
               ]}
             >
-              <X size={21} color={theme.colors.textPrimary} strokeWidth={2} />
+              <X size={21} color={theme.colors.text.primary} strokeWidth={2} />
             </Pressable>
           </View>
 
@@ -654,8 +643,8 @@ function PackageDetailBottomSheet({
                   style={[
                     styles.sourceCard,
                     {
-                      backgroundColor: theme.colors.surfaceElevated,
-                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surface.raised,
+                      borderColor: theme.colors.border.default,
                     },
                   ]}
                 >
@@ -694,11 +683,11 @@ function PackageDetailBottomSheet({
                       accessibilityLabel="Check again now"
                     >
                       {refreshing ? (
-                        <ActivityIndicator color={theme.colors.primary} />
+                        <ActivityIndicator color={theme.colors.text.interactive} />
                       ) : (
                         <RefreshCw
                           size={20}
-                          color={theme.colors.textSecondary}
+                          color={theme.colors.text.secondary}
                           strokeWidth={2}
                         />
                       )}
@@ -746,8 +735,8 @@ function PackageDetailBottomSheet({
                   style={[
                     styles.vaultCard,
                     {
-                      backgroundColor: theme.colors.surface,
-                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surface.default,
+                      borderColor: theme.colors.border.default,
                     },
                   ]}
                 >
@@ -755,13 +744,13 @@ function PackageDetailBottomSheet({
                     style={[
                       styles.vaultHeader,
                       {
-                        borderBottomColor: theme.colors.border,
+                        borderBottomColor: theme.colors.border.default,
                       },
                     ]}
                   >
                     <Check
                       size={20}
-                      color={theme.colors.success}
+                      color={theme.colors.status.success.text}
                       strokeWidth={2.5}
                     />
 
@@ -793,7 +782,7 @@ function PackageDetailBottomSheet({
                           style={[
                             styles.vaultRow,
                             {
-                              borderBottomColor: theme.colors.border,
+                              borderBottomColor: theme.colors.border.default,
                             },
                           ]}
                         >
@@ -801,20 +790,20 @@ function PackageDetailBottomSheet({
                             style={[
                               styles.vaultCheck,
                               {
-                                backgroundColor: theme.colors.success + '22',
+                                backgroundColor: theme.colors.status.success.surface,
                               },
                             ]}
                           >
                             {ready ? (
                               <Check
                                 size={17}
-                                color={theme.colors.success}
+                                color={theme.colors.status.success.text}
                                 strokeWidth={2.5}
                               />
                             ) : (
                               <Shield
                                 size={17}
-                                color={theme.colors.warning}
+                                color={theme.colors.status.warning.text}
                                 strokeWidth={2}
                               />
                             )}
@@ -831,7 +820,7 @@ function PackageDetailBottomSheet({
 
                               <ChevronRight
                                 size={18}
-                                color={theme.colors.textSecondary}
+                                color={theme.colors.text.secondary}
                                 strokeWidth={2}
                               />
                             </Row>
@@ -846,7 +835,7 @@ function PackageDetailBottomSheet({
                             <Pressable
                               style={[
                                 styles.actionPill,
-                                { borderColor: theme.colors.border },
+                                { borderColor: theme.colors.border.default },
                               ]}
                               onPress={() => {
                                 setAssignmentError(undefined);
@@ -876,20 +865,20 @@ function PackageDetailBottomSheet({
                     style={[
                       styles.vaultCard,
                       {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.border,
+                        backgroundColor: theme.colors.surface.default,
+                        borderColor: theme.colors.border.default,
                       },
                     ]}
                   >
                     <View
                       style={[
                         styles.vaultHeader,
-                        { borderBottomColor: theme.colors.border },
+                        { borderBottomColor: theme.colors.border.default },
                       ]}
                     >
                       <Shield
                         size={20}
-                        color={theme.colors.warning}
+                        color={theme.colors.status.warning.text}
                         strokeWidth={2}
                       />
                       <AppText variant="heading" style={styles.vaultTitle}>
@@ -902,18 +891,18 @@ function PackageDetailBottomSheet({
                         key={requirement.id}
                         style={[
                           styles.missingRequirementRow,
-                          { borderBottomColor: theme.colors.border },
+                          { borderBottomColor: theme.colors.border.default },
                         ]}
                       >
                         <View
                           style={[
                             styles.vaultCheck,
-                            { backgroundColor: theme.colors.warning + '22' },
+                            { backgroundColor: theme.colors.status.warning.surface },
                           ]}
                         >
                           <X
                             size={17}
-                            color={theme.colors.warning}
+                            color={theme.colors.status.warning.text}
                             strokeWidth={2.5}
                           />
                         </View>
@@ -938,7 +927,7 @@ function PackageDetailBottomSheet({
                           accessibilityRole="button"
                           style={[
                             styles.addRequirementButton,
-                            { borderColor: theme.colors.primary },
+                            { borderColor: theme.colors.border.interactive },
                           ]}
                         >
                           <AppText variant="label" color="primary">
@@ -955,20 +944,20 @@ function PackageDetailBottomSheet({
                     style={[
                       styles.vaultCard,
                       {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.border,
+                        backgroundColor: theme.colors.surface.default,
+                        borderColor: theme.colors.border.default,
                       },
                     ]}
                   >
                     <View
                       style={[
                         styles.vaultHeader,
-                        { borderBottomColor: theme.colors.border },
+                        { borderBottomColor: theme.colors.border.default },
                       ]}
                     >
                       <X
                         size={20}
-                        color={theme.colors.textSecondary}
+                        color={theme.colors.text.secondary}
                         strokeWidth={2}
                       />
                       <AppText variant="heading" style={styles.vaultTitle}>
@@ -980,7 +969,7 @@ function PackageDetailBottomSheet({
                         key={requirement.id}
                         style={[
                           styles.missingRequirementRow,
-                          { borderBottomColor: theme.colors.border },
+                          { borderBottomColor: theme.colors.border.default },
                         ]}
                       >
                         <View style={styles.missingRequirementCopy}>
@@ -1000,7 +989,7 @@ function PackageDetailBottomSheet({
                           accessibilityRole="button"
                           style={[
                             styles.addRequirementButton,
-                            { borderColor: theme.colors.primary },
+                            { borderColor: theme.colors.border.interactive },
                           ]}
                         >
                           <AppText variant="label" color="primary">
@@ -1016,20 +1005,20 @@ function PackageDetailBottomSheet({
                   style={[
                     styles.vaultCard,
                     {
-                      backgroundColor: theme.colors.surface,
-                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surface.default,
+                      borderColor: theme.colors.border.default,
                     },
                   ]}
                 >
                   <View
                     style={[
                       styles.vaultHeader,
-                      { borderBottomColor: theme.colors.border },
+                      { borderBottomColor: theme.colors.border.default },
                     ]}
                   >
                     <Download
                       size={20}
-                      color={theme.colors.textSecondary}
+                      color={theme.colors.text.secondary}
                       strokeWidth={2}
                     />
                     <AppText variant="heading" style={styles.vaultTitle}>
@@ -1044,11 +1033,11 @@ function PackageDetailBottomSheet({
                       key={requirement.id}
                       style={[
                         styles.downloadDocumentRow,
-                        { borderBottomColor: theme.colors.border },
+                        { borderBottomColor: theme.colors.border.default },
                       ]}
                     >
-                      <View style={styles.downloadCheckbox}>
-                        <Check size={17} color="#17151D" strokeWidth={3} />
+                      <View style={[styles.downloadCheckbox, { backgroundColor: theme.colors.action.primary.default }]}>
+                        <Check size={17} color={theme.colors.text.onBrand} strokeWidth={3} />
                       </View>
                       <View style={styles.downloadDocumentCopy}>
                         <AppText variant="body">{requirement.title}</AppText>
@@ -1070,11 +1059,11 @@ function PackageDetailBottomSheet({
                     }}
                     style={[
                       styles.downloadAction,
-                      { backgroundColor: theme.colors.primary },
+                      { backgroundColor: theme.colors.action.primary.default },
                     ]}
                   >
-                    <Download size={20} color="#17151D" strokeWidth={2.5} />
-                    <AppText variant="label" style={styles.downloadActionText}>
+                    <Download size={20} color={theme.colors.text.onBrand} strokeWidth={2.5} />
+                    <AppText variant="label" style={[styles.downloadActionText, { color: theme.colors.text.onBrand }]}>
                       Download
                     </AppText>
                   </Pressable>
@@ -1089,15 +1078,15 @@ function PackageDetailBottomSheet({
                     style={[
                       styles.vaultCard,
                       {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.border,
+                        backgroundColor: theme.colors.surface.default,
+                        borderColor: theme.colors.border.default,
                       },
                     ]}
                   >
                     <View
                       style={[
                         styles.vaultHeader,
-                        { borderBottomColor: theme.colors.border },
+                        { borderBottomColor: theme.colors.border.default },
                       ]}
                     >
                       <AppText variant="heading" style={styles.vaultTitle}>
@@ -1111,7 +1100,7 @@ function PackageDetailBottomSheet({
                         onPress={() => Linking.openURL(source.url)}
                         style={[
                           styles.missingRequirementRow,
-                          { borderBottomColor: theme.colors.border },
+                          { borderBottomColor: theme.colors.border.default },
                         ]}
                       >
                         <View style={styles.missingRequirementCopy}>
@@ -1130,7 +1119,7 @@ function PackageDetailBottomSheet({
                         </View>
                         <ChevronRight
                           size={18}
-                          color={theme.colors.textSecondary}
+                          color={theme.colors.text.secondary}
                         />
                       </Pressable>
                     ))}
@@ -1492,9 +1481,9 @@ export function ReadinessScreen() {
               style={[
                 styles.countBadge,
                 {
-                  backgroundColor: theme.colors.surfaceElevated,
+                  backgroundColor: theme.colors.surface.raised,
 
-                  borderColor: theme.colors.border,
+                  borderColor: theme.colors.border.default,
                 },
               ]}
             >
@@ -1503,7 +1492,7 @@ export function ReadinessScreen() {
                 color="secondary"
                 style={styles.countText}
               >
-                {items.length}
+                {packages.data?.pagination.total ?? items.length}
               </AppText>
             </View>
           </Row>
@@ -1520,9 +1509,9 @@ export function ReadinessScreen() {
               style={({ pressed }) => [
                 styles.headerButton,
                 {
-                  backgroundColor: theme.colors.surfaceElevated,
+                  backgroundColor: theme.colors.surface.raised,
 
-                  borderColor: theme.colors.border,
+                  borderColor: theme.colors.border.default,
 
                   opacity: pressed ? 0.75 : 1,
                 },
@@ -1530,7 +1519,7 @@ export function ReadinessScreen() {
             >
               <Search
                 size={20}
-                color={theme.colors.textSecondary}
+                color={theme.colors.text.secondary}
                 strokeWidth={2}
               />
             </Pressable>
@@ -1541,9 +1530,9 @@ export function ReadinessScreen() {
               style={[
                 styles.avatar,
                 {
-                  backgroundColor: theme.colors.surfaceElevated,
+                  backgroundColor: theme.colors.surface.raised,
 
-                  borderColor: theme.colors.border,
+                  borderColor: theme.colors.border.default,
                 },
               ]}
             >
@@ -1552,7 +1541,7 @@ export function ReadinessScreen() {
                 style={[
                   styles.avatarText,
                   {
-                    color: theme.colors.warning,
+                    color: theme.colors.status.warning.text,
                   },
                 ]}
               >
@@ -1573,17 +1562,17 @@ export function ReadinessScreen() {
               {
                 flex: 1,
 
-                backgroundColor: theme.colors.surface,
+                backgroundColor: theme.colors.surface.default,
 
-                borderColor: theme.colors.border,
+                borderColor: theme.colors.border.default,
 
-                borderRadius: theme.radius.md,
+                borderRadius: theme.radius.control,
               },
             ]}
           >
             <Search
               size={19}
-              color={theme.colors.textSecondary}
+              color={theme.colors.text.secondary}
               strokeWidth={2}
             />
 
@@ -1595,11 +1584,11 @@ export function ReadinessScreen() {
               onSubmitEditing={search}
               returnKeyType="search"
               placeholder="Visa, loan, admission..."
-              placeholderTextColor={theme.colors.textMuted}
+              placeholderTextColor={theme.colors.text.tertiary}
               style={[
                 styles.searchInput,
                 {
-                  color: theme.colors.textPrimary,
+                  color: theme.colors.text.primary,
                 },
               ]}
             />
@@ -1816,8 +1805,8 @@ const styles = StyleSheet.create({
   },
 
   pageTitle: {
-    fontSize: 22,
-    lineHeight: 27,
+    fontSize: fontSize.headingLg,
+    lineHeight: lineHeight.headingLg,
     fontWeight: '700',
   },
 
@@ -1825,22 +1814,22 @@ const styles = StyleSheet.create({
     minWidth: 44,
     height: 32,
     paddingHorizontal: 8,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   countText: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     fontWeight: '600',
   },
 
   headerButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.overlay,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1849,15 +1838,15 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.overlay,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   avatarText: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     fontWeight: '600',
   },
 
@@ -1877,8 +1866,8 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 46,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '400',
     padding: 0,
   },
@@ -1895,15 +1884,15 @@ const styles = StyleSheet.create({
   categoryChip: {
     height: 44,
     paddingHorizontal: 16,
-    borderRadius: 22,
+    borderRadius: radius.overlay,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   categoryText: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     fontWeight: '600',
   },
 
@@ -1940,8 +1929,8 @@ const styles = StyleSheet.create({
   },
 
   readinessNumber: {
-    fontSize: 16,
-    lineHeight: 19,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '600',
   },
 
@@ -1966,15 +1955,15 @@ const styles = StyleSheet.create({
 
   packageTitle: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '600',
   },
 
   packageStatus: {
     marginTop: 2,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   // --------------------------------------------------------------------------
@@ -1986,7 +1975,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 2,
-    borderRadius: 8,
+    borderRadius: radius.control,
     transform: [
       {
         rotate: '-8deg',
@@ -1998,8 +1987,8 @@ const styles = StyleSheet.create({
   },
 
   readyText: {
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     fontWeight: '600',
     letterSpacing: 0,
   },
@@ -2009,14 +1998,14 @@ const styles = StyleSheet.create({
   // --------------------------------------------------------------------------
 
   detailTitle: {
-    fontSize: 19,
-    lineHeight: 24,
+    fontSize: fontSize.headingMd,
+    lineHeight: lineHeight.headingMd,
     fontWeight: '700',
   },
 
   detailDescription: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
   },
 
   detailSummary: {
@@ -2024,22 +2013,22 @@ const styles = StyleSheet.create({
   },
 
   detailPercentage: {
-    fontSize: 18,
-    lineHeight: 23,
+    fontSize: fontSize.headingSm,
+    lineHeight: lineHeight.headingSm,
     fontWeight: '600',
   },
 
   requirementsHeading: {
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '600',
   },
 
   requirementGroupHeading: {
     paddingTop: 4,
     paddingBottom: 2,
-    fontSize: 12,
-    lineHeight: 15,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     fontWeight: '600',
   },
 
@@ -2053,7 +2042,7 @@ const styles = StyleSheet.create({
   requirementIcon: {
     width: 34,
     height: 34,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2071,12 +2060,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.surface,
   },
   sheetOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.58)',
+    backgroundColor: staticColors.scrim,
   },
   sheetBackdrop: {
     ...StyleSheet.absoluteFill,
@@ -2086,8 +2075,8 @@ const styles = StyleSheet.create({
     minHeight: '55%',
     paddingHorizontal: 16,
     paddingTop: 8,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
     borderWidth: 1,
   },
   sheetGrabber: {
@@ -2095,9 +2084,8 @@ const styles = StyleSheet.create({
     height: 4,
     marginTop: 4,
     marginBottom: 12,
-    borderRadius: 2,
+    borderRadius: radius.pill,
     alignSelf: 'center',
-    backgroundColor: '#8A97AE',
   },
   sheetHeader: {
     minHeight: 56,
@@ -2110,7 +2098,7 @@ const styles = StyleSheet.create({
   sheetPackageIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2123,7 +2111,7 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 18,
+    borderRadius: radius.tile,
     borderWidth: 1,
   },
   sheetContent: {
@@ -2140,7 +2128,7 @@ const styles = StyleSheet.create({
   sourceCard: {
     padding: 12,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     gap: 8,
   },
   sourceText: {},
@@ -2148,8 +2136,8 @@ const styles = StyleSheet.create({
     minHeight: 28,
   },
   packageHeaderCopy: { flex: 1, minWidth: 0, gap: 3 },
-  packageSubtitle: { fontSize: 14, lineHeight: 20 },
-  sourceProvider: { fontSize: 14, lineHeight: 20, fontWeight: '700' },
+  packageSubtitle: { fontSize: fontSize.body, lineHeight: lineHeight.body },
+  sourceProvider: { fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: '700' },
   sourceCheckedDate: { fontWeight: '600' },
   sourceLinks: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   sourcesNote: { padding: 12 },
@@ -2160,7 +2148,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginBottom: 4,
   },
-  readinessSummaryText: { fontSize: 16, lineHeight: 23 },
+  readinessSummaryText: { fontSize: fontSize.body, lineHeight: lineHeight.body },
   missingRequirementRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -2175,7 +2163,7 @@ const styles = StyleSheet.create({
     minHeight: 32,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2191,8 +2179,7 @@ const styles = StyleSheet.create({
   downloadCheckbox: {
     width: 22,
     height: 22,
-    borderRadius: 3,
-    backgroundColor: '#B18AE5',
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2200,20 +2187,20 @@ const styles = StyleSheet.create({
   downloadAction: {
     minHeight: 58,
     margin: 12,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
   },
-  downloadActionText: { color: '#17151D', fontSize: 16, fontWeight: '700' },
+  downloadActionText: { fontSize: fontSize.body, fontWeight: '700' },
   actionPill: {
     alignSelf: 'flex-start',
     minHeight: 32,
     justifyContent: 'center',
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     marginTop: 4,
   },
   readyStampLarge: {
@@ -2221,18 +2208,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderWidth: 2,
-    borderRadius: 8,
+    borderRadius: radius.control,
     transform: [{ rotate: '-6deg' }],
   },
   readyTextLarge: {
-    fontSize: 12,
-    lineHeight: 15,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     fontWeight: '700',
     letterSpacing: 0,
   },
   vaultCard: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     overflow: 'hidden',
   },
   vaultHeader: {
@@ -2258,7 +2245,7 @@ const styles = StyleSheet.create({
   vaultCheck: {
     width: 28,
     height: 28,
-    borderRadius: 9,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -16,6 +16,7 @@ import {
   MAX_IMPORT_BATCH,
 } from './lockerState';
 import { useDigiLocker } from './useDigiLocker';
+import { radius } from '../../../design/tokens/radius';
 
 export function DigiLockerCard({ onImported }: { onImported: () => void }) {
   const { theme } = useAppTheme();
@@ -41,7 +42,7 @@ export function DigiLockerCard({ onImported }: { onImported: () => void }) {
     <Card>
       <Stack gap="md">
         <Row align="center" gap="sm">
-          <FileCheck2 size={21} color={theme.colors.primary} />
+          <FileCheck2 size={21} color={theme.colors.text.interactive} />
           <Stack gap="xs" style={styles.grow}>
             <AppText variant="heading">DigiLocker</AppText>
             <AppText variant="caption" color="secondary">
@@ -89,7 +90,7 @@ export function DigiLockerCard({ onImported }: { onImported: () => void }) {
                   accessibilityState={{ checked: selected, disabled }}
                   disabled={disabled}
                   onPress={() => locker.toggle(doc.reference)}
-                  style={[styles.document, { borderColor: selected ? theme.colors.primary : theme.colors.border }]}
+                  style={[styles.document, { borderColor: selected ? theme.colors.border.interactive : theme.colors.border.default }]}
                 >
                   <Stack gap="xs">
                     <AppText variant="label" numberOfLines={1}>{doc.name}</AppText>
@@ -135,5 +136,5 @@ export function DigiLockerCard({ onImported }: { onImported: () => void }) {
 
 const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
-  document: { padding: 12, borderWidth: 1, borderRadius: 10 },
+  document: { padding: 12, borderWidth: 1, borderRadius: radius.surface },
 });

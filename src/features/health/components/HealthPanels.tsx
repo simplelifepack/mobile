@@ -24,6 +24,7 @@ import { Card } from '../../../components/primitives/Card';
 import { Row } from '../../../components/primitives/Row';
 import { Stack } from '../../../components/primitives/Stack';
 import { styles } from '../healthStyles';
+import { formatDate } from '../../../utils/format';
 
 export function Reminders({
   reminders: reminderItems,
@@ -51,8 +52,7 @@ export function Reminders({
           <Bell
             size={19}
             color={
-              theme.colors
-                .textSecondary
+              theme.colors.text.secondary
             }
           />
 
@@ -72,22 +72,17 @@ export function Reminders({
             styles.addReminder,
             {
               borderColor:
-                theme.colors
-                  .warning +
-                '66',
+                theme.colors.status.warning.surface,
 
               backgroundColor:
-                theme.colors
-                  .warning +
-                '0D',
+                theme.colors.status.warning.surface,
             },
           ]}
         >
           <Plus
             size={16}
             color={
-              theme.colors
-                .warning
+              theme.colors.status.warning.text
             }
           />
 
@@ -95,8 +90,7 @@ export function Reminders({
             variant="label"
             style={{
               color:
-                theme.colors
-                  .warning,
+                theme.colors.status.warning.text,
             }}
           >
             Add
@@ -109,7 +103,7 @@ export function Reminders({
           styles.divider,
           {
             backgroundColor:
-              theme.colors.border,
+              theme.colors.border.default,
           },
         ]}
       />
@@ -125,8 +119,7 @@ export function Reminders({
               index > 0 && {
                 borderTopWidth: 1,
                 borderTopColor:
-                  theme.colors
-                    .border,
+                  theme.colors.border.default,
               },
             ]}
           >
@@ -135,17 +128,14 @@ export function Reminders({
                 styles.reminderIcon,
                 {
                   backgroundColor:
-                    theme.colors
-                      .warning +
-                    '18',
+                    theme.colors.status.warning.surface,
                 },
               ]}
             >
               <CalendarClock
                 size={18}
                 color={
-                  theme.colors
-                    .warning
+                  theme.colors.status.warning.text
                 }
               />
             </View>
@@ -172,7 +162,7 @@ export function Reminders({
                 color="secondary"
               >
                 {reminder.dueDate
-                  ? new Date(reminder.dueDate).toLocaleDateString()
+                  ? formatDate(reminder.dueDate)
                   : `${reminder.memberName} · no due date`}
               </AppText>
             </Stack>
@@ -220,8 +210,7 @@ export function MedicalReadiness({
           <Shield
             size={19}
             color={
-              theme.colors
-                .textSecondary
+              theme.colors.text.secondary
             }
           />
 
@@ -252,8 +241,7 @@ export function MedicalReadiness({
             styles.medicalPercentage,
             {
               color:
-                theme.colors
-                  .warning,
+                theme.colors.status.warning.text,
             },
           ]}
         >
@@ -281,8 +269,7 @@ export function MedicalReadiness({
           styles.readinessTrack,
           {
             backgroundColor:
-              theme.colors
-                .surfaceElevated,
+              theme.colors.surface.raised,
           },
         ]}
       >
@@ -292,8 +279,7 @@ export function MedicalReadiness({
             {
               width: `${readiness}%`,
               backgroundColor:
-                theme.colors
-                  .warning,
+                theme.colors.status.warning.icon,
             },
           ]}
         />
@@ -314,7 +300,7 @@ export function MedicalReadiness({
           styles.divider,
           {
             backgroundColor:
-              theme.colors.border,
+              theme.colors.border.default,
           },
         ]}
       />
@@ -363,8 +349,7 @@ export function MedicalReadiness({
             styles.medicalValue,
             {
               color:
-                theme.colors
-                  .danger,
+                theme.colors.status.danger.text,
             },
           ]}
         >

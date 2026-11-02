@@ -63,7 +63,7 @@ export function OnboardingScreen({
           <Button title="Skip" variant="ghost" onPress={finish} />
         </Row>
         <Stack gap="lg">
-          <Icon size={56} color={theme.colors.primary} />
+          <Icon size={56} color={theme.colors.text.interactive} />
           <AppText variant="display">{page.title}</AppText>
           <AppText color="secondary">{page.body}</AppText>
         </Stack>

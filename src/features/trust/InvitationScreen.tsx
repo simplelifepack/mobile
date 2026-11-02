@@ -15,6 +15,7 @@ import { Row } from '../../components/primitives/Row';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
+import { radius } from '../../design/tokens/radius';
 
 export function InvitationScreen() {
   const { theme } = useAppTheme();
@@ -84,12 +85,12 @@ export function InvitationScreen() {
     <Screen scroll>
       <Stack gap="md" style={styles.container}>
         <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => navigation.goBack()}>
-          <ArrowLeft size={22} color={theme.colors.textPrimary} />
+          <ArrowLeft size={22} color={theme.colors.text.primary} />
         </Pressable>
         <Card>
           <Stack gap="md">
             <Row align="center" gap="sm">
-              <ShieldCheck size={22} color={theme.colors.primary} />
+              <ShieldCheck size={22} color={theme.colors.text.interactive} />
               <AppText variant="title">Readiness Invitation</AppText>
             </Row>
             {done ? <AppText variant="body" color="success">{done}</AppText> : null}
@@ -119,11 +120,11 @@ export function InvitationScreen() {
                       keyboardType="number-pad"
                       maxLength={6}
                       placeholder="6-digit PIN"
-                      placeholderTextColor={theme.colors.textMuted}
+                      placeholderTextColor={theme.colors.text.tertiary}
                       style={[styles.input, {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.border,
-                        color: theme.colors.textPrimary,
+                        backgroundColor: theme.colors.surface.default,
+                        borderColor: theme.colors.border.default,
+                        color: theme.colors.text.primary,
                       }]}
                     />
                   </Stack>
@@ -152,5 +153,5 @@ export function InvitationScreen() {
 
 const styles = {
   container: { paddingTop: 20, paddingBottom: 32 },
-  input: { minHeight: 46, paddingHorizontal: 12, borderWidth: 1, borderRadius: 10 },
+  input: { minHeight: 46, paddingHorizontal: 12, borderWidth: 1, borderRadius: radius.surface },
 };

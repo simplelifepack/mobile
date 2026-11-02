@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Check, ChevronDown, ChevronUp, FileText, HandCoins, Paperclip, PenLine, X } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, FileText, HandCoins, Paperclip, PenLine, X } from 'lucide-react-native';
 
 import { ActionSheet } from '../../components/primitives/ActionSheet';
 import { DatePickerInput } from '../../components/primitives/DatePickerInput';
@@ -25,6 +25,9 @@ import {
   pickAndSaveDocument,
   type SavedWealthDocument,
 } from './wealthDocumentImport';
+import { staticColors } from '../../design/tokens/colors';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 const currencies = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD'];
 const isoDate = /^\d{4}-\d{2}-\d{2}$/;
@@ -141,14 +144,14 @@ export function LentBorrowedForm({
 
   const inputStyle = [
     styles.input,
-    { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border, color: theme.colors.textPrimary },
+    { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default, color: theme.colors.text.primary },
   ];
   const input = (value: string, onChangeText: (value: string) => void, placeholder: string, extra: object = {}) => (
     <TextInput
       value={value}
       onChangeText={text => { onChangeText(text); setError(undefined); }}
       placeholder={placeholder}
-      placeholderTextColor={theme.colors.textMuted}
+      placeholderTextColor={theme.colors.text.tertiary}
       style={inputStyle}
       {...extra}
     />
@@ -162,9 +165,9 @@ export function LentBorrowedForm({
     />
   );
   const select = (text: string, onPress: () => void) => (
-    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.select, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}>
+    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.select, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
       <AppText variant="body" style={styles.selectText} numberOfLines={1}>{text}</AppText>
-      <ChevronDown size={18} color={theme.colors.textPrimary} />
+      <ChevronDown size={18} color={theme.colors.text.primary} />
     </Pressable>
   );
   const field = (label: string, child: React.ReactNode, flex = false) => (
@@ -178,11 +181,11 @@ export function LentBorrowedForm({
     switch (picker) {
       case 'direction':
         return [
-          { label: 'I lent', icon: Check, onPress: () => { setDirection('LENT'); setPicker(null); } },
-          { label: 'I borrowed', icon: Check, onPress: () => { setDirection('BORROWED'); setPicker(null); } },
+          { label: 'I lent', selected: direction === 'LENT', onPress: () => { setDirection('LENT'); setPicker(null); } },
+          { label: 'I borrowed', selected: direction === 'BORROWED', onPress: () => { setDirection('BORROWED'); setPicker(null); } },
         ];
       case 'currency':
-        return currencies.map(item => ({ label: item, icon: Check, onPress: () => { setCurrency(item); setPicker(null); } }));
+        return currencies.map(item => ({ label: item, selected: currency === item, onPress: () => { setCurrency(item); setPicker(null); } }));
       case 'proof':
         return pickAndSaveDocument(attach, () => setWorking(true), () => setWorking(false)).map(item => ({
           label: item.label,
@@ -198,11 +201,11 @@ export function LentBorrowedForm({
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior="padding" style={styles.formBackdrop}>
-        <View style={[styles.formPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <View style={[styles.formPanel, { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default }]}>
           <Row align="center" justify="space-between">
             <AppText variant="title" style={styles.title}>Record money lent or borrowed</AppText>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={[styles.close, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}>
-              <X size={22} color={theme.colors.textPrimary} strokeWidth={2} />
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={[styles.close, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
+              <X size={22} color={theme.colors.text.primary} strokeWidth={2} />
             </Pressable>
           </Row>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.formContent}>
@@ -213,9 +216,9 @@ export function LentBorrowedForm({
               accessibilityRole="button"
               disabled={working}
               onPress={() => setPicker('proof')}
-              style={[styles.proof, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}
+              style={[styles.proof, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}
             >
-              <Paperclip size={20} color={theme.colors.primary} />
+              <Paperclip size={20} color={theme.colors.text.interactive} />
               <View style={styles.flex}>
                 <AppText variant="label">Photo · screenshot · receipt · PDF</AppText>
                 <AppText variant="caption" color="secondary">
@@ -237,8 +240,8 @@ export function LentBorrowedForm({
               {field('Date', dateInput(date, setDate), true)}
             </Row>
             <Pressable accessibilityRole="button" onPress={() => setMore(value => !value)} style={styles.moreToggle}>
-              {more ? <ChevronUp size={14} color={theme.colors.primary} /> : <ChevronDown size={14} color={theme.colors.primary} />}
-              <AppText variant="label" style={{ color: theme.colors.primary }}>{more ? 'Fewer details' : 'More details'}</AppText>
+              {more ? <ChevronUp size={14} color={theme.colors.text.interactive} /> : <ChevronDown size={14} color={theme.colors.text.interactive} />}
+              <AppText variant="label" style={{ color: theme.colors.text.interactive }}>{more ? 'Fewer details' : 'More details'}</AppText>
             </Pressable>
             {more ? (
               <>
@@ -254,9 +257,9 @@ export function LentBorrowedForm({
               accessibilityRole="button"
               disabled={saving || working}
               onPress={() => { save(); }}
-              style={[styles.submit, { backgroundColor: theme.colors.primary, opacity: saving || working ? 0.5 : 1 }]}
+              style={[styles.submit, { backgroundColor: theme.colors.action.primary.default, opacity: saving || working ? 0.5 : 1 }]}
             >
-              <AppText variant="heading" style={{ color: theme.colors.onPrimary }}>{saving ? 'Saving…' : 'Confirm'}</AppText>
+              <AppText variant="heading" style={{ color: theme.colors.text.onBrand }}>{saving ? 'Saving…' : 'Confirm'}</AppText>
             </Pressable>
           </ScrollView>
         </View>
@@ -267,28 +270,28 @@ export function LentBorrowedForm({
 }
 
 const styles = StyleSheet.create({
-  formBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.58)' },
+  formBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: staticColors.scrim },
   formPanel: {
     width: '100%',
     maxHeight: '92%',
     borderTopWidth: 1,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 24,
     gap: 12,
   },
-  title: { flex: 1, fontSize: 18, lineHeight: 24, fontWeight: '700' },
-  close: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, fontSize: fontSize.headingSm, lineHeight: lineHeight.headingSm, fontWeight: '700' },
+  close: { width: 40, height: 40, borderRadius: radius.surface, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   formContent: { gap: 14, paddingBottom: 8 },
-  proof: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderWidth: 1, borderRadius: 12 },
+  proof: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderWidth: 1, borderRadius: radius.surface },
   field: { gap: 6, minWidth: 0 },
   flex: { flex: 1 },
-  label: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
-  input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 15 },
-  select: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  selectText: { flex: 1, fontSize: 15 },
+  label: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: '600' },
+  input: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 14, fontSize: fontSize.body },
+  select: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  selectText: { flex: 1, fontSize: fontSize.body },
   moreToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
-  submit: { minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  submit: { minHeight: 52, borderRadius: radius.surface, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
 });

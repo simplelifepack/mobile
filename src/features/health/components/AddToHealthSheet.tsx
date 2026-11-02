@@ -69,9 +69,9 @@ export function AddToHealthSheet({
             styles.addHealthSheet,
             {
               backgroundColor:
-                theme.colors.background,
+                theme.colors.surface.canvas,
               borderColor:
-                theme.colors.border,
+                theme.colors.border.default,
             },
           ]}
         >
@@ -82,7 +82,7 @@ export function AddToHealthSheet({
               styles.addHealthGrabber,
               {
                 backgroundColor:
-                  theme.colors.surfaceElevated,
+                  theme.colors.surface.raised,
               },
             ]}
           />
@@ -111,7 +111,7 @@ export function AddToHealthSheet({
               styles.addHealthDivider,
               {
                 backgroundColor:
-                  theme.colors.border,
+                  theme.colors.border.default,
               },
             ]}
           />
@@ -122,7 +122,7 @@ export function AddToHealthSheet({
             icon={
               <Upload
                 size={24}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
             }
@@ -137,7 +137,7 @@ export function AddToHealthSheet({
             icon={
               <Plus
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
             }
@@ -152,7 +152,7 @@ export function AddToHealthSheet({
             icon={
               <Bell
                 size={24}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
             }
@@ -167,7 +167,7 @@ export function AddToHealthSheet({
             icon={
               <Pill
                 size={24}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
             }
@@ -182,7 +182,7 @@ export function AddToHealthSheet({
             icon={
               <Users
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
             }
@@ -220,7 +220,7 @@ export function AddHealthRow({
         styles.addHealthRow,
         {
           borderBottomColor:
-            theme.colors.border,
+            theme.colors.border.default,
           borderBottomWidth: last ? 0 : 1,
           opacity: pressed ? 0.72 : 1,
         },
@@ -250,7 +250,7 @@ export function AddHealthRow({
 
       <ChevronRight
         size={22}
-        color={theme.colors.textMuted}
+        color={theme.colors.text.tertiary}
         strokeWidth={2}
       />
     </Pressable>
@@ -394,15 +394,15 @@ export function MetricPickerModal({
           style={[
             styles.metricPickerSheet,
             {
-              backgroundColor: theme.colors.background,
-              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface.canvas,
+              borderColor: theme.colors.border.default,
             },
           ]}
         >
           <View
             style={[
               styles.metricPickerGrabber,
-              { backgroundColor: theme.colors.surfaceElevated },
+              { backgroundColor: theme.colors.surface.raised },
             ]}
           />
 
@@ -452,7 +452,7 @@ export function MetricPickerModal({
                   onPress={() => toggleSelection(metric.metricKey)}
                   style={[
                     styles.metricPickerRow,
-                    { borderBottomColor: theme.colors.border },
+                    { borderBottomColor: theme.colors.border.default },
                   ]}
                 >
                   <View
@@ -460,16 +460,16 @@ export function MetricPickerModal({
                       styles.metricPickerCircle,
                       {
                         borderColor: isSelected
-                          ? theme.colors.primary
-                          : theme.colors.border,
+                          ? theme.colors.border.interactive
+                          : theme.colors.border.default,
                         backgroundColor: isSelected
-                          ? theme.colors.primary
+                          ? theme.colors.action.primary.default
                           : 'transparent',
                       },
                     ]}
                   >
                     {isSelected ? (
-                      <View style={styles.metricPickerCircleInner} />
+                      <View style={[styles.metricPickerCircleInner, { backgroundColor: theme.colors.text.onBrand }]} />
                     ) : null}
                   </View>
 
@@ -509,7 +509,7 @@ export function MetricPickerModal({
                 styles.metricPickerButton,
                 styles.metricPickerResetButton,
                 {
-                  borderColor: theme.colors.border,
+                  borderColor: theme.colors.border.default,
                   opacity: saving || loading ? 0.6 : 1,
                 },
               ]}
@@ -527,14 +527,14 @@ export function MetricPickerModal({
                 styles.metricPickerButton,
                 styles.metricPickerDoneButton,
                 {
-                  backgroundColor: theme.colors.primary,
+                  backgroundColor: theme.colors.action.primary.default,
                   opacity: saving || loading ? 0.6 : 1,
                 },
               ]}
             >
               <AppText
                 variant="label"
-                style={styles.metricPickerDoneText}
+                style={{ color: theme.colors.text.onBrand }}
               >
                 {saving ? 'Saving…' : 'Done'}
               </AppText>

@@ -1,25 +1,10 @@
+import type { ThemeColors } from '../tokens/colors';
 import { radius } from '../tokens/radius';
 import { shadows } from '../tokens/shadows';
 import { sizes } from '../tokens/sizes';
 import { spacing } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 export type ThemeMode = 'system' | 'light' | 'dark';
-export type ThemeColors = {
-  background: string;
-  surface: string;
-  surfaceElevated: string;
-  textPrimary: string;
-  textSecondary: string;
-  textMuted: string;
-  border: string;
-  primary: string;
-  primaryPressed: string;
-  onPrimary: string;
-  success: string;
-  warning: string;
-  danger: string;
-  overlay: string;
-};
 export type AppTheme = {
   isDark: boolean;
   colors: ThemeColors;
@@ -29,3 +14,4 @@ export type AppTheme = {
   sizes: typeof sizes;
   shadows: typeof shadows;
 };
+export type { ThemeColors };

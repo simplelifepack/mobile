@@ -8,10 +8,10 @@ const Container = styled.Pressable(({ theme }) => ({
   height: theme.sizes.input,
   paddingHorizontal: theme.spacing.md,
   justifyContent: 'center',
-  backgroundColor: theme.colors.surface,
+  backgroundColor: theme.colors.surface.default,
   borderWidth: 1,
-  borderColor: theme.colors.border,
-  borderRadius: theme.radius.md,
+  borderColor: theme.colors.border.default,
+  borderRadius: theme.radius.control,
 }));
 export function Select({
   label,
@@ -33,7 +33,7 @@ export function Select({
         <AppText>{value}</AppText>
         <ChevronDown
           size={theme.sizes.icon.sm}
-          color={theme.colors.textSecondary}
+          color={theme.colors.text.secondary}
         />
       </Row>
     </Container>

@@ -17,6 +17,7 @@ import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { DigiLockerCard } from '../integrations/digilocker/DigiLockerCard';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
+import { radius } from '../../design/tokens/radius';
 
 type DuplicateAction = 'ignore' | 'keep_both' | 'replace';
 
@@ -115,7 +116,7 @@ export function IntegrationsScreen() {
       <Stack gap="md" style={styles.container}>
         <Row align="center" gap="sm">
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => navigation.goBack()}>
-            <ArrowLeft size={22} color={theme.colors.textPrimary} />
+            <ArrowLeft size={22} color={theme.colors.text.primary} />
           </Pressable>
           <AppText variant="title">Connections</AppText>
         </Row>
@@ -125,7 +126,7 @@ export function IntegrationsScreen() {
         <Card>
           <Stack gap="md">
             <Row align="center" gap="sm">
-              <Mail size={21} color={theme.colors.primary} />
+              <Mail size={21} color={theme.colors.text.interactive} />
               <Stack gap="xs" style={styles.grow}>
                 <AppText variant="heading">Gmail</AppText>
                 <AppText variant="caption" color="secondary">
@@ -147,7 +148,7 @@ export function IntegrationsScreen() {
                     key={candidate.id}
                     disabled={candidate.status !== 'candidate' && candidate.status !== 'needs_review'}
                     onPress={() => toggleCandidate(candidate.id)}
-                    style={[styles.candidate, { borderColor: theme.colors.border }]}
+                    style={[styles.candidate, { borderColor: theme.colors.border.default }]}
                   >
                     <Row align="center" justify="space-between" gap="sm">
                       <Stack gap="xs" style={styles.grow}>
@@ -175,7 +176,7 @@ export function IntegrationsScreen() {
         <Card>
           <Stack gap="md">
             <Row align="center" gap="sm">
-              <Cloud size={21} color={theme.colors.primary} />
+              <Cloud size={21} color={theme.colors.text.interactive} />
               <Stack gap="xs" style={styles.grow}>
                 <AppText variant="heading">Google Drive</AppText>
                 <AppText variant="caption" color="secondary">
@@ -194,7 +195,7 @@ export function IntegrationsScreen() {
                     <Pressable
                       key={action}
                       onPress={() => setDuplicateAction(action)}
-                      style={[styles.choice, { borderColor: duplicateAction === action ? theme.colors.primary : theme.colors.border }]}
+                      style={[styles.choice, { borderColor: duplicateAction === action ? theme.colors.border.interactive : theme.colors.border.default }]}
                     >
                       <AppText variant="caption" align="center">
                         {action === 'keep_both' ? 'Keep both' : action === 'replace' ? 'Replace' : 'Ignore'}
@@ -224,6 +225,6 @@ export function IntegrationsScreen() {
 const styles = StyleSheet.create({
   container: { paddingTop: 20, paddingBottom: 32 },
   grow: { flex: 1, minWidth: 0 },
-  candidate: { padding: 12, borderWidth: 1, borderRadius: 10 },
-  choice: { flex: 1, minHeight: 38, paddingHorizontal: 4, borderWidth: 1, borderRadius: 8, justifyContent: 'center' },
+  candidate: { padding: 12, borderWidth: 1, borderRadius: radius.surface },
+  choice: { flex: 1, minHeight: 38, paddingHorizontal: 4, borderWidth: 1, borderRadius: radius.control, justifyContent: 'center' },
 });

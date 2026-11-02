@@ -6,11 +6,11 @@ const Digit = styled.TextInput(({ theme }) => ({
   width: 44,
   height: 52,
   textAlign: 'center',
-  color: theme.colors.textPrimary,
-  backgroundColor: theme.colors.surface,
+  color: theme.colors.text.primary,
+  backgroundColor: theme.colors.surface.default,
   borderWidth: 1,
-  borderColor: theme.colors.border,
-  borderRadius: theme.radius.md,
+  borderColor: theme.colors.border.default,
+  borderRadius: theme.radius.control,
   ...theme.typography.heading,
 }));
 export function PinInput({

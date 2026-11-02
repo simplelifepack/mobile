@@ -44,12 +44,12 @@ export function RootNavigator() {
   const navigationTheme: Theme = {
     dark: theme.isDark,
     colors: {
-      primary: theme.colors.primary,
-      background: theme.colors.background,
-      card: theme.colors.surface,
-      text: theme.colors.textPrimary,
-      border: theme.colors.border,
-      notification: theme.colors.danger,
+      primary: theme.colors.text.interactive,
+      background: theme.colors.surface.canvas,
+      card: theme.colors.surface.default,
+      text: theme.colors.text.primary,
+      border: theme.colors.border.default,
+      notification: theme.colors.status.danger.text,
     },
     fonts: {
       regular: { fontFamily: 'System', fontWeight: '400' },

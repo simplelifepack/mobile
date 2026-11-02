@@ -6,6 +6,9 @@ import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { authApi } from '../../api/auth.api';
 import { cleanPin } from '../auth/auth.validators';
+import { staticColors } from '../../design/tokens/colors';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 type Mode = 'change' | 'reset';
 
@@ -89,7 +92,7 @@ export function PinChangeModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
-        <View style={[styles.panel, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.panel, { backgroundColor: theme.colors.surface.canvas }]}>
           <AppText style={styles.title}>
             {mode === 'change' ? 'Change R-pin' : 'Reset R-pin'}
           </AppText>
@@ -135,7 +138,7 @@ export function PinChangeModal({
               onPress={close}
               style={[
                 styles.button,
-                { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
+                { borderColor: theme.colors.border.default, backgroundColor: theme.colors.surface.default },
               ]}
             >
               <AppText style={styles.buttonText}>Cancel</AppText>
@@ -145,10 +148,10 @@ export function PinChangeModal({
               onPress={showFields ? submit : sendCode}
               style={[
                 styles.button,
-                { backgroundColor: theme.colors.primary, opacity: busy ? 0.6 : 1 },
+                { backgroundColor: theme.colors.action.primary.default, opacity: busy ? 0.6 : 1 },
               ]}
             >
-              <AppText style={[styles.buttonText, styles.primaryText]}>
+              <AppText style={[styles.buttonText, { color: theme.colors.text.onBrand }]}>
                 {busy ? 'Working…' : showFields ? 'Update R-pin' : 'Send code'}
               </AppText>
             </Pressable>
@@ -182,13 +185,13 @@ function PinField({
         keyboardType="number-pad"
         secureTextEntry={secure}
         maxLength={6}
-        placeholderTextColor={theme.colors.textMuted}
+        placeholderTextColor={theme.colors.text.tertiary}
         style={[
           styles.input,
           {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            color: theme.colors.textPrimary,
+            backgroundColor: theme.colors.surface.default,
+            borderColor: theme.colors.border.default,
+            color: theme.colors.text.primary,
           },
         ]}
       />
@@ -197,36 +200,35 @@ function PinField({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.58)' },
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: staticColors.scrim },
   panel: {
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 32,
     gap: 16,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
   },
-  title: { fontSize: 22, lineHeight: 30, fontWeight: '700' },
+  title: { fontSize: fontSize.headingLg, lineHeight: lineHeight.headingLg, fontWeight: '700' },
   field: { gap: 8 },
-  fieldLabel: { fontSize: 13, lineHeight: 20 },
+  fieldLabel: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm },
   input: {
     minHeight: 46,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 11,
-    fontSize: 15,
+    borderRadius: radius.surface,
+    fontSize: fontSize.body,
   },
-  error: { fontSize: 13, lineHeight: 20 },
+  error: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm },
   buttons: { marginTop: 4 },
   button: {
     flex: 1,
     minHeight: 46,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
   },
-  buttonText: { fontSize: 15, fontWeight: '700' },
-  primaryText: { color: '#07111E' },
+  buttonText: { fontSize: fontSize.body, fontWeight: '700' },
 });

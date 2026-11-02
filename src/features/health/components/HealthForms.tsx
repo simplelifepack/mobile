@@ -129,8 +129,8 @@ export function HealthReadingForm({
                 style={[
                   styles.chip,
                   {
-                    borderColor: active ? theme.colors.primary : theme.colors.border,
-                    backgroundColor: active ? theme.colors.surfaceElevated : theme.colors.background,
+                    borderColor: active ? theme.colors.border.interactive : theme.colors.border.default,
+                    backgroundColor: active ? theme.colors.surface.raised : theme.colors.surface.canvas,
                   },
                 ]}
               >
@@ -278,14 +278,14 @@ export function FormSheet({
           style={[
             styles.modalPanel,
             styles.formSheet,
-            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+            { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default },
           ]}
         >
-          <View style={[styles.formGrabber, { backgroundColor: theme.colors.border }]} />
+          <View style={[styles.formGrabber, { backgroundColor: theme.colors.border.default }]} />
           <Row align="center" justify="space-between">
             <AppText variant="heading">{title}</AppText>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.formClose}>
-              <X size={20} color={theme.colors.textSecondary} />
+              <X size={20} color={theme.colors.text.secondary} />
             </Pressable>
           </Row>
           <ScrollView
@@ -328,8 +328,8 @@ export function ChoiceChips<T extends string>({
               style={[
                 styles.chip,
                 {
-                  borderColor: active ? theme.colors.primary : theme.colors.border,
-                  backgroundColor: active ? theme.colors.surfaceElevated : theme.colors.background,
+                  borderColor: active ? theme.colors.border.interactive : theme.colors.border.default,
+                  backgroundColor: active ? theme.colors.surface.raised : theme.colors.surface.canvas,
                 },
               ]}
             >
@@ -512,7 +512,7 @@ export function HealthDateField({
         maximumDate={maximumDate}
         style={[
           styles.formInput,
-          { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+          { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default },
         ]}
       />
     </Stack>
@@ -529,13 +529,13 @@ export function HealthField({
       <AppText variant="label" color="secondary" style={styles.formSectionLabel}>{label}</AppText>
       <TextInput
         {...props}
-        placeholderTextColor={theme.colors.textMuted}
+        placeholderTextColor={theme.colors.text.tertiary}
         style={[
           styles.formInput,
           {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            color: theme.colors.textPrimary,
+            backgroundColor: theme.colors.surface.default,
+            borderColor: theme.colors.border.default,
+            color: theme.colors.text.primary,
           },
         ]}
       />

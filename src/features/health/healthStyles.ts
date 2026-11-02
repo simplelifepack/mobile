@@ -1,4 +1,7 @@
 import { StyleSheet } from 'react-native';
+import { staticColors } from '../../design/tokens/colors';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 
 export const styles = StyleSheet.create({
@@ -14,23 +17,22 @@ export const styles = StyleSheet.create({
   modalBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: staticColors.scrim,
   },
 
   modalPanel: {
     maxHeight: '85%',
     padding: 20,
     gap: 12,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
   },
 
   sheetGrabber: {
     alignSelf: 'center',
     width: 40,
     height: 4,
-    borderRadius: 2,
-    backgroundColor: '#8A97AE',
+    borderRadius: radius.pill,
   },
 
   healthAddOption: {
@@ -38,7 +40,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -47,7 +49,7 @@ export const styles = StyleSheet.create({
   healthAddIcon: {
     width: 38,
     height: 38,
-    borderRadius: 11,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -65,15 +67,15 @@ export const styles = StyleSheet.create({
     maxHeight: '94%',
     borderWidth: 1,
     borderBottomWidth: 0,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
   },
 
   formGrabber: {
     alignSelf: 'center',
     width: 38,
     height: 4,
-    borderRadius: 4,
+    borderRadius: radius.pill,
   },
 
   formClose: {
@@ -100,7 +102,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.surface,
   },
 
   metricPickerSheet: {
@@ -109,27 +111,27 @@ export const styles = StyleSheet.create({
     paddingTop: 28,
     paddingHorizontal: 18,
     paddingBottom: 18,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: radius.pill,
+    borderTopRightRadius: radius.pill,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
   metricPickerGrabber: {
     width: 76,
     height: 8,
-    borderRadius: 8,
+    borderRadius: radius.control,
     alignSelf: 'center',
     marginBottom: 36,
   },
   metricPickerTitle: {
-    fontSize: 19,
-    lineHeight: 24,
+    fontSize: fontSize.headingMd,
+    lineHeight: lineHeight.headingMd,
     fontWeight: '700',
     marginBottom: 16,
   },
   metricPickerSubtitle: {
-    fontSize: 14,
-    lineHeight: 23,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     marginBottom: 12,
   },
   metricPickerList: {
@@ -151,7 +153,7 @@ export const styles = StyleSheet.create({
   metricPickerCircle: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.overlay,
     borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
@@ -159,8 +161,7 @@ export const styles = StyleSheet.create({
   metricPickerCircleInner: {
     width: 12,
     height: 12,
-    borderRadius: 6,
-    backgroundColor: '#FFFFFF',
+    borderRadius: radius.control,
   },
   metricPickerText: {
     flex: 1,
@@ -168,13 +169,13 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   metricPickerMetricName: {
-    fontSize: 16,
-    lineHeight: 21,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '500',
   },
   metricPickerMetricDetail: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
   metricPickerFooter: {
     flexDirection: 'row',
@@ -184,7 +185,7 @@ export const styles = StyleSheet.create({
   metricPickerButton: {
     flex: 1,
     minHeight: 58,
-    borderRadius: 14,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -195,9 +196,6 @@ export const styles = StyleSheet.create({
   metricPickerDoneButton: {
     borderColor: 'transparent',
   },
-  metricPickerDoneText: {
-    color: '#17151D',
-  },
 
   healthTabContent: {
     paddingHorizontal: 2,
@@ -205,7 +203,7 @@ export const styles = StyleSheet.create({
   },
   healthTabCard: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 24,
+    borderRadius: radius.overlay,
     paddingHorizontal: 18,
     paddingVertical: 16,
     overflow: 'hidden',
@@ -229,7 +227,7 @@ export const styles = StyleSheet.create({
   healthSmallAction: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: radius.surface,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -260,7 +258,7 @@ export const styles = StyleSheet.create({
   healthTimelineDot: {
     width: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: radius.control,
     zIndex: 1,
   },
   healthTimelineLine: {
@@ -271,7 +269,7 @@ export const styles = StyleSheet.create({
   healthTimelineIcon: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -301,7 +299,7 @@ export const styles = StyleSheet.create({
   healthAddButton: {
     minHeight: 44,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -316,7 +314,7 @@ export const styles = StyleSheet.create({
   healthMedicationIcon: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -335,7 +333,7 @@ export const styles = StyleSheet.create({
     minHeight: 42,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -348,7 +346,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -364,7 +362,7 @@ export const styles = StyleSheet.create({
   healthRecordIcon: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -378,13 +376,13 @@ export const styles = StyleSheet.create({
     minHeight: 54,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderRadius: 12,
-    fontSize: 14,
+    borderRadius: radius.surface,
+    fontSize: fontSize.body,
   },
 
   formSectionLabel: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -419,7 +417,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -439,15 +437,15 @@ export const styles = StyleSheet.create({
   },
 
 headerTitle: {
-  fontSize: 22,
-  lineHeight: 27,
+  fontSize: fontSize.headingLg,
+  lineHeight: lineHeight.headingLg,
   fontWeight: '700',
 },
 
 headerButton: {
   width: 40,
   height: 40,
-  borderRadius: 20,
+  borderRadius: radius.overlay,
   borderWidth: 1,
   alignItems: 'center',
   justifyContent: 'center',
@@ -455,15 +453,15 @@ headerButton: {
 profileButton: {
   width: 40,
   height: 40,
-  borderRadius: 20,
+  borderRadius: radius.overlay,
   borderWidth: 1,
   alignItems: 'center',
   justifyContent: 'center',
 },
 
   profileInitial: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     fontWeight: '700',
   },
 
@@ -484,21 +482,21 @@ memberItem: {
   memberAvatar: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: radius.pill,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   memberInitial: {
-    fontSize: 16,
-    lineHeight: 19,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
   },
 
   memberName: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     fontWeight: '600',
   },
 
@@ -515,15 +513,15 @@ memberItem: {
   profileAvatar: {
     width: 66,
     height: 66,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   profileAvatarText: {
-    fontSize: 22,
-    lineHeight: 24,
+    fontSize: fontSize.headingLg,
+    lineHeight: lineHeight.headingLg,
     fontWeight: '600',
   },
 
@@ -533,13 +531,13 @@ memberItem: {
   },
 
 profileName: {
-  fontSize: 18,
-  lineHeight: 23,
+  fontSize: fontSize.headingSm,
+  lineHeight: lineHeight.headingSm,
   fontWeight: '700',
 },
 profileMeta: {
-  fontSize: 13,
-  lineHeight: 19,
+  fontSize: fontSize.bodySm,
+  lineHeight: lineHeight.bodySm,
 },
   // --------------------------------------------------------------------------
   // Prepare
@@ -547,7 +545,7 @@ profileMeta: {
 
   prepareVisit: {
   minHeight: 64,
-  borderRadius: 18,
+  borderRadius: radius.tile,
   paddingHorizontal: 20,
   paddingVertical: 12,
   flexDirection: 'row',
@@ -557,8 +555,8 @@ profileMeta: {
 
 prepareText: {
   flex: 1,
-  fontSize: 14,
-  lineHeight: 18,
+  fontSize: fontSize.body,
+  lineHeight: lineHeight.body,
   fontWeight: '700',
 },
 
@@ -574,7 +572,7 @@ prepareText: {
   quickAction: {
   flex: 1,
   minHeight: 60,
-  borderRadius: 17,
+  borderRadius: radius.tile,
   borderWidth: 1,
   paddingHorizontal: 12,
   paddingVertical: 12,
@@ -584,8 +582,8 @@ prepareText: {
 },
   quickActionText: {
   flex: 1,
-  fontSize: 13,
-  lineHeight: 17,
+  fontSize: fontSize.bodySm,
+  lineHeight: lineHeight.bodySm,
   fontWeight: '600',
 },
 
@@ -615,17 +613,9 @@ prepareText: {
   },
 
   tabText: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     fontWeight: '600',
-  },
-
-  tabCount: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   // --------------------------------------------------------------------------
@@ -638,8 +628,8 @@ prepareText: {
 
 resultsCount: {
   flex: 1,
-  fontSize: 12,
-  lineHeight: 18,
+  fontSize: fontSize.caption,
+  lineHeight: lineHeight.caption,
 },
 
   // --------------------------------------------------------------------------
@@ -653,33 +643,33 @@ resultsCount: {
 
   readingTitle: {
     flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   statusBadge: {
-    borderRadius: 17,
+    borderRadius: radius.tile,
     borderWidth: 1,
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
 
   noRangeText: {
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     fontWeight: '600',
   },
 
   readingValue: {
-    fontSize: 22,
-    lineHeight: 27,
+    fontSize: fontSize.headingLg,
+    lineHeight: lineHeight.headingLg,
     fontWeight: '700',
   },
 
   rangeText: {
     flex: 1,
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   // --------------------------------------------------------------------------
@@ -705,13 +695,13 @@ resultsCount: {
     position: 'absolute',
     right: 10,
     bottom: 22,
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   removeReading: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   sourceRow: {
@@ -721,8 +711,8 @@ resultsCount: {
 
   sourceText: {
     flexShrink: 1,
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   // --------------------------------------------------------------------------
@@ -735,14 +725,14 @@ resultsCount: {
   },
 
   sectionTitle: {
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
   },
 
   addReminder: {
     minHeight: 34,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     borderWidth: 1,
     paddingHorizontal: 12,
     flexDirection: 'row',
@@ -767,7 +757,7 @@ resultsCount: {
   reminderIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -777,15 +767,15 @@ resultsCount: {
   },
 
   reminderTitle: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     fontWeight: '600',
   },
 
   reminderAction: {
     width: 36,
     height: 36,
-    borderRadius: 11,
+    borderRadius: radius.surface,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -794,7 +784,7 @@ resultsCount: {
   checkCircle: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radius.surface,
     borderWidth: 2,
   },
 
@@ -809,7 +799,7 @@ resultsCount: {
 
   editButton: {
     minHeight: 34,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     borderWidth: 1,
     paddingHorizontal: 12,
     alignItems: 'center',
@@ -821,21 +811,21 @@ resultsCount: {
   },
 
   medicalPercentage: {
-    fontSize: 26,
-    lineHeight: 31,
+    fontSize: fontSize.headingXl,
+    lineHeight: lineHeight.headingXl,
     fontWeight: '700',
   },
 
   medicalDescription: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   howButton: {
     minWidth: 58,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -843,18 +833,18 @@ resultsCount: {
 
   readinessTrack: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: radius.pill,
     overflow: 'hidden',
   },
 
   readinessFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: radius.pill,
   },
 
   stillNeeded: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   medicalRow: {
@@ -862,8 +852,8 @@ resultsCount: {
   },
 
   medicalValue: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     fontWeight: '600',
   },
 
@@ -886,14 +876,14 @@ addHealthOverlay: {
 
 addHealthBackdrop: {
   ...StyleSheet.absoluteFill,
-  backgroundColor: 'rgba(0, 0, 0, 0.62)',
+  backgroundColor: staticColors.scrim,
 },
 
 addHealthSheet: {
   width: '100%',
   maxHeight: '78%',
-  borderTopLeftRadius: 24,
-  borderTopRightRadius: 24,
+  borderTopLeftRadius: radius.overlay,
+  borderTopRightRadius: radius.overlay,
   borderWidth: 1,
   paddingHorizontal: 24,
   paddingTop: 12,
@@ -903,20 +893,20 @@ addHealthSheet: {
 addHealthGrabber: {
   width: 76,
   height: 7,
-  borderRadius: 4,
+  borderRadius: radius.pill,
   alignSelf: 'center',
   marginBottom: 32,
 },
 
 addHealthTitle: {
-  fontSize: 19,
-  lineHeight: 24,
+  fontSize: fontSize.headingMd,
+  lineHeight: lineHeight.headingMd,
   fontWeight: '700',
 },
 
 addHealthSubtitle: {
-  fontSize: 14,
-  lineHeight: 18,
+  fontSize: fontSize.body,
+  lineHeight: lineHeight.body,
 },
 
 addHealthDivider: {
@@ -945,14 +935,14 @@ addHealthRowContent: {
 },
 
 addHealthRowTitle: {
-  fontSize: 14,
-  lineHeight: 20,
+  fontSize: fontSize.body,
+  lineHeight: lineHeight.body,
   fontWeight: '700',
 },
 
 addHealthRowDescription: {
   marginTop: 4,
-  fontSize: 13,
-  lineHeight: 19,
+  fontSize: fontSize.bodySm,
+  lineHeight: lineHeight.bodySm,
 },
 });

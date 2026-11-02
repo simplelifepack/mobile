@@ -19,27 +19,26 @@ import { useAppTheme } from '../../../design/theme/ThemeProvider';
 
 import { AppText } from '../../../components/primitives/AppText';
 import { Row } from '../../../components/primitives/Row';
+import type { ThemeColors } from '../../../design/tokens/colors';
 import { Stack } from '../../../components/primitives/Stack';
 import { styles } from '../healthStyles';
+import { humanizeLabel } from '../../../utils/format';
 
 export function memberColor(
   tone: string,
+  palette: ThemeColors['person'],
 ) {
   switch (tone) {
     case 'purple':
-      return '#9B72E8';
-
+      return palette[2];
     case 'green':
-      return '#36B995';
-
+      return palette[3];
     case 'pink':
-      return '#D96BB1';
-
+      return palette[4];
     case 'gold':
-      return '#D8B45A';
-
+      return palette[5];
     default:
-      return '#4F8CFF';
+      return palette[1];
   }
 }
 
@@ -79,17 +78,16 @@ export function Header({
             styles.headerButton,
             {
               backgroundColor:
-                theme.colors
-                  .surfaceElevated,
+                theme.colors.surface.raised,
               borderColor:
-                theme.colors.border,
+                theme.colors.border.default,
             },
           ]}
         >
           <Users
             size={20}
             color={
-              theme.colors.textPrimary
+              theme.colors.text.primary
             }
             strokeWidth={2}
           />
@@ -103,16 +101,16 @@ export function Header({
             styles.headerButton,
             {
               backgroundColor:
-                theme.colors.surface,
+                theme.colors.surface.default,
               borderColor:
-                theme.colors.border,
+                theme.colors.border.default,
             },
           ]}
         >
           <Search
             size={20}
             color={
-              theme.colors.textSecondary
+              theme.colors.text.secondary
             }
             strokeWidth={2}
           />
@@ -123,10 +121,9 @@ export function Header({
             styles.profileButton,
             {
               backgroundColor:
-                theme.colors
-                  .surfaceElevated,
+                theme.colors.surface.raised,
               borderColor:
-                theme.colors.border,
+                theme.colors.border.default,
             },
           ]}
         >
@@ -135,7 +132,7 @@ export function Header({
               styles.profileInitial,
               {
                 color:
-                  theme.colors.warning,
+                  theme.colors.status.warning.text,
               },
             ]}
           >
@@ -174,7 +171,7 @@ export function MemberSelector({
       <Row gap="sm">
         {members.map(member => {
           const isSelected = selected === member.id;
-          const color = memberColor(member.relation.toLowerCase());
+          const color = memberColor(member.relation.toLowerCase(), theme.colors.person);
           const initials = member.name
             .trim()
             .split(/\s+/)
@@ -197,15 +194,13 @@ export function MemberSelector({
                   {
                     backgroundColor:
                       isSelected
-                        ? theme.colors
-                            .surfaceElevated
+                        ? theme.colors.surface.raised
                         : color +
                           '18',
 
                     borderColor:
                       isSelected
-                        ? theme.colors
-                            .primary
+                        ? theme.colors.border.interactive
                         : 'transparent',
                   },
                 ]}
@@ -278,12 +273,10 @@ export function MemberProfile({
           styles.profileAvatar,
           {
             backgroundColor:
-              theme.colors.primary +
-              '18',
+              theme.colors.selection.surface,
 
             borderColor:
-              theme.colors.primary +
-              '66',
+              theme.colors.selection.surface,
           },
         ]}
       >
@@ -292,7 +285,7 @@ export function MemberProfile({
             styles.profileAvatarText,
             {
               color:
-                theme.colors.primary,
+                theme.colors.text.interactive,
             },
           ]}
         >
@@ -322,7 +315,7 @@ export function MemberProfile({
             styles.profileMeta
           }
         >
-          {member.relation}
+          {humanizeLabel(member.relation)}
           {age !== undefined ? ` · ${age}` : ''}
           {member.bloodGroup ? ` · ${member.bloodGroup}` : ''}
         </AppText>

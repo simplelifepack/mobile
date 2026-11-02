@@ -17,7 +17,7 @@ export function AppHeader({
         <ChevronLeft
           accessibilityLabel="Back"
           onPress={onBack}
-          color={theme.colors.textPrimary}
+          color={theme.colors.text.primary}
           size={theme.sizes.icon.lg}
         />
       ) : null}

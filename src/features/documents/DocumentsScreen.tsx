@@ -66,13 +66,17 @@ import { EmptyState } from '../../components/feedback/EmptyState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
+import { staticColors } from '../../design/tokens/colors';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
+import { formatDate } from '../../utils/format';
 
 const PreviewModalSurface = styled.View(({ theme }) => ({
   flex: 1,
   paddingTop: 12,
   paddingHorizontal: 12,
   paddingBottom: 12,
-  backgroundColor: theme.colors.background,
+  backgroundColor: theme.colors.surface.canvas,
 }));
 const PreviewSafeArea = styled(SafeAreaView)(() => ({
   flex: 1,
@@ -172,54 +176,27 @@ function getDocumentIconColor(
 ) {
   switch (category) {
     case 'Identity':
-      return theme.colors.primary;
+      return theme.colors.text.interactive;
 
     case 'Health':
-      return theme.colors.danger;
+      return theme.colors.status.danger.text;
 
     case 'Finance':
-      return theme.colors.warning;
+      return theme.colors.status.warning.text;
 
     case 'Home':
-      return theme.colors.success;
+      return theme.colors.status.success.text;
 
     case 'Travel':
-      return theme.colors.primary;
+      return theme.colors.text.interactive;
 
     default:
-      return theme.colors.textSecondary;
+      return theme.colors.text.secondary;
   }
 }
 
-function formatDocumentDate(
-  createdAt?: string,
-  expiryDate?: string | null,
-) {
-  if (expiryDate) {
-    const expiry = new Date(expiryDate);
-
-    if (!Number.isNaN(expiry.getTime())) {
-      return expiry.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: '2-digit',
-      });
-    }
-  }
-
-  if (createdAt) {
-    const created = new Date(createdAt);
-
-    if (!Number.isNaN(created.getTime())) {
-      return created.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: '2-digit',
-      });
-    }
-  }
-
-  return '';
+function formatDocumentDate(createdAt?: string, expiryDate?: string | null) {
+  return formatDate(expiryDate || createdAt);
 }
 
 export function DocumentsScreen() {
@@ -554,15 +531,15 @@ export function DocumentsScreen() {
                 styles.headerButton,
                 {
                   backgroundColor:
-                    theme.colors.surface,
-                  borderColor: theme.colors.border,
+                    theme.colors.surface.default,
+                  borderColor: theme.colors.border.default,
                 },
                 pressed && styles.pressed,
               ]}
             >
               <Search
                 size={23}
-                color={theme.colors.textSecondary}
+                color={theme.colors.text.secondary}
                 strokeWidth={2}
               />
             </Pressable>
@@ -572,8 +549,8 @@ export function DocumentsScreen() {
                 styles.avatar,
                 {
                   backgroundColor:
-                    theme.colors.surfaceElevated,
-                  borderColor: theme.colors.border,
+                    theme.colors.surface.raised,
+                  borderColor: theme.colors.border.default,
                 },
               ]}
             >
@@ -593,14 +570,14 @@ export function DocumentsScreen() {
             styles.searchContainer,
             {
               backgroundColor:
-                theme.colors.surface,
-              borderColor: theme.colors.border,
+                theme.colors.surface.default,
+              borderColor: theme.colors.border.default,
             },
           ]}
         >
           <Search
             size={23}
-            color={theme.colors.textSecondary}
+            color={theme.colors.text.secondary}
             strokeWidth={2}
           />
 
@@ -640,7 +617,7 @@ export function DocumentsScreen() {
               {selectionMode ? (
                 <Check
                   size={19}
-                  color={theme.colors.primary}
+                  color={theme.colors.text.interactive}
                   strokeWidth={2.5}
                 />
               ) : null}
@@ -650,7 +627,7 @@ export function DocumentsScreen() {
                 style={[
                   styles.toolbarText,
                   {
-                    color: theme.colors.primary,
+                    color: theme.colors.text.interactive,
                   },
                 ]}
               >
@@ -669,7 +646,7 @@ export function DocumentsScreen() {
             >
               <SlidersHorizontal
                 size={20}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={2}
               />
 
@@ -678,7 +655,7 @@ export function DocumentsScreen() {
                 style={[
                   styles.toolbarText,
                   {
-                    color: theme.colors.primary,
+                    color: theme.colors.text.interactive,
                   },
                 ]}
               >
@@ -703,7 +680,7 @@ export function DocumentsScreen() {
                 )}
                 style={styles.toolbarButton}
               >
-                <Trash2 size={19} color={theme.colors.danger} />
+                <Trash2 size={19} color={theme.colors.status.danger.text} />
                 <AppText variant="label" color="danger">
                   Delete ({selectedIds.length})
                 </AppText>
@@ -732,11 +709,11 @@ export function DocumentsScreen() {
                     styles.filterPill,
                     {
                       backgroundColor: active
-                        ? theme.colors.primary
-                        : theme.colors.surfaceElevated,
+                        ? theme.colors.action.primary.default
+                        : theme.colors.surface.raised,
                       borderColor: active
-                        ? theme.colors.primary
-                        : theme.colors.border,
+                        ? theme.colors.border.interactive
+                        : theme.colors.border.default,
                     },
                     pressed && styles.pressed,
                   ]}
@@ -765,8 +742,8 @@ export function DocumentsScreen() {
               styles.documentList,
               {
                 backgroundColor:
-                  theme.colors.surface,
-                borderColor: theme.colors.border,
+                  theme.colors.surface.default,
+                borderColor: theme.colors.border.default,
               },
             ]}
           >
@@ -818,12 +795,12 @@ export function DocumentsScreen() {
                     styles.documentRow,
                     !isLast && {
                       borderBottomColor:
-                        theme.colors.border,
+                        theme.colors.border.default,
                       borderBottomWidth: 1,
                     },
                     isSelected && {
                       backgroundColor:
-                        theme.colors.surfaceElevated,
+                        theme.colors.surface.raised,
                     },
                     pressed && styles.rowPressed,
                   ]}
@@ -884,11 +861,11 @@ export function DocumentsScreen() {
                         {
                           borderColor:
                             isSelected
-                              ? theme.colors.primary
-                              : theme.colors.border,
+                              ? theme.colors.border.interactive
+                              : theme.colors.border.default,
                           backgroundColor:
                             isSelected
-                              ? theme.colors.primary
+                              ? theme.colors.action.primary.default
                               : 'transparent',
                         },
                       ]}
@@ -897,7 +874,7 @@ export function DocumentsScreen() {
                         <Check
                           size={15}
                           color={
-                            theme.colors.onPrimary
+                            theme.colors.text.onBrand
                           }
                           strokeWidth={3}
                         />
@@ -907,7 +884,7 @@ export function DocumentsScreen() {
                     <ChevronRight
                       size={22}
                       color={
-                        theme.colors.textSecondary
+                        theme.colors.text.secondary
                       }
                       strokeWidth={2}
                     />
@@ -921,7 +898,7 @@ export function DocumentsScreen() {
                         styles.expandedDetails,
                         {
                           borderTopColor:
-                            theme.colors.border,
+                            theme.colors.border.default,
                         },
                       ]}
                     >
@@ -953,9 +930,7 @@ export function DocumentsScreen() {
                           color="secondary"
                         >
                           Expires:{' '}
-                          {new Date(
-                            document.expiryDate,
-                          ).toLocaleDateString()}
+                          {formatDate(document.expiryDate)}
                         </AppText>
                       ) : null}
 
@@ -1009,8 +984,8 @@ export function DocumentsScreen() {
             style={[
               styles.importProgressCard,
               {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.surface.default,
+                borderColor: theme.colors.border.default,
               },
             ]}
           >
@@ -1041,8 +1016,8 @@ export function DocumentsScreen() {
                         size={22}
                         color={
                           previewPageIndex === 0
-                            ? theme.colors.textMuted
-                            : theme.colors.textPrimary
+                            ? theme.colors.text.tertiary
+                            : theme.colors.text.primary
                         }
                       />
                     </Pressable>
@@ -1060,7 +1035,7 @@ export function DocumentsScreen() {
                     onPress={closePreview}
                     style={styles.previewClose}
                   >
-                    <X size={22} color={theme.colors.textPrimary} />
+                    <X size={22} color={theme.colors.text.primary} />
                   </Pressable>
                 </View>
 
@@ -1111,8 +1086,8 @@ export function DocumentsScreen() {
                         size={22}
                         color={
                           previewPageIndex >= previewPages.length - 1
-                            ? theme.colors.textMuted
-                            : theme.colors.textPrimary
+                            ? theme.colors.text.tertiary
+                            : theme.colors.text.primary
                         }
                       />
                     </Pressable>
@@ -1154,9 +1129,9 @@ function SearchInput({
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={
-          theme.colors.textSecondary
+          theme.colors.text.secondary
         }
-        selectionColor={theme.colors.primary}
+        selectionColor={theme.colors.text.interactive}
       />
     </View>
   );
@@ -1176,15 +1151,15 @@ const styles = StyleSheet.create({
   /* Header */
 
   headerTitle: {
-    fontSize: 22,
-    lineHeight: 27,
+    fontSize: fontSize.headingLg,
+    lineHeight: lineHeight.headingLg,
     fontWeight: '700',
   },
 
   headerButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.overlay,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1193,7 +1168,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.overlay,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1207,7 +1182,7 @@ const styles = StyleSheet.create({
 
   searchContainer: {
     height: 50,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     borderWidth: 1,
     paddingHorizontal: 12,
     flexDirection: 'row',
@@ -1233,8 +1208,8 @@ const styles = StyleSheet.create({
   },
 
   documentCount: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   toolbarButton: {
@@ -1245,8 +1220,8 @@ const styles = StyleSheet.create({
   },
 
   toolbarText: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   /* Filters */
@@ -1259,7 +1234,7 @@ const styles = StyleSheet.create({
 
   filterPill: {
     minHeight: 40,
-    borderRadius: 20,
+    borderRadius: radius.overlay,
     borderWidth: 1,
     paddingHorizontal: 16,
     alignItems: 'center',
@@ -1267,15 +1242,15 @@ const styles = StyleSheet.create({
   },
 
   filterText: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   /* Document list */
 
   documentList: {
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: radius.overlay,
     overflow: 'hidden',
   },
 
@@ -1296,7 +1271,7 @@ const styles = StyleSheet.create({
   documentIcon: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -1308,21 +1283,21 @@ const styles = StyleSheet.create({
   },
 
   documentTitle: {
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '600',
   },
 
   documentMeta: {
     marginTop: 4,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   selectionCircle: {
     width: 25,
     height: 25,
-    borderRadius: 13,
+    borderRadius: radius.surface,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1397,7 +1372,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: staticColors.scrim,
     padding: 24,
   },
 
@@ -1412,7 +1387,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.surface,
   },
 
 

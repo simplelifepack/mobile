@@ -16,6 +16,8 @@ import DateTimePicker, {
 import { CalendarDays, X } from 'lucide-react-native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { AppText } from './AppText';
+import { staticColors } from '../../design/tokens/colors';
+import { radius } from '../../design/tokens/radius';
 
 export type DateFormat = 'iso' | 'us';
 
@@ -110,7 +112,7 @@ export function DatePickerInput({
             styles.text,
             {
               fontSize: flat.fontSize ?? 14,
-              color: value ? theme.colors.textPrimary : theme.colors.textMuted,
+              color: value ? theme.colors.text.primary : theme.colors.text.tertiary,
             },
           ]}
         >
@@ -122,10 +124,10 @@ export function DatePickerInput({
             hitSlop={10}
             onPress={() => onChangeText('')}
           >
-            <X size={16} color={theme.colors.textSecondary} />
+            <X size={16} color={theme.colors.text.secondary} />
           </Pressable>
         ) : (
-          <CalendarDays size={18} color={theme.colors.textSecondary} />
+          <CalendarDays size={18} color={theme.colors.text.secondary} />
         )}
       </Pressable>
 
@@ -133,7 +135,7 @@ export function DatePickerInput({
         <Modal visible={iosOpen} transparent animationType="slide" onRequestClose={() => setIosOpen(false)}>
           <View style={styles.backdrop}>
             <Pressable style={StyleSheet.absoluteFill} onPress={() => setIosOpen(false)} />
-            <View style={[styles.sheet, { backgroundColor: theme.colors.surface }]}>
+            <View style={[styles.sheet, { backgroundColor: theme.colors.surface.default }]}>
               <View style={styles.sheetHeader}>
                 <Pressable onPress={() => setIosOpen(false)} hitSlop={10}>
                   <AppText color="secondary">Cancel</AppText>
@@ -145,7 +147,7 @@ export function DatePickerInput({
                   }}
                   hitSlop={10}
                 >
-                  <AppText style={{ color: theme.colors.primary, fontWeight: '700' }}>Done</AppText>
+                  <AppText style={{ color: theme.colors.text.interactive, fontWeight: '700' }}>Done</AppText>
                 </Pressable>
               </View>
               <DateTimePicker
@@ -168,7 +170,7 @@ export function DatePickerInput({
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   text: { flex: 1 },
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 28 },
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: staticColors.scrim },
+  sheet: { borderTopLeftRadius: radius.overlay, borderTopRightRadius: radius.overlay, padding: 16, paddingBottom: 28 },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
 });

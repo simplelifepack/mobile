@@ -50,6 +50,12 @@ import {
   type WealthHandoffSummary,
   type WealthRecord,
 } from '../../api/wealth.api';
+import { staticColors } from '../../design/tokens/colors';
+import { readinessTone } from '../readiness/readinessTone';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
+import { formatDate } from '../../utils/format';
+import { humanizeLabel } from '../../utils/format';
 
 
 type LendingItem = {
@@ -128,7 +134,7 @@ function toLendingItem(record: WealthRecord): LendingItem {
     direction: record.type === 'LOAN_GIVEN' ? 'owedToYou' : 'youOwe',
     status: detailsAreSettled(record) ? 'settled' : 'open',
     followUp: record.followUpDate
-      ? `follow up ${new Date(record.followUpDate).toLocaleDateString()}`
+      ? `follow up ${formatDate(record.followUpDate)}`
       : 'no follow-up date',
   };
 }
@@ -158,15 +164,15 @@ function Header({
           style={({ pressed }) => [
             styles.headerButton,
             {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface.default,
+              borderColor: theme.colors.border.default,
             },
             pressed && styles.pressed,
           ]}
         >
           <Search
             size={22}
-            color={theme.colors.textSecondary}
+            color={theme.colors.text.secondary}
             strokeWidth={2}
           />
         </Pressable>
@@ -175,8 +181,8 @@ function Header({
           style={[
             styles.avatar,
             {
-              backgroundColor: theme.colors.surfaceElevated,
-              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface.raised,
+              borderColor: theme.colors.border.default,
             },
           ]}
         >
@@ -230,7 +236,7 @@ function ReadinessCard({
         >
           <KeyRound
             size={22}
-            color={theme.colors.textSecondary}
+            color={theme.colors.text.secondary}
             strokeWidth={2}
           />
 
@@ -244,8 +250,10 @@ function ReadinessCard({
 
         <AppText
           variant="display"
-          color="success"
-          style={styles.readinessPercentage}
+          style={[
+            styles.readinessPercentage,
+            { color: theme.colors.status[readinessTone(readiness)].text },
+          ]}
         >
           {readiness}%
         </AppText>
@@ -254,7 +262,7 @@ function ReadinessCard({
       <View
         style={[
           styles.progressTrack,
-          { backgroundColor: theme.colors.surfaceElevated },
+          { backgroundColor: theme.colors.surface.raised },
         ]}
       >
         <View
@@ -262,7 +270,7 @@ function ReadinessCard({
             styles.progressFill,
             {
               width: `${readiness}%`,
-              backgroundColor: theme.colors.success,
+              backgroundColor: theme.colors.status[readinessTone(readiness)].icon,
             },
           ]}
         />
@@ -290,8 +298,8 @@ function ReadinessCard({
           style={({ pressed }) => [
             styles.howButton,
             {
-              backgroundColor: theme.colors.surfaceElevated,
-              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface.raised,
+              borderColor: theme.colors.border.default,
             },
             pressed && styles.pressed,
           ]}
@@ -306,7 +314,7 @@ function ReadinessCard({
       >
         <CircleDollarSign
           size={20}
-          color={theme.colors.textSecondary}
+          color={theme.colors.text.secondary}
           strokeWidth={2}
         />
 
@@ -332,7 +340,7 @@ function ReadinessCard({
 
         <ChevronRight
           size={18}
-          color={theme.colors.textSecondary}
+          color={theme.colors.text.secondary}
           strokeWidth={2}
         />
       </Row>
@@ -378,7 +386,7 @@ function WealthGroupCard({
       <View
         style={[
           styles.sectionDivider,
-          { backgroundColor: theme.colors.border },
+          { backgroundColor: theme.colors.border.default },
         ]}
       />
 
@@ -417,16 +425,16 @@ function WealthRecordRow({
       : Building2;
 
   const iconColor = isLoan
-    ? theme.colors.danger
+    ? theme.colors.status.danger.text
     : isInsurance
-      ? theme.colors.primary
-      : theme.colors.warning;
+      ? theme.colors.text.interactive
+      : theme.colors.status.warning.text;
 
   const iconBackground = isLoan
-    ? `${theme.colors.danger}20`
+    ? `${theme.colors.status.danger.text}20`
     : isInsurance
-      ? `${theme.colors.primary}20`
-      : `${theme.colors.warning}20`;
+      ? `${theme.colors.text.interactive}20`
+      : `${theme.colors.status.warning.text}20`;
 
   const institution = String(
     details.institution ??
@@ -463,7 +471,7 @@ function WealthRecordRow({
         styles.wealthRow,
         !last && {
           borderBottomWidth: 1,
-          borderBottomColor: theme.colors.border,
+          borderBottomColor: theme.colors.border.default,
         },
       ]}
     >
@@ -535,7 +543,7 @@ function WealthRecordRow({
 
       <ChevronRight
         size={22}
-        color={theme.colors.textSecondary}
+        color={theme.colors.text.secondary}
         strokeWidth={2}
       />
     </View>
@@ -568,10 +576,10 @@ function CategoryTabs({
               styles.categoryPill,
               {
                 borderColor: isSelected
-                  ? theme.colors.primary
-                  : theme.colors.border,
+                  ? theme.colors.border.interactive
+                  : theme.colors.border.default,
                 backgroundColor: isSelected
-                  ? theme.colors.surfaceElevated
+                  ? theme.colors.surface.raised
                   : 'transparent',
               },
               pressed && styles.pressed,
@@ -620,7 +628,7 @@ function LendingSection({
         >
           <HandCoins
             size={21}
-            color={theme.colors.textSecondary}
+            color={theme.colors.text.secondary}
             strokeWidth={2}
           />
 
@@ -636,8 +644,8 @@ function LendingSection({
               styles.openBadge,
               {
                 backgroundColor:
-                  theme.colors.surfaceElevated,
-                borderColor: theme.colors.border,
+                  theme.colors.surface.raised,
+                borderColor: theme.colors.border.default,
               },
             ]}
           >
@@ -653,15 +661,15 @@ function LendingSection({
             styles.recordButton,
             {
               backgroundColor:
-                theme.colors.surfaceElevated,
-              borderColor: theme.colors.border,
+                theme.colors.surface.raised,
+              borderColor: theme.colors.border.default,
             },
             pressed && styles.pressed,
           ]}
         >
           <Plus
             size={19}
-            color={theme.colors.textPrimary}
+            color={theme.colors.text.primary}
             strokeWidth={2}
           />
 
@@ -675,7 +683,7 @@ function LendingSection({
         style={[
           styles.sectionDivider,
           {
-            backgroundColor: theme.colors.border,
+            backgroundColor: theme.colors.border.default,
           },
         ]}
       />
@@ -686,7 +694,7 @@ function LendingSection({
           style={[
             styles.lendingItem,
             index !== items.length - 1 && {
-              borderBottomColor: theme.colors.border,
+              borderBottomColor: theme.colors.border.default,
               borderBottomWidth: 1,
             },
           ]}
@@ -696,7 +704,7 @@ function LendingSection({
               styles.lendingIcon,
               {
                 backgroundColor:
-                  theme.colors.surfaceElevated,
+                  theme.colors.surface.raised,
               },
             ]}
           >
@@ -704,8 +712,8 @@ function LendingSection({
               size={23}
               color={
                 item.direction === 'owedToYou'
-                  ? theme.colors.success
-                  : theme.colors.danger
+                  ? theme.colors.status.success.text
+                  : theme.colors.status.danger.text
               }
               strokeWidth={2}
             />
@@ -758,7 +766,7 @@ function LendingSection({
             onPress={() => onDelete(item.id)}
             hitSlop={8}
           >
-            <Trash2 size={18} color={theme.colors.danger} />
+            <Trash2 size={18} color={theme.colors.status.danger.text} />
           </Pressable>
         </View>
       ))}
@@ -1109,8 +1117,8 @@ export function WealthScreen({
             style={[
               styles.guestNotice,
               {
-                backgroundColor: theme.colors.surfaceElevated,
-                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.surface.raised,
+                borderColor: theme.colors.border.default,
               },
             ]}
           >
@@ -1128,14 +1136,14 @@ export function WealthScreen({
             style={[
               styles.searchContainer,
               {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.surface.default,
+                borderColor: theme.colors.border.default,
               },
             ]}
           >
             <Search
               size={19}
-              color={theme.colors.textSecondary}
+              color={theme.colors.text.secondary}
               strokeWidth={2}
             />
 
@@ -1143,10 +1151,10 @@ export function WealthScreen({
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search investments, loans, insurance..."
-              placeholderTextColor={theme.colors.textMuted}
+              placeholderTextColor={theme.colors.text.tertiary}
               style={[
                 styles.searchPlaceholder,
-                { color: theme.colors.textPrimary },
+                { color: theme.colors.text.primary },
               ]}
             />
           </View>
@@ -1186,19 +1194,19 @@ export function WealthScreen({
           onPress={() => guestPreview ? onSignIn?.() : setHandoffVisible(true)}
           style={({ pressed }) => [
             styles.sosButton,
-            { backgroundColor: theme.colors.danger },
+            { backgroundColor: theme.colors.action.destructive.default },
             pressed && styles.pressed,
           ]}
         >
           <Siren
             size={24}
-            color="#111111"
+            color={theme.colors.text.onBrand}
             strokeWidth={2}
           />
 
           <AppText
             variant="heading"
-            style={styles.sosText}
+            style={[styles.sosText, { color: theme.colors.text.onBrand }]}
           >
             SOS handoff
           </AppText>
@@ -1213,7 +1221,7 @@ export function WealthScreen({
           <Card style={styles.emptyState}>
             <CircleDollarSign
               size={34}
-              color={theme.colors.primary}
+              color={theme.colors.text.interactive}
               strokeWidth={1.8}
             />
             <AppText variant="heading" style={styles.emptyTitle}>
@@ -1388,18 +1396,18 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
             styles.modalPanel,
             styles.sosPanel,
             {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface.default,
+              borderColor: theme.colors.border.default,
             },
           ]}
         >
           <View
-            style={[styles.sosHandle, { backgroundColor: theme.colors.border }]}
+            style={[styles.sosHandle, { backgroundColor: theme.colors.border.default }]}
           />
 
           <Row align="center" justify="space-between">
             <Row align="center" gap="sm">
-              <Siren size={22} color={theme.colors.danger} strokeWidth={2} />
+              <Siren size={22} color={theme.colors.status.danger.text} strokeWidth={2} />
               <AppText variant="heading">SOS handoff</AppText>
             </Row>
             <Pressable
@@ -1408,7 +1416,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
               onPress={onClose}
               style={styles.sosCloseButton}
             >
-              <X size={20} color={theme.colors.textSecondary} />
+              <X size={20} color={theme.colors.text.secondary} />
             </Pressable>
           </Row>
 
@@ -1424,7 +1432,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
             <View style={styles.sosSuccess}>
               <CircleCheck
                 size={52}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
               <AppText variant="heading">SOS handoff released</AppText>
@@ -1464,8 +1472,8 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
                       const isSelected = chosen.includes(recipient.id);
                       const tone =
                         recipient.type === 'family'
-                          ? theme.colors.success
-                          : theme.colors.primary;
+                          ? theme.colors.status.success.text
+                          : theme.colors.text.interactive;
                       return (
                         <Pressable
                           key={recipient.id}
@@ -1480,9 +1488,9 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
                             styles.sosRecipient,
                             {
                               borderColor: isSelected
-                                ? theme.colors.primary
-                                : theme.colors.border,
-                              backgroundColor: theme.colors.background,
+                                ? theme.colors.border.interactive
+                                : theme.colors.border.default,
+                              backgroundColor: theme.colors.surface.canvas,
                               opacity: recipient.canReceiveHandoff ? 1 : 0.55,
                             },
                           ]}
@@ -1500,7 +1508,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
                           <View style={styles.sosRecipientDetails}>
                             <AppText variant="body">{recipient.name}</AppText>
                             <AppText variant="caption" color="secondary">
-                              {recipient.relationship} ·{' '}
+                              {humanizeLabel(recipient.relationship)} ·{' '}
                               {recipient.accessTypeLabel}
                             </AppText>
                             <AppText variant="caption" color="secondary">
@@ -1515,16 +1523,16 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
                               styles.sosCheckbox,
                               {
                                 borderColor: isSelected
-                                  ? theme.colors.primary
-                                  : theme.colors.border,
+                                  ? theme.colors.border.interactive
+                                  : theme.colors.border.default,
                                 backgroundColor: isSelected
-                                  ? theme.colors.primary
+                                  ? theme.colors.action.primary.default
                                   : 'transparent',
                               },
                             ]}
                           >
                             {isSelected ? (
-                              <Check size={14} color={theme.colors.onPrimary} />
+                              <Check size={14} color={theme.colors.text.onBrand} />
                             ) : null}
                           </View>
                         </Pressable>
@@ -1549,16 +1557,16 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
                   style={[
                     styles.sosInfoCard,
                     {
-                      backgroundColor: theme.colors.background,
-                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surface.canvas,
+                      borderColor: theme.colors.border.default,
                     },
                   ]}
                 >
                   <AppText variant="label">They receive</AppText>
-                  <AppText variant="caption" style={{ color: theme.colors.success }}>
+                  <AppText variant="caption" style={{ color: theme.colors.status.success.text }}>
                     ✓ {docs} wealth documents (deeds, policies, statements)
                   </AppText>
-                  <AppText variant="caption" style={{ color: theme.colors.success }}>
+                  <AppText variant="caption" style={{ color: theme.colors.status.success.text }}>
                     ✓ Access instructions per holding
                   </AppText>
                   <AppText variant="caption" color="secondary">
@@ -1578,16 +1586,16 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
                       styles.sosCheckbox,
                       {
                         borderColor: ack
-                          ? theme.colors.primary
-                          : theme.colors.border,
+                          ? theme.colors.border.interactive
+                          : theme.colors.border.default,
                         backgroundColor: ack
-                          ? theme.colors.primary
+                          ? theme.colors.action.primary.default
                           : 'transparent',
                       },
                     ]}
                   >
                     {ack ? (
-                      <Check size={14} color={theme.colors.onPrimary} />
+                      <Check size={14} color={theme.colors.text.onBrand} />
                     ) : null}
                   </View>
                   <View style={styles.sosRecipientDetails}>
@@ -1600,7 +1608,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
                 </Pressable>
               </ScrollView>
 
-              <View style={styles.sosActions}>
+              <View style={[styles.sosActions, { borderTopColor: theme.colors.border.subtle }]}>
                 <Button
                   title={
                     busy
@@ -1630,8 +1638,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 10,
     paddingBottom: 24,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
     borderWidth: 1,
     borderBottomWidth: 0,
   },
@@ -1640,7 +1648,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: 38,
     height: 4,
-    borderRadius: 4,
+    borderRadius: radius.pill,
     marginBottom: 12,
   },
 
@@ -1661,7 +1669,7 @@ const styles = StyleSheet.create({
     gap: 4,
     padding: 14,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.surface,
   },
 
   sosGroup: {
@@ -1673,7 +1681,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.surface,
     paddingVertical: 10,
     paddingHorizontal: 12,
     gap: 12,
@@ -1682,7 +1690,7 @@ const styles = StyleSheet.create({
   sosAvatar: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.tile,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1695,7 +1703,7 @@ const styles = StyleSheet.create({
   sosCheckbox: {
     width: 22,
     height: 22,
-    borderRadius: 6,
+    borderRadius: radius.control,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1712,7 +1720,6 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(136,136,136,0.33)',
   },
 
   sosSuccess: {
@@ -1733,15 +1740,15 @@ const styles = StyleSheet.create({
   modalBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: staticColors.scrim,
   },
 
   modalPanel: {
     maxHeight: '90%',
     padding: 16,
     gap: 12,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
+    borderTopLeftRadius: radius.tile,
+    borderTopRightRadius: radius.tile,
   },
 
   formContent: {
@@ -1753,7 +1760,7 @@ const styles = StyleSheet.create({
     minHeight: 34,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 9,
+    borderRadius: radius.surface,
     justifyContent: 'center',
   },
 
@@ -1761,7 +1768,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radius.control,
   },
 
 
@@ -1787,7 +1794,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     justifyContent: 'center',
     gap: 4,
   },
@@ -1795,15 +1802,15 @@ const styles = StyleSheet.create({
   /* Header */
 
   headerTitle: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
   },
 
   headerButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.overlay,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1812,7 +1819,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.overlay,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1826,7 +1833,7 @@ const styles = StyleSheet.create({
 
   searchContainer: {
     minHeight: 42,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     borderWidth: 1,
     paddingHorizontal: 12,
     flexDirection: 'row',
@@ -1836,15 +1843,15 @@ const styles = StyleSheet.create({
 
   searchPlaceholder: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   guestNotice: {
     minHeight: 46,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.surface,
   },
 
   errorText: {
@@ -1856,7 +1863,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 32,
-    borderRadius: 16,
+    borderRadius: radius.tile,
   },
 
   emptyTitle: {
@@ -1874,7 +1881,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     gap: 12,
-    borderRadius: 16,
+    borderRadius: radius.tile,
   },
 
   readinessTopRow: {
@@ -1888,25 +1895,25 @@ const styles = StyleSheet.create({
 
   readinessTitle: {
     flexShrink: 1,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   readinessPercentage: {
-    fontSize: 26,
-    lineHeight: 31,
+    fontSize: fontSize.headingXl,
+    lineHeight: lineHeight.headingXl,
     fontWeight: '700',
   },
 
   progressTrack: {
     height: 8,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     overflow: 'hidden',
   },
 
   progressFill: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: radius.pill,
   },
 
   readinessInfo: {
@@ -1915,14 +1922,14 @@ const styles = StyleSheet.create({
 
   readinessMeta: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   howButton: {
     minWidth: 66,
     height: 38,
-    borderRadius: 8,
+    borderRadius: radius.control,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1935,7 +1942,7 @@ const styles = StyleSheet.create({
 
   moneyText: {
     fontWeight: '700',
-    fontSize: 12,
+    fontSize: fontSize.caption,
   },
 
   readinessActions: {
@@ -1945,7 +1952,7 @@ const styles = StyleSheet.create({
   primaryAction: {
     height: 70,
     flex: 1,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1956,7 +1963,7 @@ const styles = StyleSheet.create({
   dangerAction: {
     height: 70,
     flex: 0.82,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     borderWidth: 2,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1966,8 +1973,8 @@ const styles = StyleSheet.create({
   },
 
   actionText: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   /* Needs attention */
@@ -1983,14 +1990,14 @@ const styles = StyleSheet.create({
   },
 
   attentionHeaderTitle: {
-    fontSize: 16,
-    lineHeight: 19,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
   },
 
   countBadge: {
     minWidth: 58,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.overlay,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2021,12 +2028,12 @@ const styles = StyleSheet.create({
   severityDot: {
     width: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: radius.control,
   },
 
   severityText: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   attentionContent: {
@@ -2035,14 +2042,14 @@ const styles = StyleSheet.create({
   },
 
   attentionTitle: {
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
   },
 
   attentionDescription: {
     marginTop: 4,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   attentionAction: {
@@ -2055,8 +2062,8 @@ const styles = StyleSheet.create({
   },
 
   attentionActionText: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   viewAllButton: {
@@ -2068,8 +2075,8 @@ const styles = StyleSheet.create({
   },
 
   viewAllText: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   chevronUp: {
@@ -2087,22 +2094,22 @@ const styles = StyleSheet.create({
   categoryPill: {
     minHeight: 40,
     paddingHorizontal: 12,
-    borderRadius: 20,
+    borderRadius: radius.overlay,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   categoryText: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   /* Required wealth groups */
 
   sosButton: {
     minHeight: 58,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2111,16 +2118,15 @@ const styles = StyleSheet.create({
   },
 
   sosText: {
-    color: '#111111',
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
   },
 
   groupCard: {
     padding: 0,
     overflow: 'hidden',
-    borderRadius: 14,
+    borderRadius: radius.surface,
   },
 
   groupHeader: {
@@ -2130,14 +2136,14 @@ const styles = StyleSheet.create({
   },
 
   groupTitle: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     flex: 1,
   },
 
   groupTotal: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     fontWeight: '500',
   },
 
@@ -2153,7 +2159,7 @@ const styles = StyleSheet.create({
   wealthIcon: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -2165,32 +2171,32 @@ const styles = StyleSheet.create({
   },
 
   wealthName: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   wealthMeta: {
     marginTop: 2,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   wealthSecondary: {
     marginTop: 2,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   wealthWarning: {
     marginTop: 4,
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   wealthAmount: {
     maxWidth: 78,
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     fontWeight: '700',
     textAlign: 'right',
     flexShrink: 0,
@@ -2216,13 +2222,13 @@ const styles = StyleSheet.create({
 
   lendingTitle: {
     flexShrink: 1,
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   openBadge: {
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.tile,
     borderWidth: 1,
     paddingHorizontal: 8,
     alignItems: 'center',
@@ -2231,7 +2237,7 @@ const styles = StyleSheet.create({
 
   recordButton: {
     height: 38,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     borderWidth: 1,
     paddingHorizontal: 12,
     flexDirection: 'row',
@@ -2253,7 +2259,7 @@ const styles = StyleSheet.create({
   lendingIcon: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2264,14 +2270,14 @@ const styles = StyleSheet.create({
   },
 
   lendingName: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   lendingDescription: {
     marginTop: 4,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   amountColumn: {
@@ -2283,14 +2289,14 @@ const styles = StyleSheet.create({
   },
 
   amountText: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     fontWeight: '700',
   },
 
   amountLabel: {
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   lendingActions: {
@@ -2304,7 +2310,7 @@ const styles = StyleSheet.create({
 
   smallAction: {
     height: 34,
-    borderRadius: 17,
+    borderRadius: radius.tile,
     borderWidth: 1,
     paddingHorizontal: 8,
     flexDirection: 'row',
@@ -2316,7 +2322,7 @@ const styles = StyleSheet.create({
     minWidth: 96,
     height: 40,
     marginLeft: 'auto',
-    borderRadius: 10,
+    borderRadius: radius.surface,
     borderWidth: 1,
     paddingHorizontal: 12,
     flexDirection: 'row',
@@ -2333,7 +2339,7 @@ const styles = StyleSheet.create({
 
   comingSoonText: {
     marginTop: 4,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 });

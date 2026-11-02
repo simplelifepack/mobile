@@ -92,7 +92,7 @@ export function TrendChart({
           cx={left}
           cy={height - bottom}
           r={2}
-          fill={theme.colors.border}
+          fill={theme.colors.border.default}
         />
 
         <Polyline
@@ -162,8 +162,7 @@ export function TrendChart({
             styles.chartRange,
             {
               color:
-                theme.colors
-                  .success,
+                theme.colors.status.success.text,
             },
           ]}
         >
@@ -193,8 +192,8 @@ export function ReadingCard({
   const lineColor =
     reading.color ===
     'danger'
-      ? theme.colors.danger
-      : theme.colors.primary;
+      ? theme.colors.status.danger.text
+      : theme.colors.text.interactive;
 
   return (
     <Card
@@ -224,11 +223,11 @@ export function ReadingCard({
               styles.statusBadge,
               {
                 backgroundColor: (reading.status === 'outside printed range'
-                  ? theme.colors.danger
-                  : theme.colors.success) + '14',
+                  ? theme.colors.status.danger.icon
+                  : theme.colors.status.success.icon) + '14',
                 borderColor: (reading.status === 'outside printed range'
-                  ? theme.colors.danger
-                  : theme.colors.success) + '66',
+                  ? theme.colors.status.danger.border
+                  : theme.colors.status.success.border) + '66',
               },
             ]}
           >
@@ -236,8 +235,8 @@ export function ReadingCard({
               variant="caption"
               style={{
                 color: reading.status === 'outside printed range'
-                  ? theme.colors.danger
-                  : theme.colors.success,
+                  ? theme.colors.status.danger.text
+                  : theme.colors.status.success.text,
                 fontWeight:
                   '600',
               }}
@@ -322,8 +321,7 @@ export function ReadingCard({
           <FileText
             size={16}
             color={
-              theme.colors
-                .textMuted
+              theme.colors.text.tertiary
             }
           />
 

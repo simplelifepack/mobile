@@ -12,7 +12,6 @@ import {
   ListChecks,
   Plus,
   Search,
-  ShieldCheck,
   WalletCards,
   ChevronRight,
   type LucideIcon,
@@ -22,6 +21,7 @@ import { useBootstrapQuery, usePackagesQuery } from '../../services/api';
 import { healthApi, type HealthHomeReminder } from '../../api/health.api';
 import { wealthApi, type WealthRecord } from '../../api/wealth.api';
 import type { DocumentRecord } from '../../api/types';
+import { readinessTone } from '../readiness/readinessTone';
 import { calculatePackReadiness } from '../readiness/calculatePackReadiness';
 import type { MainTabParamList, RootStackParamList } from '../../app/navigation/types';
 import { parseHomeOverview } from './homeSelectors';
@@ -34,14 +34,16 @@ import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { Row } from '../../components/primitives/Row';
 import { AppText } from '../../components/primitives/AppText';
-import { BrandMark } from '../../components/BrandMark';
+import { BrandLogo } from '../../components/BrandLogo';
+import { radius } from '../../design/tokens/radius';
+import { sizes } from '../../design/tokens/sizes';
+import { shadows } from '../../design/tokens/shadows';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
 
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 
 const DAY = 86_400_000;
-const ACCENT = '#B79BE6';
-const ACCENT_TINT = 'rgba(167, 132, 222, 0.08)';
 
 function daysUntil(value?: string | null, now = Date.now()) {
   if (!value) return undefined;
@@ -68,7 +70,8 @@ function RecentDocumentCard({
       onPress={onPress}
       style={({ pressed }) => [
         styles.recentCard,
-        { backgroundColor: theme.colors.surface, opacity: pressed ? 0.85 : 1 },
+        shadows.card,
+        { backgroundColor: theme.colors.surface.raised, opacity: pressed ? 0.85 : 1 },
       ]}
     >
       <View style={styles.recentTop}>
@@ -82,16 +85,16 @@ function RecentDocumentCard({
         </View>
       </View>
       <View style={styles.recentBottom}>
-        <View style={styles.thumb}>
-          <FileText size={26} color={ACCENT} strokeWidth={1.8} />
+        <View style={[styles.thumb, { backgroundColor: theme.colors.surface.brandTint }]}>
+          <FileText size={26} color={theme.colors.icon.interactive} strokeWidth={1.8} />
         </View>
         <View style={styles.recentRight}>
-          <View style={styles.badge}>
-            <AppText style={styles.badgeText}>{document.category ?? 'Document'}</AppText>
+          <View style={[styles.badge, { backgroundColor: theme.colors.surface.brandTint, borderColor: theme.colors.border.subtle }]}>
+            <AppText style={[styles.badgeText, { color: theme.colors.text.interactive }]}>{document.category ?? 'Document'}</AppText>
           </View>
-          <View style={styles.viewButton}>
-            <AppText style={styles.viewButtonText}>View document</AppText>
-            <ArrowRight size={16} color={ACCENT} strokeWidth={2} />
+          <View style={[styles.viewButton, { borderColor: theme.colors.border.interactive }]}>
+            <AppText style={[styles.viewButtonText, { color: theme.colors.text.interactive }]}>View document</AppText>
+            <ArrowRight size={16} color={theme.colors.icon.interactive} strokeWidth={2} />
           </View>
         </View>
       </View>
@@ -99,22 +102,20 @@ function RecentDocumentCard({
   );
 }
 
+type StatusTone = 'success' | 'warning' | 'danger' | 'info';
+
 function SummaryCard({
   Icon,
-  iconColor,
+  tone,
   badge,
-  badgeBackground,
-  badgeColor,
   label,
   value,
   note,
   onPress,
 }: {
   Icon: LucideIcon;
-  iconColor: string;
+  tone: StatusTone;
   badge: string;
-  badgeBackground: string;
-  badgeColor: string;
   label: string;
   value: string;
   note: string;
@@ -128,25 +129,26 @@ function SummaryCard({
       onPress={onPress}
       style={({ pressed }) => [
         styles.summaryCard,
-        { backgroundColor: theme.colors.surface, opacity: pressed ? 0.85 : 1 },
+        shadows.card,
+        { backgroundColor: theme.colors.surface.raised, opacity: pressed ? 0.85 : 1 },
       ]}
     >
       <View style={styles.summaryTop}>
-        <View style={[styles.summaryIcon, { backgroundColor: theme.colors.surfaceElevated }]}>
-          <Icon size={18} color={iconColor} strokeWidth={2} />
+        <View style={[styles.summaryIcon, { backgroundColor: theme.colors.surface.brandTint }]}>
+          <Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />
         </View>
-        <View style={[styles.summaryBadge, { backgroundColor: badgeBackground }]}>
-          <AppText style={[styles.summaryBadgeText, { color: badgeColor }]}>{badge}</AppText>
+        <View style={[styles.summaryBadge, { backgroundColor: theme.colors.status[tone].surface, borderColor: theme.colors.status[tone].border }]}>
+          <AppText style={[styles.summaryBadgeText, { color: theme.colors.status[tone].text }]}>{badge}</AppText>
         </View>
       </View>
       <View style={styles.summaryBody}>
-        <AppText style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>{label}</AppText>
-        <AppText style={[styles.summaryValue, { color: theme.colors.textPrimary }]}>{value}</AppText>
-        <AppText style={[styles.summaryNote, { color: theme.colors.danger }]}>{note}</AppText>
+        <AppText style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>{label}</AppText>
+        <AppText style={[styles.summaryValue, { color: theme.colors.text.primary }]}>{value}</AppText>
+        <AppText style={[styles.summaryNote, { color: theme.colors.text.secondary }]}>{note}</AppText>
       </View>
       <View style={styles.viewAll}>
-        <AppText style={styles.viewAllText}>View all</AppText>
-        <ArrowRight size={12} color={ACCENT} strokeWidth={2} />
+        <AppText style={[styles.viewAllText, { color: theme.colors.text.interactive }]}>View all</AppText>
+        <ArrowRight size={sizes.icon.sm} color={theme.colors.icon.interactive} strokeWidth={2} />
       </View>
     </Pressable>
   );
@@ -171,19 +173,19 @@ function QuickAction({
       onPress={onPress}
       style={({ pressed }) => [
         styles.quickAction,
+        shadows.card,
         {
-          backgroundColor: theme.colors.surfaceElevated,
-          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.surface.raised,
           opacity: pressed ? 0.85 : 1,
         },
       ]}
     >
-      <View style={styles.quickIcon}>
-        <Icon size={18} color={ACCENT} strokeWidth={2} />
+      <View style={[styles.quickIcon, { backgroundColor: theme.colors.surface.brandTint }]}>
+        <Icon size={18} color={theme.colors.icon.interactive} strokeWidth={2} />
       </View>
       <View style={styles.quickCopy}>
         <AppText style={styles.quickTitle} numberOfLines={1}>{title}</AppText>
-        <AppText style={[styles.quickSubtitle, { color: theme.colors.textMuted }]} numberOfLines={1}>
+        <AppText style={[styles.quickSubtitle, { color: theme.colors.text.tertiary }]} numberOfLines={1}>
           {subtitle}
         </AppText>
       </View>
@@ -303,9 +305,9 @@ export function HomeScreen() {
               styles.retryButton,
               {
                 backgroundColor:
-                  theme.colors.primary,
+                  theme.colors.action.primary.default,
                 borderRadius:
-                  theme.radius.md,
+                  theme.radius.control,
               },
             ]}
           >
@@ -348,6 +350,7 @@ export function HomeScreen() {
   });
   const attentionCount = expiringDocuments.length + healthReminders.length + renewalsDue.length;
   const overdueCount = expiredDocuments.length + overdueReminders.length;
+  const bannerTone: StatusTone = overdueCount ? 'danger' : 'warning';
   const readyPercent = situationStats.total
     ? Math.round((situationStats.ready / situationStats.total) * 100)
     : 0;
@@ -364,25 +367,25 @@ export function HomeScreen() {
         onOpenResult={openSearchResult}
       />
       <Stack gap="md" style={styles.container}>
-        <Row align="center" justify="space-between">
+        <Row align="center" justify="space-between" style={styles.appBar}>
           <Row align="center" gap="sm">
-            <BrandMark size={26} color={theme.colors.textPrimary} />
-            <AppText variant="heading">Readiness</AppText>
+            <BrandLogo size={26} />
+            <AppText variant="heading">ReadiNes</AppText>
           </Row>
           <Row gap="sm">
             <Pressable
               onPress={() => setSearchOpen(true)}
               accessibilityRole="button"
               accessibilityLabel="Search"
-              style={[styles.headerButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}
+              style={[styles.headerButton, { borderColor: theme.colors.border.default, backgroundColor: theme.colors.surface.default }]}
             >
-              <Search size={22} color={theme.colors.textSecondary} strokeWidth={2} />
+              <Search size={22} color={theme.colors.text.secondary} strokeWidth={2} />
             </Pressable>
             <Pressable
               onPress={() => navigation.navigate('Profile')}
               accessibilityRole="button"
               accessibilityLabel="Profile"
-              style={[styles.avatar, { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceElevated }]}
+              style={[styles.avatar, { borderColor: theme.colors.border.default, backgroundColor: theme.colors.surface.raised }]}
             >
               <AppText variant="heading" color="secondary" align="center">
                 {homeOverview.name.charAt(0).toUpperCase()}
@@ -415,10 +418,8 @@ export function HomeScreen() {
         <View style={styles.grid}>
           <SummaryCard
             Icon={Folder}
-            iconColor={ACCENT}
+            tone={expiringDocuments.length ? 'warning' : 'success'}
             badge={String(expiringDocuments.length)}
-            badgeBackground="#3A1A1D"
-            badgeColor="#F5A3A8"
             label="Documents"
             value={String(documents.length)}
             note={`${expiringDocuments.length} expiring soon`}
@@ -426,10 +427,8 @@ export function HomeScreen() {
           />
           <SummaryCard
             Icon={ListChecks}
-            iconColor={ACCENT}
+            tone={readinessTone(readyPercent)}
             badge={`${readyPercent}%`}
-            badgeBackground="#17301F"
-            badgeColor="#8FD9AA"
             label="Packages"
             value={`${situationStats.ready}/${situationStats.total}`}
             note={`${readyPercent}% ready`}
@@ -437,10 +436,8 @@ export function HomeScreen() {
           />
           <SummaryCard
             Icon={HeartPulse}
-            iconColor="#F08CB4"
+            tone={overdueReminders.length ? 'danger' : healthReminders.length ? 'warning' : 'success'}
             badge={String(healthReminders.length)}
-            badgeBackground="#332A12"
-            badgeColor="#F0C86A"
             label="Health"
             value={String(healthReminders.length)}
             note="Tasks pending"
@@ -448,10 +445,8 @@ export function HomeScreen() {
           />
           <SummaryCard
             Icon={WalletCards}
-            iconColor="#E0B45A"
+            tone={renewalsDue.length ? 'info' : 'success'}
             badge={String(renewalsDue.length)}
-            badgeBackground="#172238"
-            badgeColor="#9DBEF5"
             label="Wealth"
             value={String(renewalsDue.length)}
             note="Renewals due"
@@ -467,20 +462,27 @@ export function HomeScreen() {
           accessibilityRole="button"
           accessibilityLabel={`${attentionCount} items need your attention`}
           onPress={() => navigation.navigate(healthReminders.length ? 'Health' : 'Documents')}
-          style={({ pressed }) => [styles.needsBanner, { opacity: pressed ? 0.85 : 1 }]}
+          style={({ pressed }) => [
+            styles.needsBanner,
+            {
+              borderColor: theme.colors.status[bannerTone].border,
+              backgroundColor: theme.colors.status[bannerTone].surface,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
         >
           <View style={styles.needsIcon}>
-            <AlertCircle size={18} color="#17141F" strokeWidth={2} />
+            <AlertCircle size={sizes.icon.md} color={theme.colors.status[bannerTone].icon} strokeWidth={2} />
           </View>
           <View style={styles.needsCopy}>
-            <AppText style={styles.needsTitle}>
+            <AppText style={[styles.needsTitle, { color: theme.colors.status[bannerTone].text }]}>
               {attentionCount} {attentionCount === 1 ? 'item needs' : 'items need'} your attention
             </AppText>
-            <AppText style={styles.needsSubtitle}>
+            <AppText style={[styles.needsSubtitle, { color: theme.colors.status[bannerTone].text }]}>
               {overdueCount} overdue · View all
             </AppText>
           </View>
-          <ChevronRight size={16} color={ACCENT} strokeWidth={2} />
+          <ChevronRight size={sizes.icon.sm} color={theme.colors.status[bannerTone].icon} strokeWidth={2} />
         </Pressable>
 
         <View style={styles.quickSection}>
@@ -503,52 +505,38 @@ export function HomeScreen() {
             />
           </View>
         </View>
-
-        <View style={[styles.brandBanner, { backgroundColor: theme.colors.surfaceElevated }]}>
-          <View style={styles.brandIcon}>
-            <ShieldCheck size={18} color={ACCENT} strokeWidth={2} />
-          </View>
-          <View style={styles.brandCopy}>
-            <AppText style={styles.needsTitle}>Your essentials, in one place.</AppText>
-            <AppText style={[styles.quickSubtitle, { color: theme.colors.textMuted }]}>
-              Secure access to documents, packages, health, and wealth.
-            </AppText>
-          </View>
-        </View>
       </Stack>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 },
-  headerButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  avatar: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  container: { paddingHorizontal: 16, paddingTop: 0, paddingBottom: 24 },
+  appBar: { minHeight: sizes.header },
+  headerButton: { width: 44, height: 44, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 44, height: 44, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   retryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
 
   section: { gap: 8 },
   sectionHeader: { paddingLeft: 4 },
-  sectionTitle: { fontSize: 14, lineHeight: 17, fontWeight: '600' },
+  sectionTitle: { fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: '600' },
   recentRow: { gap: 12, paddingRight: 16 },
   recentCard: {
     width: 312,
     height: 148,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#2A2A31',
-    borderRadius: 20,
+    borderRadius: radius.overlay,
     justifyContent: 'space-between',
   },
   recentTop: { flexDirection: 'row', justifyContent: 'space-between' },
   recentCopy: { gap: 4, flex: 1 },
-  recentTitle: { fontSize: 14, lineHeight: 17, fontWeight: '600' },
-  recentSubtitle: { fontSize: 11, lineHeight: 13 },
+  recentTitle: { fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: '600' },
+  recentSubtitle: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
   recentBottom: { flexDirection: 'row', alignItems: 'flex-end', gap: 16 },
   thumb: {
     width: 64,
     height: 64,
-    borderRadius: 8,
-    backgroundColor: '#070930',
+    borderRadius: radius.control,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -556,12 +544,10 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.control,
     borderWidth: 1,
-    borderColor: 'rgba(167, 132, 222, 0.2)',
-    backgroundColor: ACCENT_TINT,
   },
-  badgeText: { fontSize: 10, lineHeight: 12, fontWeight: '500', color: ACCENT },
+  badgeText: { fontSize: fontSize.caption, lineHeight: lineHeight.caption, fontWeight: '500' },
   viewButton: {
     alignSelf: 'stretch',
     flexDirection: 'row',
@@ -570,10 +556,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#9470CC',
-    borderRadius: 8,
+    borderRadius: radius.control,
   },
-  viewButtonText: { fontSize: 11, lineHeight: 13, color: ACCENT },
+  viewButtonText: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   summaryCard: {
@@ -581,21 +566,19 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     height: 148,
     padding: 14,
-    borderWidth: 1,
-    borderColor: '#2A2A31',
-    borderRadius: 16,
+    borderRadius: radius.tile,
     justifyContent: 'space-between',
   },
   summaryTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  summaryIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  summaryBadge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
-  summaryBadgeText: { fontSize: 10, lineHeight: 12, fontWeight: '700' },
+  summaryIcon: { width: 32, height: 32, borderRadius: radius.control, alignItems: 'center', justifyContent: 'center' },
+  summaryBadge: { minWidth: 20, height: 20, borderRadius: radius.surface, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
+  summaryBadgeText: { fontSize: fontSize.caption, lineHeight: lineHeight.caption, fontWeight: '700' },
   summaryBody: { gap: 3 },
-  summaryLabel: { fontSize: 11, lineHeight: 13 },
-  summaryValue: { fontSize: 20, lineHeight: 24, fontWeight: '700' },
-  summaryNote: { fontSize: 10, lineHeight: 12 },
+  summaryLabel: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
+  summaryValue: { fontSize: fontSize.headingMd, lineHeight: lineHeight.headingMd, fontWeight: '700' },
+  summaryNote: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
   viewAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  viewAllText: { fontSize: 11, lineHeight: 13, color: ACCENT },
+  viewAllText: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
 
   needsBanner: {
     flexDirection: 'row',
@@ -605,19 +588,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: ACCENT,
-    borderRadius: 12,
-    backgroundColor: '#2A2537',
+    borderRadius: radius.surface,
   },
-  needsIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#A784DE', alignItems: 'center', justifyContent: 'center' },
+  needsIcon: { width: 32, height: 32, borderRadius: radius.control, alignItems: 'center', justifyContent: 'center' },
   needsCopy: { flex: 1, gap: 2 },
-  needsTitle: { fontSize: 13, lineHeight: 16, fontWeight: '600' },
-  needsSubtitle: { fontSize: 11, lineHeight: 13, color: ACCENT },
+  needsTitle: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: '600' },
+  needsSubtitle: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
 
   quickSection: { gap: 10 },
   quickHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 4 },
-  quickHeading: { fontSize: 13, lineHeight: 16, fontWeight: '600' },
-  quickHint: { fontSize: 11, lineHeight: 13, color: ACCENT },
+  quickHeading: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: '600' },
+  quickHint: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
   quickRow: { flexDirection: 'row', gap: 12 },
   quickAction: {
     flex: 1,
@@ -626,15 +607,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 12,
-    borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.surface,
   },
-  quickIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: ACCENT_TINT, alignItems: 'center', justifyContent: 'center' },
+  quickIcon: { width: 32, height: 32, borderRadius: radius.control, alignItems: 'center', justifyContent: 'center' },
   quickCopy: { flex: 1, gap: 2 },
-  quickTitle: { fontSize: 13, lineHeight: 16, fontWeight: '600' },
-  quickSubtitle: { fontSize: 10, lineHeight: 12 },
+  quickTitle: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: '600' },
+  quickSubtitle: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
 
-  brandBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14 },
-  brandIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: ACCENT_TINT, alignItems: 'center', justifyContent: 'center' },
-  brandCopy: { flex: 1, gap: 2 },
 });

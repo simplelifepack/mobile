@@ -46,6 +46,8 @@ import { AccountDataSection } from './AccountDataSection';
 import { DeleteAccountModal } from './ProfileDialogs';
 import { PreferencesSection } from './PreferencesSection';
 import { accountApi } from '../../api/account.api';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 export function ProfileScreen() {
   const { theme } = useAppTheme();
@@ -206,7 +208,7 @@ export function ProfileScreen() {
             <ArrowLeft
               size={22}
               strokeWidth={2}
-              color={theme.colors.textPrimary}
+              color={theme.colors.text.primary}
             />
           </Pressable>
 
@@ -229,8 +231,8 @@ export function ProfileScreen() {
 
           {/* Profile */}
           <View style={styles.profileRow}>
-            <View style={styles.avatar}>
-              <AppText style={styles.avatarText}>
+            <View style={[styles.avatar, { backgroundColor: theme.colors.surface.brandTint }]}>
+              <AppText style={[styles.avatarText, { color: theme.colors.text.interactive }]}>
                 {(user?.name?.charAt(0) ?? 'R').toUpperCase()}
               </AppText>
             </View>
@@ -240,7 +242,7 @@ export function ProfileScreen() {
                 {user?.name ?? 'Ravi'}
               </AppText>
 
-              <View style={styles.profileDivider} />
+              <View style={[styles.profileDivider, { backgroundColor: theme.colors.border.subtle }]} />
 
               <AppText
                 style={styles.profileEmail}
@@ -257,7 +259,7 @@ export function ProfileScreen() {
             icon={
               <Users
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
             }
@@ -272,7 +274,7 @@ export function ProfileScreen() {
             icon={
               <Mail
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
             }
@@ -292,7 +294,7 @@ export function ProfileScreen() {
             icon={
               <LockKeyhole
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
             }
@@ -309,7 +311,7 @@ export function ProfileScreen() {
             icon={
               <LockKeyhole
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
             }
@@ -338,7 +340,7 @@ export function ProfileScreen() {
             icon={
               <Sparkles
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
             }
@@ -355,7 +357,7 @@ export function ProfileScreen() {
 
                 <ChevronRight
                   size={21}
-                  color={theme.colors.textSecondary}
+                  color={theme.colors.text.secondary}
                   strokeWidth={2}
                 />
               </View>
@@ -369,7 +371,7 @@ export function ProfileScreen() {
             icon={
               <CircleHelp
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
             }
@@ -384,7 +386,7 @@ export function ProfileScreen() {
             icon={
               <MessageSquare
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
             }
@@ -399,7 +401,7 @@ export function ProfileScreen() {
             icon={
               <ShieldCheck
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
             }
@@ -414,7 +416,7 @@ export function ProfileScreen() {
             icon={
               <Info
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
             }
@@ -440,9 +442,9 @@ export function ProfileScreen() {
             styles.dangerCard,
             {
               backgroundColor:
-                theme.colors.surface,
+                theme.colors.surface.default,
               borderColor:
-                theme.colors.danger,
+                theme.colors.status.danger.border,
             },
           ]}
         >
@@ -452,7 +454,7 @@ export function ProfileScreen() {
             icon={
               <LogOut
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
             }
@@ -468,7 +470,7 @@ export function ProfileScreen() {
             icon={
               <LogOut
                 size={25}
-                color={theme.colors.primary}
+                color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
             }
@@ -484,7 +486,7 @@ export function ProfileScreen() {
             icon={
               <Trash2
                 size={25}
-                color={theme.colors.danger}
+                color={theme.colors.status.danger.text}
                 strokeWidth={1.8}
               />
             }
@@ -570,14 +572,14 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: fontSize.headingLg,
+    lineHeight: lineHeight.headingLg,
     fontWeight: '700',
   },
 
   sectionTitle: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     fontWeight: '700',
     letterSpacing: 0,
     marginLeft: 4,
@@ -594,7 +596,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.surface,
     overflow: 'hidden',
     marginBottom: 16,
   },
@@ -614,18 +616,16 @@ const styles = StyleSheet.create({
   avatar: {
     width: 56,
     height: 56,
-    borderRadius: 16,
-    backgroundColor: '#2A303A',
+    borderRadius: radius.tile,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
 
   avatarText: {
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: fontSize.headingXl,
+    lineHeight: lineHeight.headingXl,
     fontWeight: '700',
-    color: '#D9B75F',
   },
 
   profileContent: {
@@ -635,21 +635,20 @@ const styles = StyleSheet.create({
   },
 
   profileName: {
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: fontSize.headingSm,
+    lineHeight: lineHeight.headingSm,
     fontWeight: '700',
   },
 
   profileDivider: {
     height: 1,
     width: '100%',
-    backgroundColor: '#27324A',
     marginVertical: 8,
   },
 
   profileEmail: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   /* -----------------------------------------------------------
@@ -667,7 +666,7 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -680,14 +679,14 @@ const styles = StyleSheet.create({
   },
 
   rowTitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
   },
 
   rowSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
     marginTop: 4,
   },
 
@@ -703,37 +702,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
 
-  preferenceIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#162F3D',
-    marginRight: 12,
-  },
 
   preferenceContent: {
     flex: 1,
     minWidth: 0,
   },
 
-  currencyButton: {
-    minWidth: 82,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#1B2740',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-  },
 
-  currencyText: {
-    fontSize: 13,
-    lineHeight: 20,
-    fontWeight: '600',
-  },
 
   appearanceRow: {
     flexDirection: 'row',
@@ -746,7 +721,7 @@ const styles = StyleSheet.create({
   appearanceControl: {
     height: 38,
     width: 140,
-    borderRadius: 10,
+    borderRadius: radius.surface,
     borderWidth: 1,
     flexDirection: 'row',
     overflow: 'hidden',
@@ -758,20 +733,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  appearanceOptionActive: {
-    backgroundColor: '#35A7A0',
-  },
 
-  appearanceText: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '700',
-    color: '#8A97AE',
-  },
 
-  appearanceTextActive: {
-    color: '#07111E',
-  },
 
   preferenceDivider: {
     height: 1,
@@ -797,8 +760,8 @@ const styles = StyleSheet.create({
   },
 
   versionText: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   /* -----------------------------------------------------------
@@ -808,7 +771,7 @@ const styles = StyleSheet.create({
   dangerCard: {
     width: '100%',
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: radius.overlay,
     overflow: 'hidden',
     marginBottom: 24,
   },

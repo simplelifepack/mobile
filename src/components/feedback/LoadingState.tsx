@@ -53,7 +53,7 @@ export function LoadingState({
           {label}
         </AppText>
         <Animated.View style={{ opacity, transform: [{ scale }] }}>
-          <BrandMark color={theme.colors.primary} size={size} />
+          <BrandMark color={theme.colors.text.interactive} size={size} />
         </Animated.View>
       </Stack>
     </View>

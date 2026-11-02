@@ -19,6 +19,9 @@ import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { pickAndSaveDocument, type SavedWealthDocument } from './wealthDocumentImport';
+import { staticColors } from '../../design/tokens/colors';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 type Kind = 'asset' | 'liability' | 'cover';
 
@@ -240,12 +243,12 @@ export function WealthHoldingForm({
 
   const inputStyle = [
     styles.input,
-    { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border, color: theme.colors.textPrimary },
+    { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default, color: theme.colors.text.primary },
   ];
   const select = (text: string, onPress: () => void) => (
-    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.select, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}>
+    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.select, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
       <AppText variant="body" style={styles.selectText} numberOfLines={1}>{text}</AppText>
-      <ChevronDown size={18} color={theme.colors.textPrimary} />
+      <ChevronDown size={18} color={theme.colors.text.primary} />
     </Pressable>
   );
   const field = (label: string, child: React.ReactNode, flex = false) => (
@@ -263,7 +266,7 @@ export function WealthHoldingForm({
       value={f[key]}
       onChangeText={value => set(key, value)}
       placeholder={placeholder}
-      placeholderTextColor={theme.colors.textMuted}
+      placeholderTextColor={theme.colors.text.tertiary}
       style={inputStyle}
       {...extra}
     />
@@ -281,13 +284,13 @@ export function WealthHoldingForm({
   const pickerOptions = (() => {
     switch (picker) {
       case 'kind':
-        return kinds.map(item => ({ label: item.label, icon: Check, onPress: () => { setF(c => ({ ...c, kind: item.value, type: '', otherType: '' })); setPicker(null); } }));
+        return kinds.map(item => ({ label: item.label, selected: f.kind === item.value, onPress: () => { setF(c => ({ ...c, kind: item.value, type: '', otherType: '' })); setPicker(null); } }));
       case 'type':
-        return typeSuggestions[f.kind].map(item => ({ label: item, icon: Check, onPress: () => { set('type', item); setPicker(null); } }));
+        return typeSuggestions[f.kind].map(item => ({ label: item, selected: f.type === item, onPress: () => { set('type', item); setPicker(null); } }));
       case 'currency':
-        return currencies.map(item => ({ label: item, icon: Check, onPress: () => { set('currency', item); setPicker(null); } }));
+        return currencies.map(item => ({ label: item, selected: f.currency === item, onPress: () => { set('currency', item); setPicker(null); } }));
       case 'owner':
-        return owners.map(item => ({ label: item.name, icon: Check, onPress: () => { set('memberId', item.id); setPicker(null); } }));
+        return owners.map(item => ({ label: item.name, selected: f.memberId === item.id, onPress: () => { set('memberId', item.id); setPicker(null); } }));
       case 'source':
         return pickAndSaveDocument(attachDocument, () => setWorking(true), () => setWorking(false)).map(item => ({
           label: item.label,
@@ -303,16 +306,16 @@ export function WealthHoldingForm({
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
-        <View style={[styles.panel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <View style={[styles.panel, { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default }]}>
           <Row align="center" justify="space-between">
             <AppText variant="title" style={styles.title}>Add holding</AppText>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={[styles.close, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}>
-              <X size={22} color={theme.colors.textPrimary} strokeWidth={2} />
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={[styles.close, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
+              <X size={22} color={theme.colors.text.primary} strokeWidth={2} />
             </Pressable>
           </Row>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-            <View style={[styles.banner, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}>
-              <FileText size={18} color={theme.colors.textSecondary} />
+            <View style={[styles.banner, { backgroundColor: theme.colors.surface.raised, borderColor: theme.colors.border.default }]}>
+              <FileText size={18} color={theme.colors.text.secondary} />
               <AppText variant="caption" color="secondary" style={styles.flex}>
                 {attached
                   ? note ?? `${attached.title} is linked.`
@@ -322,7 +325,7 @@ export function WealthHoldingForm({
               </AppText>
               {!attached && !working ? (
                 <Pressable accessibilityRole="button" onPress={() => setPicker('source')}>
-                  <AppText variant="label" style={{ color: theme.colors.primary }}>Add document</AppText>
+                  <AppText variant="label" style={{ color: theme.colors.text.interactive }}>Add document</AppText>
                 </Pressable>
               ) : null}
             </View>
@@ -357,8 +360,8 @@ export function WealthHoldingForm({
             {!isLiability ? (
               <View style={styles.field}>
                 <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: f.nominee }} onPress={() => set('nominee', !f.nominee)} style={styles.nomineeRow}>
-                  <View style={[styles.checkbox, { borderColor: f.nominee ? theme.colors.primary : theme.colors.textMuted, backgroundColor: f.nominee ? theme.colors.primary : 'transparent' }]}>
-                    {f.nominee ? <Check size={16} color={theme.colors.onPrimary} /> : null}
+                  <View style={[styles.checkbox, { borderColor: f.nominee ? theme.colors.action.primary.default : theme.colors.text.tertiary, backgroundColor: f.nominee ? theme.colors.action.primary.default : 'transparent' }]}>
+                    {f.nominee ? <Check size={16} color={theme.colors.text.onBrand} /> : null}
                   </View>
                   <AppText variant="body">Nominee named</AppText>
                 </Pressable>
@@ -371,9 +374,9 @@ export function WealthHoldingForm({
               accessibilityRole="button"
               disabled={saving || working}
               onPress={() => { save(); }}
-              style={[styles.submit, { backgroundColor: theme.colors.primary, opacity: saving || working ? 0.5 : 1 }]}
+              style={[styles.submit, { backgroundColor: theme.colors.action.primary.default, opacity: saving || working ? 0.5 : 1 }]}
             >
-              <AppText variant="heading" style={{ color: theme.colors.onPrimary }}>{saving ? 'Saving…' : 'Add holding'}</AppText>
+              <AppText variant="heading" style={{ color: theme.colors.text.onBrand }}>{saving ? 'Saving…' : 'Add holding'}</AppText>
             </Pressable>
           </ScrollView>
         </View>
@@ -384,30 +387,30 @@ export function WealthHoldingForm({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.58)' },
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: staticColors.scrim },
   panel: {
     width: '100%',
     maxHeight: '92%',
     borderTopWidth: 1,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 24,
     gap: 12,
   },
-  title: { fontSize: 20, lineHeight: 26, fontWeight: '700' },
-  close: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: fontSize.headingMd, lineHeight: lineHeight.headingMd, fontWeight: '700' },
+  close: { width: 40, height: 40, borderRadius: radius.surface, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   content: { gap: 14, paddingBottom: 8 },
-  banner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderRadius: 12 },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderRadius: radius.surface },
   field: { gap: 6, minWidth: 0 },
   flex: { flex: 1 },
-  label: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
-  input: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, fontSize: 15 },
+  label: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: '600' },
+  input: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 14, fontSize: fontSize.body },
   textarea: { minHeight: 90, paddingTop: 12, textAlignVertical: 'top' },
-  select: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  selectText: { flex: 1, fontSize: 15 },
+  select: { minHeight: 48, borderWidth: 1, borderRadius: radius.surface, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  selectText: { flex: 1, fontSize: fontSize.body },
   nomineeRow: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  checkbox: { width: 24, height: 24, borderWidth: 1, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
-  submit: { minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  checkbox: { width: 24, height: 24, borderWidth: 1, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  submit: { minHeight: 52, borderRadius: radius.surface, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
 });

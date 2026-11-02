@@ -29,14 +29,14 @@ export function PrepareVisit({ onPress }: { onPress: () => void }) {
         styles.prepareVisit,
         {
           backgroundColor:
-            theme.colors.primary,
+            theme.colors.action.primary.default,
         },
       ]}
     >
       <CalendarDays
         size={22}
         color={
-          theme.colors.onPrimary
+          theme.colors.text.onBrand
         }
         strokeWidth={2}
       />
@@ -46,7 +46,7 @@ export function PrepareVisit({ onPress }: { onPress: () => void }) {
           styles.prepareText,
           {
             color:
-              theme.colors.onPrimary,
+              theme.colors.text.onBrand,
           },
         ]}
       >
@@ -79,14 +79,14 @@ export function QuickActions({
         style={[
           styles.quickAction,
           {
-            backgroundColor: theme.colors.surfaceElevated,
-            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface.raised,
+            borderColor: theme.colors.border.default,
           },
         ]}
       >
         <IdCard
           size={22}
-          color={theme.colors.textPrimary}
+          color={theme.colors.text.primary}
           strokeWidth={2}
         />
 
@@ -103,14 +103,14 @@ export function QuickActions({
         style={[
           styles.quickAction,
           {
-            backgroundColor: theme.colors.surfaceElevated,
-            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface.raised,
+            borderColor: theme.colors.border.default,
           },
         ]}
       >
         <Shield
           size={22}
-          color={theme.colors.textPrimary}
+          color={theme.colors.text.primary}
           strokeWidth={2}
         />
 
@@ -152,7 +152,7 @@ export function HealthTabs({
           styles.tabs,
           {
             borderBottomColor:
-              theme.colors.border,
+              theme.colors.border.default,
           },
         ]}
       >
@@ -170,8 +170,7 @@ export function HealthTabs({
                 styles.tab,
                 active && {
                   borderBottomColor:
-                    theme.colors
-                      .primary,
+                    theme.colors.text.interactive,
                 },
               ]}
             >
@@ -188,48 +187,6 @@ export function HealthTabs({
               >
                 {tab}
               </AppText>
-
-              {tab ===
-              'Medications' ? (
-                <View
-                  style={[
-                    styles.tabCount,
-                    {
-                      backgroundColor:
-                        theme.colors
-                          .surfaceElevated,
-                    },
-                  ]}
-                >
-                  <AppText
-                    variant="caption"
-                    color="secondary"
-                  >
-                    2
-                  </AppText>
-                </View>
-              ) : null}
-
-              {tab ===
-              'Records' ? (
-                <View
-                  style={[
-                    styles.tabCount,
-                    {
-                      backgroundColor:
-                        theme.colors
-                          .surfaceElevated,
-                    },
-                  ]}
-                >
-                  <AppText
-                    variant="caption"
-                    color="secondary"
-                  >
-                    5
-                  </AppText>
-                </View>
-              ) : null}
             </Pressable>
           );
         })}

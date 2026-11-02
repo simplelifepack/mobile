@@ -5,6 +5,9 @@ import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { authApi } from '../../api/auth.api';
+import { staticColors } from '../../design/tokens/colors';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 type CredentialKind = 'email' | 'password';
 
@@ -117,7 +120,7 @@ export function CredentialChangeModal({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
-        <View style={[styles.panel, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.panel, { backgroundColor: theme.colors.surface.canvas }]}>
           <AppText style={styles.title}>
             {step === 'otp'
               ? 'Verify change'
@@ -190,8 +193,8 @@ export function CredentialChangeModal({
               style={[
                 styles.button,
                 {
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border.default,
+                  backgroundColor: theme.colors.surface.default,
                 },
               ]}
             >
@@ -203,12 +206,12 @@ export function CredentialChangeModal({
               style={[
                 styles.button,
                 {
-                  backgroundColor: theme.colors.primary,
+                  backgroundColor: theme.colors.action.primary.default,
                   opacity: busy ? 0.6 : 1,
                 },
               ]}
             >
-              <AppText style={[styles.buttonText, styles.primaryText]}>
+              <AppText style={[styles.buttonText, { color: theme.colors.text.onBrand }]}>
                 {busy ? 'Working…' : step === 'form' ? 'Send code' : 'Verify'}
               </AppText>
             </Pressable>
@@ -232,13 +235,13 @@ function PreferenceField({
       </AppText>
       <TextInput
         {...props}
-        placeholderTextColor={theme.colors.textMuted}
+        placeholderTextColor={theme.colors.text.tertiary}
         style={[
           styles.input,
           {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            color: theme.colors.textPrimary,
+            backgroundColor: theme.colors.surface.default,
+            borderColor: theme.colors.border.default,
+            color: theme.colors.text.primary,
           },
         ]}
       />
@@ -250,38 +253,38 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.58)',
+    backgroundColor: staticColors.scrim,
   },
   panel: {
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 32,
     gap: 16,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
   },
   title: {
-    fontSize: 22,
-    lineHeight: 30,
+    fontSize: fontSize.headingLg,
+    lineHeight: lineHeight.headingLg,
     fontWeight: '700',
   },
   field: {
     gap: 8,
   },
   fieldLabel: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
   input: {
     minHeight: 46,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 11,
-    fontSize: 15,
+    borderRadius: radius.surface,
+    fontSize: fontSize.body,
   },
   error: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
   buttons: {
     marginTop: 4,
@@ -289,17 +292,14 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     minHeight: 46,
-    borderRadius: 12,
+    borderRadius: radius.surface,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
   },
   buttonText: {
-    fontSize: 15,
+    fontSize: fontSize.body,
     fontWeight: '700',
-  },
-  primaryText: {
-    color: '#07111E',
   },
 });

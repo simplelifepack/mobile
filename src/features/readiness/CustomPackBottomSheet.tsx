@@ -29,6 +29,9 @@ import type {
   PackageSummary,
   VerificationSource,
 } from '../../api/types';
+import { staticColors } from '../../design/tokens/colors';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { radius } from '../../design/tokens/radius';
 
 /* ============================================================================
    TYPES
@@ -656,9 +659,9 @@ export function CustomPackBottomSheet({
             style={[
               styles.sheet,
               {
-                backgroundColor: theme.colors.background,
+                backgroundColor: theme.colors.surface.canvas,
 
-                borderColor: theme.colors.border,
+                borderColor: theme.colors.border.default,
 
                 transform: [
                   {
@@ -673,7 +676,7 @@ export function CustomPackBottomSheet({
               style={[
                 styles.handle,
                 {
-                  backgroundColor: theme.colors.border,
+                  backgroundColor: theme.colors.border.default,
                 },
               ]}
             />
@@ -689,13 +692,13 @@ export function CustomPackBottomSheet({
                 style={[
                   styles.closeButton,
                   {
-                    backgroundColor: theme.colors.surfaceElevated,
+                    backgroundColor: theme.colors.surface.raised,
 
-                    borderColor: theme.colors.border,
+                    borderColor: theme.colors.border.default,
                   },
                 ]}
               >
-                <X size={18} color={theme.colors.textPrimary} strokeWidth={2} />
+                <X size={18} color={theme.colors.text.primary} strokeWidth={2} />
               </Pressable>
             </View>
 
@@ -788,17 +791,17 @@ function LookupStep({
           value={purpose}
           onChangeText={setPurpose}
           placeholder="My son's school admission"
-          placeholderTextColor={theme.colors.textSecondary}
+          placeholderTextColor={theme.colors.text.secondary}
           multiline
           textAlignVertical="top"
           style={[
             styles.textArea,
             {
-              backgroundColor: theme.colors.surfaceElevated,
+              backgroundColor: theme.colors.surface.raised,
 
-              borderColor: theme.colors.border,
+              borderColor: theme.colors.border.default,
 
-              color: theme.colors.textPrimary,
+              color: theme.colors.text.primary,
             },
           ]}
         />
@@ -809,18 +812,18 @@ function LookupStep({
           style={[
             styles.primaryButton,
             {
-              backgroundColor: theme.colors.primary,
+              backgroundColor: theme.colors.action.primary.default,
             },
 
             (!purpose.trim() || loading) && styles.disabledButton,
           ]}
         >
           {loading ? (
-            <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+            <ActivityIndicator size="small" color={theme.colors.text.onBrand} />
           ) : (
             <Search
               size={16}
-              color={theme.colors.onPrimary}
+              color={theme.colors.text.onBrand}
               strokeWidth={2.2}
             />
           )}
@@ -835,13 +838,13 @@ function LookupStep({
 
         <View style={styles.orRow}>
           <View
-            style={[styles.orLine, { backgroundColor: theme.colors.border }]}
+            style={[styles.orLine, { backgroundColor: theme.colors.border.default }]}
           />
           <AppText variant="caption" color="secondary">
             or
           </AppText>
           <View
-            style={[styles.orLine, { backgroundColor: theme.colors.border }]}
+            style={[styles.orLine, { backgroundColor: theme.colors.border.default }]}
           />
         </View>
 
@@ -853,15 +856,15 @@ function LookupStep({
           style={[
             styles.secondaryButton,
             {
-              backgroundColor: theme.colors.surfaceElevated,
-              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface.raised,
+              borderColor: theme.colors.border.default,
             },
             loading && styles.disabledButton,
           ]}
         >
           <Pencil
             size={16}
-            color={theme.colors.textPrimary}
+            color={theme.colors.text.primary}
             strokeWidth={2.2}
           />
           <AppText variant="label" style={styles.primaryButtonText}>
@@ -980,7 +983,7 @@ function ResultStep({
     >
       {generating ? (
         <View style={styles.generationState}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <ActivityIndicator size="small" color={theme.colors.text.interactive} />
           <AppText
             variant="body"
             color="secondary"
@@ -1003,15 +1006,15 @@ function ResultStep({
         value={packName}
         onChangeText={setPackName}
         placeholder="Name this pack"
-        placeholderTextColor={theme.colors.textSecondary}
+        placeholderTextColor={theme.colors.text.secondary}
         style={[
           styles.input,
           {
-            backgroundColor: theme.colors.surfaceElevated,
+            backgroundColor: theme.colors.surface.raised,
 
-            borderColor: theme.colors.border,
+            borderColor: theme.colors.border.default,
 
-            color: theme.colors.textPrimary,
+            color: theme.colors.text.primary,
           },
         ]}
       />
@@ -1024,14 +1027,14 @@ function ResultStep({
         value={purpose}
         onChangeText={setPurpose}
         placeholder="What is this pack for?"
-        placeholderTextColor={theme.colors.textSecondary}
+        placeholderTextColor={theme.colors.text.secondary}
         multiline
         style={[
           styles.input,
           {
-            backgroundColor: theme.colors.surfaceElevated,
-            borderColor: theme.colors.border,
-            color: theme.colors.textPrimary,
+            backgroundColor: theme.colors.surface.raised,
+            borderColor: theme.colors.border.default,
+            color: theme.colors.text.primary,
             minHeight: 64,
             textAlignVertical: 'top',
           },
@@ -1076,35 +1079,35 @@ function ResultStep({
                 value={requirement}
                 onChangeText={value => updateRequirement(index, value)}
                 placeholder="Document name"
-                placeholderTextColor={theme.colors.textSecondary}
+                placeholderTextColor={theme.colors.text.secondary}
                 style={[
                   styles.requirementInput,
                   hasDocument && styles.requirementMatched,
                   {
-                    backgroundColor: theme.colors.surfaceElevated,
+                    backgroundColor: theme.colors.surface.raised,
                     borderColor: hasDocument
-                      ? theme.colors.success
-                      : theme.colors.border,
-                    color: theme.colors.textPrimary,
+                      ? theme.colors.status.success.border
+                      : theme.colors.border.default,
+                    color: theme.colors.text.primary,
                   },
                 ]}
               />
               {hasDocument ? (
-                <Check size={20} color={theme.colors.success} strokeWidth={3} />
+                <Check size={20} color={theme.colors.status.success.text} strokeWidth={3} />
               ) : null}
               <Pressable
                 onPress={() => removeRequirement(index)}
                 style={[
                   styles.deleteButton,
                   {
-                    backgroundColor: theme.colors.surfaceElevated,
-                    borderColor: theme.colors.border,
+                    backgroundColor: theme.colors.surface.raised,
+                    borderColor: theme.colors.border.default,
                   },
                 ]}
               >
                 <Trash2
                   size={17}
-                  color={theme.colors.textPrimary}
+                  color={theme.colors.text.primary}
                   strokeWidth={2}
                 />
               </Pressable>
@@ -1118,12 +1121,12 @@ function ResultStep({
         style={[
           styles.addRequirementButton,
           {
-            backgroundColor: theme.colors.surfaceElevated,
-            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface.raised,
+            borderColor: theme.colors.border.default,
           },
         ]}
       >
-        <Plus size={17} color={theme.colors.textPrimary} strokeWidth={2} />
+        <Plus size={17} color={theme.colors.text.primary} strokeWidth={2} />
         <AppText variant="label" style={styles.addRequirementText}>
           Add requirement
         </AppText>
@@ -1158,14 +1161,14 @@ function ResultStep({
                   style={[
                     styles.vaultChip,
                     {
-                      backgroundColor: theme.colors.surfaceElevated,
-                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surface.raised,
+                      borderColor: theme.colors.border.default,
                     },
                   ]}
                 >
                   <Plus
                     size={13}
-                    color={theme.colors.primary}
+                    color={theme.colors.text.interactive}
                     strokeWidth={2.4}
                   />
                   <AppText variant="caption">{label}</AppText>
@@ -1175,7 +1178,7 @@ function ResultStep({
         </View>
       ) : null}
 
-      <AppText style={[styles.archiveCount, { color: theme.colors.success }]}>
+      <AppText style={[styles.archiveCount, { color: theme.colors.status.success.text }]}>
         {archiveMatches} of {totalRequirements} already in your archive.
       </AppText>
 
@@ -1183,11 +1186,11 @@ function ResultStep({
         style={[
           styles.infoCard,
           {
-            backgroundColor: theme.colors.surfaceElevated,
+            backgroundColor: theme.colors.surface.raised,
 
             borderColor: isVerified
-              ? theme.colors.success
-              : theme.colors.primary,
+              ? theme.colors.status.success.border
+              : theme.colors.border.interactive,
           },
         ]}
       >
@@ -1195,7 +1198,7 @@ function ResultStep({
           style={[
             styles.infoText,
             {
-              color: isVerified ? theme.colors.success : theme.colors.primary,
+              color: isVerified ? theme.colors.status.success.text : theme.colors.text.interactive,
             },
           ]}
         >
@@ -1209,7 +1212,7 @@ function ResultStep({
         <View
           style={[
             styles.infoCard,
-            { backgroundColor: theme.colors.surfaceElevated },
+            { backgroundColor: theme.colors.surface.raised },
           ]}
         >
           <AppText variant="label">Official sources</AppText>
@@ -1233,9 +1236,9 @@ function ResultStep({
         style={[
           styles.estimateCard,
           {
-            backgroundColor: theme.colors.background,
+            backgroundColor: theme.colors.surface.canvas,
 
-            borderColor: theme.colors.border,
+            borderColor: theme.colors.border.default,
           },
         ]}
       >
@@ -1244,24 +1247,32 @@ function ResultStep({
             style={[
               styles.estimateTitle,
               {
-                color: theme.colors.danger,
+                color: isVerified
+                  ? theme.colors.status.success.text
+                  : theme.colors.status.warning.text,
               },
             ]}
           >
             {isVerified ? 'Official estimate' : 'Offline estimate'}
           </AppText>
 
-          <AppText style={styles.estimateMeta}>
+          <AppText style={[styles.estimateMeta, { color: theme.colors.text.secondary }]}>
             · confidence: {String(confidence)}
           </AppText>
 
-          <AppText style={styles.estimateMeta}>· checked {checkedDate}</AppText>
+          <AppText style={[styles.estimateMeta, { color: theme.colors.text.secondary }]}>· checked {checkedDate}</AppText>
         </View>
 
         <AppText style={styles.estimateDescription} color="secondary">
           {disclaimer ||
             'Offline estimate. Connect to get the current official list.'}
         </AppText>
+        {!isVerified ? (
+          <AppText style={styles.estimateDescription} color="secondary">
+            Next: save this pack to keep working offline, then refresh it from
+            the pack details when you are back online to confirm the official list.
+          </AppText>
+        ) : null}
       </View>
 
       {/* ==========================================================
@@ -1284,7 +1295,7 @@ function ResultStep({
         style={[
           styles.saveButton,
           {
-            backgroundColor: theme.colors.primary,
+            backgroundColor: theme.colors.action.primary.default,
           },
 
           (!canSave || saving) && styles.disabledButton,
@@ -1318,7 +1329,7 @@ const styles = StyleSheet.create({
 
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.58)',
+    backgroundColor: staticColors.scrim,
   },
 
   keyboardContainer: {
@@ -1330,8 +1341,8 @@ const styles = StyleSheet.create({
     width: '100%',
     maxHeight: '92%',
 
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
 
     borderWidth: 1,
 
@@ -1350,7 +1361,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 4,
 
-    borderRadius: 3,
+    borderRadius: radius.pill,
 
     marginBottom: 12,
   },
@@ -1376,8 +1387,8 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
 
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
 
     fontWeight: '700',
   },
@@ -1386,7 +1397,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
 
-    borderRadius: 18,
+    borderRadius: radius.tile,
 
     borderWidth: 1,
 
@@ -1413,15 +1424,15 @@ const styles = StyleSheet.create({
   },
 
   intro: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   fieldLabel: {
     marginTop: 12,
 
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
 
     fontWeight: '700',
 
@@ -1431,20 +1442,20 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 96,
 
-    borderRadius: 12,
+    borderRadius: radius.surface,
     borderWidth: 1,
 
     paddingHorizontal: 12,
     paddingVertical: 12,
 
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   primaryButton: {
     height: 48,
 
-    borderRadius: 12,
+    borderRadius: radius.surface,
 
     flexDirection: 'row',
 
@@ -1460,7 +1471,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     height: 48,
 
-    borderRadius: 12,
+    borderRadius: radius.surface,
 
     borderWidth: 1,
 
@@ -1509,7 +1520,7 @@ const styles = StyleSheet.create({
 
     height: 34,
 
-    borderRadius: 17,
+    borderRadius: radius.tile,
 
     borderWidth: 1,
 
@@ -1517,8 +1528,8 @@ const styles = StyleSheet.create({
   },
 
   primaryButtonText: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   disabledButton: {
@@ -1537,14 +1548,14 @@ const styles = StyleSheet.create({
   input: {
     height: 48,
 
-    borderRadius: 11,
+    borderRadius: radius.surface,
     borderWidth: 1,
 
     paddingHorizontal: 12,
     paddingVertical: 12,
 
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
   },
 
   generationState: {
@@ -1561,8 +1572,8 @@ const styles = StyleSheet.create({
   description: {
     marginTop: 4,
 
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   /* ------------------------------------------------------------
@@ -1574,7 +1585,7 @@ const styles = StyleSheet.create({
 
     minHeight: 0,
 
-    borderRadius: 12,
+    borderRadius: radius.surface,
 
     borderWidth: 1,
 
@@ -1585,8 +1596,8 @@ const styles = StyleSheet.create({
   },
 
   infoText: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
 
     fontWeight: '500',
   },
@@ -1606,14 +1617,14 @@ const styles = StyleSheet.create({
 
     height: 50,
 
-    borderRadius: 11,
+    borderRadius: radius.surface,
 
     borderWidth: 1,
 
     paddingHorizontal: 12,
 
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
 
     fontWeight: '500',
   },
@@ -1626,7 +1637,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 38,
 
-    borderRadius: 10,
+    borderRadius: radius.surface,
 
     borderWidth: 1,
 
@@ -1644,7 +1655,7 @@ const styles = StyleSheet.create({
 
     height: 42,
 
-    borderRadius: 10,
+    borderRadius: radius.surface,
 
     borderWidth: 1,
 
@@ -1662,8 +1673,8 @@ const styles = StyleSheet.create({
   },
 
   addRequirementText: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   /* ------------------------------------------------------------
@@ -1673,8 +1684,8 @@ const styles = StyleSheet.create({
   archiveCount: {
     marginTop: 12,
 
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
 
     fontWeight: '500',
   },
@@ -1686,7 +1697,7 @@ const styles = StyleSheet.create({
   estimateCard: {
     marginTop: 12,
 
-    borderRadius: 12,
+    borderRadius: radius.surface,
 
     borderWidth: 1,
 
@@ -1706,24 +1717,23 @@ const styles = StyleSheet.create({
   },
 
   estimateTitle: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
 
     fontWeight: '700',
   },
 
   estimateMeta: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
 
-    color: '#93A0B8',
   },
 
   estimateDescription: {
     marginTop: 8,
 
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   /* ------------------------------------------------------------
@@ -1733,8 +1743,8 @@ const styles = StyleSheet.create({
   errorText: {
     marginTop: 12,
 
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
 
   /* ------------------------------------------------------------
@@ -1744,7 +1754,7 @@ const styles = StyleSheet.create({
   saveButton: {
     height: 50,
 
-    borderRadius: 12,
+    borderRadius: radius.surface,
 
     marginTop: 12,
 
@@ -1754,8 +1764,8 @@ const styles = StyleSheet.create({
   },
 
   saveButtonText: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
 
     fontWeight: '700',
   },

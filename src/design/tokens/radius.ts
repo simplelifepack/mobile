@@ -1,1 +1,8 @@
-export const radius = { sm: 6, md: 10, lg: 16, xl: 24, pill: 999 } as const;
+// Design System 1.0: control 8, surface 12, tile 16, overlay 20, pill.
+export const radius = {
+  control: 8,
+  surface: 12,
+  tile: 16,
+  overlay: 20,
+  pill: 9999,
+} as const;

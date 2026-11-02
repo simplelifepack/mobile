@@ -11,7 +11,7 @@ import styled from 'styled-components/native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 const Safe = styled(SafeAreaView)(({ theme }) => ({
   flex: 1,
-  backgroundColor: theme.colors.background,
+  backgroundColor: theme.colors.surface.canvas,
 }));
 const Content = styled.View<{ padded: boolean }>(({ theme, padded }) => ({
   flex: 1,
@@ -66,8 +66,8 @@ export function Screen({
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                tintColor={theme.colors.primary}
-                colors={[theme.colors.primary]}
+                tintColor={theme.colors.text.interactive}
+                colors={[theme.colors.text.interactive]}
               />
             ) : undefined
           }

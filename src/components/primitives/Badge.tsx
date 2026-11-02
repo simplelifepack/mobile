@@ -6,7 +6,7 @@ const Container = styled.View(({ theme }) => ({
   paddingHorizontal: theme.spacing.sm,
   paddingVertical: theme.spacing.xs,
   borderRadius: theme.radius.pill,
-  backgroundColor: theme.colors.surfaceElevated,
+  backgroundColor: theme.colors.surface.raised,
 }));
 export function Badge({ label }: { label: string }) {
   return (
