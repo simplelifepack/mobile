@@ -1,3 +1,4 @@
+import { sizes } from '../../../design/tokens/sizes';
 import React, { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
@@ -397,8 +398,8 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   passwordToggle: {
-    width: 36,
-    height: 40,
+    width: sizes.minimumTouchTarget,
+    height: sizes.minimumTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   textAction: {
-    minHeight: 42,
+    minHeight: sizes.minimumTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },

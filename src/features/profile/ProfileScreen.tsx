@@ -1,3 +1,4 @@
+import { sizes } from '../../design/tokens/sizes';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -540,8 +541,8 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-    width: 34,
-    height: 34,
+    width: sizes.minimumTouchTarget,
+    height: sizes.minimumTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,3 +1,4 @@
+import { sizes } from '../../design/tokens/sizes';
 import React, { useEffect, useRef, useState } from 'react';
 
 import {
@@ -1393,8 +1394,8 @@ const styles = StyleSheet.create({
   },
 
   closeButton: {
-    width: 36,
-    height: 36,
+    width: sizes.minimumTouchTarget,
+    height: sizes.minimumTouchTarget,
 
     borderRadius: radius.tile,
 
@@ -1517,7 +1518,7 @@ const styles = StyleSheet.create({
 
     gap: 6,
 
-    height: 34,
+    height: sizes.minimumTouchTarget,
 
     borderRadius: radius.tile,
 
@@ -1633,8 +1634,8 @@ const styles = StyleSheet.create({
   },
 
   deleteButton: {
-    width: 42,
-    height: 38,
+    width: sizes.minimumTouchTarget,
+    height: sizes.minimumTouchTarget,
 
     borderRadius: radius.surface,
 
@@ -1652,7 +1653,7 @@ const styles = StyleSheet.create({
   addRequirementButton: {
     alignSelf: 'flex-start',
 
-    height: 42,
+    height: sizes.minimumTouchTarget,
 
     borderRadius: radius.surface,
 

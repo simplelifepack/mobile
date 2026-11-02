@@ -1013,7 +1013,7 @@ const styles = StyleSheet.create({
   },
 
   toolbarButton: {
-    minHeight: 36,
+    minHeight: sizes.minimumTouchTarget,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -1033,7 +1033,7 @@ const styles = StyleSheet.create({
   },
 
   filterPill: {
-    minHeight: 40,
+    minHeight: sizes.minimumTouchTarget,
     borderRadius: radius.overlay,
     borderWidth: 1,
     paddingHorizontal: 16,
@@ -1075,8 +1075,8 @@ const styles = StyleSheet.create({
   },
 
   previewClose: {
-    width: 40,
-    height: 40,
+    width: sizes.minimumTouchTarget,
+    height: sizes.minimumTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1105,7 +1105,7 @@ const styles = StyleSheet.create({
 
   previewPageButton: {
     width: 44,
-    height: 40,
+    height: sizes.minimumTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },

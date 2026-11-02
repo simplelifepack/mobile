@@ -1,3 +1,4 @@
+import { sizes } from '../../design/tokens/sizes';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   useFocusEffect,
@@ -1826,8 +1827,8 @@ const styles = StyleSheet.create({
   },
 
   headerButton: {
-    width: 40,
-    height: 40,
+    width: sizes.minimumTouchTarget,
+    height: sizes.minimumTouchTarget,
     borderRadius: radius.overlay,
     borderWidth: 1,
     alignItems: 'center',
@@ -2105,8 +2106,8 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   sheetCloseButton: {
-    width: 36,
-    height: 36,
+    width: sizes.minimumTouchTarget,
+    height: sizes.minimumTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.tile,
@@ -2158,7 +2159,7 @@ const styles = StyleSheet.create({
   missingRequirementCopy: { flex: 1, minWidth: 0, gap: 2 },
   addRequirementButton: {
     minWidth: 56,
-    minHeight: 32,
+    minHeight: sizes.minimumTouchTarget,
     paddingHorizontal: 12,
     borderWidth: 1,
     borderRadius: radius.tile,
@@ -2194,7 +2195,7 @@ const styles = StyleSheet.create({
   downloadActionText: { fontSize: fontSize.body, fontWeight: '700' },
   actionPill: {
     alignSelf: 'flex-start',
-    minHeight: 32,
+    minHeight: sizes.minimumTouchTarget,
     justifyContent: 'center',
     paddingHorizontal: 12,
     borderWidth: 1,

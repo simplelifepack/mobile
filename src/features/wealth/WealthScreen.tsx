@@ -1508,8 +1508,8 @@ const styles = StyleSheet.create({
   },
 
   sosCloseButton: {
-    minWidth: 36,
-    minHeight: 36,
+    minWidth: sizes.minimumTouchTarget,
+    minHeight: sizes.minimumTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1662,8 +1662,8 @@ const styles = StyleSheet.create({
   },
 
   headerButton: {
-    width: 40,
-    height: 40,
+    width: sizes.minimumTouchTarget,
+    height: sizes.minimumTouchTarget,
     borderRadius: radius.overlay,
     borderWidth: 1,
     alignItems: 'center',
@@ -1782,7 +1782,7 @@ const styles = StyleSheet.create({
 
   howButton: {
     minWidth: 66,
-    height: 38,
+    height: sizes.minimumTouchTarget,
     borderRadius: radius.control,
     borderWidth: 1,
     alignItems: 'center',
@@ -1946,7 +1946,7 @@ const styles = StyleSheet.create({
   },
 
   categoryPill: {
-    minHeight: 40,
+    minHeight: sizes.minimumTouchTarget,
     paddingHorizontal: 12,
     borderRadius: radius.overlay,
     borderWidth: 1,
@@ -2029,7 +2029,7 @@ const styles = StyleSheet.create({
   },
 
   recordButton: {
-    height: 38,
+    height: sizes.minimumTouchTarget,
     borderRadius: radius.surface,
     borderWidth: 1,
     paddingHorizontal: 12,

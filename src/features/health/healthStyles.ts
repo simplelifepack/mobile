@@ -1,3 +1,4 @@
+import { sizes } from '../../design/tokens/sizes';
 import { StyleSheet } from 'react-native';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
@@ -77,8 +78,8 @@ export const styles = StyleSheet.create({
   },
 
   formClose: {
-    minWidth: 36,
-    minHeight: 36,
+    minWidth: sizes.minimumTouchTarget,
+    minHeight: sizes.minimumTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -328,7 +329,7 @@ export const styles = StyleSheet.create({
     marginTop: 4,
   },
   healthMedicationStatusButton: {
-    minHeight: 42,
+    minHeight: sizes.minimumTouchTarget,
     paddingHorizontal: 12,
     borderWidth: 1,
     borderRadius: radius.surface,
@@ -441,8 +442,8 @@ headerTitle: {
 },
 
 headerButton: {
-  width: 40,
-  height: 40,
+  width: sizes.minimumTouchTarget,
+  height: sizes.minimumTouchTarget,
   borderRadius: radius.overlay,
   borderWidth: 1,
   alignItems: 'center',
@@ -729,7 +730,7 @@ resultsCount: {
   },
 
   addReminder: {
-    minHeight: 34,
+    minHeight: sizes.minimumTouchTarget,
     borderRadius: radius.surface,
     borderWidth: 1,
     paddingHorizontal: 12,
