@@ -986,7 +986,7 @@ export function WealthScreen({
           onPress={() => guestPreview ? onSignIn?.() : setHandoffVisible(true)}
           style={({ pressed }) => [
             styles.sosButton,
-            { backgroundColor: theme.colors.action.destructive.default },
+            { backgroundColor: theme.colors.border.destructive.hover },
             pressed && styles.pressed,
           ]}
         >
