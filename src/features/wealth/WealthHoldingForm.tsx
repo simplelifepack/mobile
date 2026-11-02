@@ -11,7 +11,7 @@ import {
 import { Check, ChevronDown, FileText, X } from 'lucide-react-native';
 
 import { useAppSelector } from '../../app/store/hooks';
-import { trustApi } from '../../api/trust.api';
+import { healthApi } from '../../api/health.api';
 import { wealthApi, type WealthRecord, type WealthRecordType } from '../../api/wealth.api';
 import { ActionSheet } from '../../components/primitives/ActionSheet';
 import { DatePickerInput } from '../../components/primitives/DatePickerInput';
@@ -155,12 +155,14 @@ export function WealthHoldingForm({
 
   useEffect(() => {
     let active = true;
-    trustApi.get()
+    healthApi.members()
       .then(response => {
         if (!active) return;
         setOwners([
           { id: 'you', name: userName || 'You' },
-          ...response.members.map(member => ({ id: member.id, name: member.name })),
+          ...response
+            .filter(member => member.relation.toLowerCase() !== 'self')
+            .map(member => ({ id: member.id, name: member.name })),
         ]);
       })
       .catch(() => {});
