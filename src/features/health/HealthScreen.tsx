@@ -257,7 +257,7 @@ export function HealthScreen() {
               : undefined),
         dates: points.map(point =>
           point.measuredAt
-            ? new Date(point.measuredAt).toLocaleDateString('en-US', {
+            ? new Date(point.measuredAt).toLocaleDateString(undefined, {
                 month: 'short',
                 day: 'numeric',
               })
@@ -686,7 +686,7 @@ floatingAction={
                     : undefined;
                   const monthLabel = date
                     ? date
-                        .toLocaleDateString('en-US', {
+                        .toLocaleDateString(undefined, {
                           month: 'short',
                           year: 'numeric',
                         })
@@ -698,7 +698,7 @@ floatingAction={
                       : undefined;
                   const previousMonth = previousDate
                     ? previousDate
-                        .toLocaleDateString('en-US', {
+                        .toLocaleDateString(undefined, {
                           month: 'short',
                           year: 'numeric',
                         })
@@ -779,7 +779,7 @@ floatingAction={
                           style={styles.healthTimelineDate}
                         >
                           {date
-                            ? date.toLocaleDateString('en-US', {
+                            ? date.toLocaleDateString(undefined, {
                                 month: 'short',
                                 day: '2-digit',
                                 year: 'numeric',
