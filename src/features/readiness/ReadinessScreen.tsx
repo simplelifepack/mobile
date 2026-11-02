@@ -78,7 +78,6 @@ import type {
 } from '../../app/navigation/types';
 
 import { calculatePackReadiness } from './calculatePackReadiness';
-import { staticColors } from '../../design/tokens/colors';
 
 import type { DocumentRecord, PackageSummary } from '../../api/types';
 import { readinessTone } from './readinessTone';
@@ -547,7 +546,7 @@ function PackageDetailBottomSheet({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.sheetOverlay}>
+      <View style={[styles.sheetOverlay, { backgroundColor: theme.colors.overlay.scrim }]}>
         {/* Close when tapping outside */}
         <Pressable style={styles.sheetBackdrop} onPress={onClose} />
 
@@ -2065,7 +2064,6 @@ const styles = StyleSheet.create({
   sheetOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: staticColors.scrim,
   },
   sheetBackdrop: {
     ...StyleSheet.absoluteFill,

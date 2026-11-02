@@ -1,5 +1,4 @@
 import { StyleSheet } from 'react-native';
-import { staticColors } from '../../design/tokens/colors';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
@@ -17,7 +16,6 @@ export const styles = StyleSheet.create({
   modalBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: staticColors.scrim,
   },
 
   modalPanel: {
@@ -876,7 +874,6 @@ addHealthOverlay: {
 
 addHealthBackdrop: {
   ...StyleSheet.absoluteFill,
-  backgroundColor: staticColors.scrim,
 },
 
 addHealthSheet: {

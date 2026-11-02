@@ -4,7 +4,6 @@ import { Modal, Pressable, StyleSheet, TextInput, View, KeyboardAvoidingView } f
 import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-import { staticColors } from '../../design/tokens/colors';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
@@ -27,7 +26,7 @@ export function CurrencyPickerModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
+      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
         <View style={[styles.currencyPanel, { backgroundColor: theme.colors.surface.canvas }]}>
           <View style={styles.header}>
             <AppText style={styles.title}>Home currency</AppText>
@@ -94,7 +93,7 @@ export function DeleteAccountModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
+      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
         <View style={[styles.deletePanel, { backgroundColor: theme.colors.surface.canvas }]}>
           <AppText style={styles.title}>Schedule account deletion</AppText>
           <AppText style={styles.description} color="secondary">
@@ -161,7 +160,6 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: staticColors.scrim,
   },
   currencyPanel: {
     paddingHorizontal: 24,

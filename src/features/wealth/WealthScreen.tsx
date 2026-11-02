@@ -45,7 +45,6 @@ import {
   type WealthHandoffSummary,
   type WealthRecord,
 } from '../../api/wealth.api';
-import { staticColors } from '../../design/tokens/colors';
 import { readinessTone } from '../readiness/readinessTone';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
@@ -1379,7 +1378,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={styles.modalBackdrop}>
+      <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
         <View
           style={[
             styles.modalPanel,
@@ -1723,7 +1722,6 @@ const styles = StyleSheet.create({
   modalBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: staticColors.scrim,
   },
 
   modalPanel: {

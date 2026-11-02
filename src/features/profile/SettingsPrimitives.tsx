@@ -1,11 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../components/primitives/AppText';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
-import { radius } from '../../design/tokens/radius';
+import { ListGroup, ListRow } from '../../components/primitives/ListRow';
 
 export function SectionTitle({
   title,
@@ -32,22 +31,10 @@ export function SectionTitle({
   );
 }
 
-export function SettingsCard({
-  children,
-}: React.PropsWithChildren) {
-  const { theme } = useAppTheme();
-
+export function SettingsCard({ children }: React.PropsWithChildren) {
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: theme.colors.surface.default,
-          borderColor: theme.colors.border.default,
-        },
-      ]}
-    >
-      {children}
+    <View style={styles.card}>
+      <ListGroup>{children}</ListGroup>
     </View>
   );
 }
@@ -71,53 +58,16 @@ export function SettingsRow({
   showSubtitle?: boolean;
   rightContent?: React.ReactNode;
 }) {
-  const { theme } = useAppTheme();
-
   return (
-    <Pressable
-      accessibilityRole="button"
+    <ListRow
+      icon={icon}
+      title={title}
+      subtitle={showSubtitle ? subtitle : undefined}
+      danger={titleDanger}
       disabled={disabled}
+      trailing={rightContent}
       onPress={onPress}
-      style={[styles.settingsRow, { opacity: disabled ? 0.55 : 1 }]}
-    >
-      <View
-        style={[
-          styles.iconBox,
-          { backgroundColor: theme.colors.surface.raised },
-        ]}
-      >
-        {icon}
-      </View>
-
-      <View style={styles.settingsRowContent}>
-        <AppText
-          style={[
-            styles.rowTitle,
-            titleDanger && { color: theme.colors.status.danger.text },
-          ]}
-        >
-          {title}
-        </AppText>
-
-        {showSubtitle && subtitle ? (
-          <AppText
-            style={styles.rowSubtitle}
-            color="secondary"
-            numberOfLines={3}
-          >
-            {subtitle}
-          </AppText>
-        ) : null}
-      </View>
-
-      {rightContent ?? (
-        <ChevronRight
-          size={21}
-          color={theme.colors.text.secondary}
-          strokeWidth={2}
-        />
-      )}
-    </Pressable>
+    />
   );
 }
 
@@ -131,41 +81,5 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 6,
   },
-  card: {
-    width: '100%',
-    borderWidth: 1,
-    borderRadius: radius.surface,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  settingsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 72,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  settingsRowContent: {
-    flex: 1,
-    minWidth: 0,
-    paddingRight: 8,
-  },
-  rowTitle: {
-    fontSize: fontSize.body,
-    lineHeight: lineHeight.body,
-    fontWeight: '700',
-  },
-  rowSubtitle: {
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
-    marginTop: 4,
-  },
+  card: { width: '100%', marginBottom: 16 },
 });

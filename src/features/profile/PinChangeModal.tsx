@@ -6,7 +6,6 @@ import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { authApi } from '../../api/auth.api';
 import { cleanPin } from '../auth/auth.validators';
-import { staticColors } from '../../design/tokens/colors';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
@@ -91,7 +90,7 @@ export function PinChangeModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-      <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
+      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
         <View style={[styles.panel, { backgroundColor: theme.colors.surface.canvas }]}>
           <AppText style={styles.title}>
             {mode === 'change' ? 'Change R-pin' : 'Reset R-pin'}
@@ -200,7 +199,7 @@ function PinField({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: staticColors.scrim },
+  backdrop: { flex: 1, justifyContent: 'flex-end', },
   panel: {
     paddingHorizontal: 24,
     paddingTop: 24,

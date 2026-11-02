@@ -117,7 +117,7 @@ export const lightColors = {
   },
   overlay: {
     backdrop: 'rgba(23, 20, 31, 0.40)',
-    scrim: 'rgba(23, 20, 31, 0.60)',
+    scrim: 'rgba(23, 20, 31, 0.40)',
     highlight: 'rgba(23, 20, 31, 0.05)',
   },
   logo: {
@@ -252,7 +252,7 @@ export const darkColors = {
   },
   overlay: {
     backdrop: 'rgba(0, 0, 0, 0.50)',
-    scrim: 'rgba(0, 0, 0, 0.70)',
+    scrim: 'rgba(0, 0, 0, 0.50)',
     highlight: 'rgba(255, 255, 255, 0.06)',
   },
   logo: {
@@ -276,6 +276,5 @@ export type ThemeColors = Widen<typeof lightColors>;
 
 // Theme-independent values for static StyleSheet blocks.
 export const staticColors = {
-  scrim: 'rgba(23, 20, 31, 0.45)',
   white: '#FFFFFF',
 } as const;

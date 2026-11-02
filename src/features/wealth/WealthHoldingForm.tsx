@@ -19,7 +19,6 @@ import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { pickAndSaveDocument, type SavedWealthDocument } from './wealthDocumentImport';
-import { staticColors } from '../../design/tokens/colors';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
@@ -307,7 +306,7 @@ export function WealthHoldingForm({
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
+      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
         <View style={[styles.panel, { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default }]}>
           <Row align="center" justify="space-between">
             <AppText variant="title" style={styles.title}>Add holding</AppText>
@@ -389,7 +388,7 @@ export function WealthHoldingForm({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: staticColors.scrim },
+  backdrop: { flex: 1, justifyContent: 'flex-end', },
   panel: {
     width: '100%',
     maxHeight: '92%',

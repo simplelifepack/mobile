@@ -271,7 +271,7 @@ export function FormSheet({
     <Modal visible transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
       <KeyboardAvoidingView
         behavior="padding"
-        style={styles.modalBackdrop}
+        style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim }]}
       >
         <Pressable style={styles.formDismiss} onPress={onClose} accessibilityLabel="Dismiss" />
         <View

@@ -25,7 +25,6 @@ import {
   pickAndSaveDocument,
   type SavedWealthDocument,
 } from './wealthDocumentImport';
-import { staticColors } from '../../design/tokens/colors';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
@@ -200,7 +199,7 @@ export function LentBorrowedForm({
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior="padding" style={styles.formBackdrop}>
+      <KeyboardAvoidingView behavior="padding" style={[styles.formBackdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
         <View style={[styles.formPanel, { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default }]}>
           <Row align="center" justify="space-between">
             <AppText variant="title" style={styles.title}>Record money lent or borrowed</AppText>
@@ -270,7 +269,7 @@ export function LentBorrowedForm({
 }
 
 const styles = StyleSheet.create({
-  formBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: staticColors.scrim },
+  formBackdrop: { flex: 1, justifyContent: 'flex-end', },
   formPanel: {
     width: '100%',
     maxHeight: '92%',

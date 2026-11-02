@@ -1016,7 +1016,7 @@ floatingAction={
         ) : null}
         {resolution && !memberFormVisible ? (
           <Modal visible transparent animationType="slide" onRequestClose={() => setResolution(undefined)}>
-            <View style={styles.modalBackdrop}>
+            <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
               <View style={[styles.modalPanel, { backgroundColor: theme.colors.surface.canvas }]}>
                 <AppText variant="heading">Choose a profile</AppText>
                 <AppText variant="caption" color="secondary">

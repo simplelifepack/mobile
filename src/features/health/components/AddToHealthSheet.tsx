@@ -59,7 +59,7 @@ export function AddToHealthSheet({
 
         {/* Background / scrim */}
         <Pressable
-          style={styles.addHealthBackdrop}
+          style={[styles.addHealthBackdrop, { backgroundColor: theme.colors.overlay.scrim }]}
           onPress={onClose}
         />
 
@@ -389,7 +389,7 @@ export function MetricPickerModal({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={styles.modalBackdrop}>
+      <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
         <View
           style={[
             styles.metricPickerSheet,

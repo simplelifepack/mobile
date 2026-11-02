@@ -5,7 +5,6 @@ import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { authApi } from '../../api/auth.api';
-import { staticColors } from '../../design/tokens/colors';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
@@ -119,7 +118,7 @@ export function CredentialChangeModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
+      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
         <View style={[styles.panel, { backgroundColor: theme.colors.surface.canvas }]}>
           <AppText style={styles.title}>
             {step === 'otp'
@@ -253,7 +252,6 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: staticColors.scrim,
   },
   panel: {
     paddingHorizontal: 24,

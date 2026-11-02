@@ -16,7 +16,6 @@ import DateTimePicker, {
 import { CalendarDays, X } from 'lucide-react-native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { AppText } from './AppText';
-import { staticColors } from '../../design/tokens/colors';
 import { radius } from '../../design/tokens/radius';
 
 export type DateFormat = 'iso' | 'us';
@@ -133,7 +132,7 @@ export function DatePickerInput({
 
       {Platform.OS === 'ios' ? (
         <Modal visible={iosOpen} transparent animationType="slide" onRequestClose={() => setIosOpen(false)}>
-          <View style={styles.backdrop}>
+          <View style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
             <Pressable style={StyleSheet.absoluteFill} onPress={() => setIosOpen(false)} />
             <View style={[styles.sheet, { backgroundColor: theme.colors.surface.default }]}>
               <View style={styles.sheetHeader}>
@@ -170,7 +169,7 @@ export function DatePickerInput({
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   text: { flex: 1 },
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: staticColors.scrim },
+  backdrop: { flex: 1, justifyContent: 'flex-end', },
   sheet: { borderTopLeftRadius: radius.overlay, borderTopRightRadius: radius.overlay, padding: 16, paddingBottom: 28 },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
 });

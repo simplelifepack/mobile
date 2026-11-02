@@ -18,7 +18,6 @@ import {
   documentMatchesRequirement,
   type DerivedRequirement,
 } from './calculatePackReadiness';
-import { staticColors } from '../../design/tokens/colors';
 import { radius } from '../../design/tokens/radius';
 
 const documentName = (document: DocumentRecord) =>
@@ -136,7 +135,7 @@ export function ChangeDocumentSheet({
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={styles.overlay}
+        style={[styles.overlay, { backgroundColor: theme.colors.overlay.scrim }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
@@ -277,7 +276,6 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: staticColors.scrim,
   },
   sheet: {
     maxHeight: '88%',

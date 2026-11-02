@@ -29,7 +29,6 @@ import type {
   PackageSummary,
   VerificationSource,
 } from '../../api/types';
-import { staticColors } from '../../design/tokens/colors';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
@@ -639,6 +638,7 @@ export function CustomPackBottomSheet({
           pointerEvents="auto"
           style={[
             styles.backdrop,
+            { backgroundColor: theme.colors.overlay.scrim },
             {
               opacity: backdropOpacity,
             },
@@ -1329,7 +1329,6 @@ const styles = StyleSheet.create({
 
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: staticColors.scrim,
   },
 
   keyboardContainer: {

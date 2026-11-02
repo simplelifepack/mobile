@@ -33,6 +33,7 @@ import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { Row } from '../../components/primitives/Row';
+import { Tile, type StatusTone } from '../../components/primitives/Tile';
 import { AppText } from '../../components/primitives/AppText';
 import { BrandLogo } from '../../components/BrandLogo';
 import { radius } from '../../design/tokens/radius';
@@ -102,57 +103,6 @@ function RecentDocumentCard({
   );
 }
 
-type StatusTone = 'success' | 'warning' | 'danger' | 'info';
-
-function SummaryCard({
-  Icon,
-  tone,
-  badge,
-  label,
-  value,
-  note,
-  onPress,
-}: {
-  Icon: LucideIcon;
-  tone: StatusTone;
-  badge: string;
-  label: string;
-  value: string;
-  note: string;
-  onPress: () => void;
-}) {
-  const { theme } = useAppTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${label}: ${value}, ${note}`}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.summaryCard,
-        shadows.card,
-        { backgroundColor: theme.colors.surface.raised, opacity: pressed ? 0.85 : 1 },
-      ]}
-    >
-      <View style={styles.summaryTop}>
-        <View style={[styles.summaryIcon, { backgroundColor: theme.colors.surface.brandTint }]}>
-          <Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />
-        </View>
-        <View style={[styles.summaryBadge, { backgroundColor: theme.colors.status[tone].surface, borderColor: theme.colors.status[tone].border }]}>
-          <AppText style={[styles.summaryBadgeText, { color: theme.colors.status[tone].text }]}>{badge}</AppText>
-        </View>
-      </View>
-      <View style={styles.summaryBody}>
-        <AppText style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>{label}</AppText>
-        <AppText style={[styles.summaryValue, { color: theme.colors.text.primary }]}>{value}</AppText>
-        <AppText style={[styles.summaryNote, { color: theme.colors.text.secondary }]}>{note}</AppText>
-      </View>
-      <View style={styles.viewAll}>
-        <AppText style={[styles.viewAllText, { color: theme.colors.text.interactive }]}>View all</AppText>
-        <ArrowRight size={sizes.icon.sm} color={theme.colors.icon.interactive} strokeWidth={2} />
-      </View>
-    </Pressable>
-  );
-}
 
 function QuickAction({
   Icon,
@@ -414,40 +364,44 @@ export function HomeScreen() {
         ) : null}
 
         <View style={styles.grid}>
-          <SummaryCard
-            Icon={Folder}
-            tone={expiringDocuments.length ? 'warning' : 'success'}
-            badge={String(expiringDocuments.length)}
-            label="Documents"
-            value={String(documents.length)}
-            note={`${expiringDocuments.length} expiring soon`}
+          <Tile
+            icon={Folder}
+            title="Documents"
+            status={
+              expiringDocuments.length
+                ? `${expiringDocuments.length} expiring soon`
+                : documents.length
+                  ? `${documents.length} stored`
+                  : 'None added yet'
+            }
+            statusTone={expiredDocuments.length ? 'danger' : expiringDocuments.length ? 'warning' : 'neutral'}
             onPress={() => navigation.navigate('Documents')}
           />
-          <SummaryCard
-            Icon={ListChecks}
-            tone={readinessTone(readyPercent)}
-            badge={`${readyPercent}%`}
-            label="Packages"
-            value={`${situationStats.ready}/${situationStats.total}`}
-            note={`${readyPercent}% ready`}
+          <Tile
+            icon={ListChecks}
+            title="Packages"
+            status={`${situationStats.ready} of ${situationStats.total} ready`}
+            statusTone={situationStats.total ? readinessTone(readyPercent) : 'neutral'}
             onPress={() => navigation.navigate('Packages')}
           />
-          <SummaryCard
-            Icon={HeartPulse}
-            tone={overdueReminders.length ? 'danger' : healthReminders.length ? 'warning' : 'success'}
-            badge={String(healthReminders.length)}
-            label="Health"
-            value={String(healthReminders.length)}
-            note="Tasks pending"
+          <Tile
+            icon={HeartPulse}
+            title="Health"
+            status={
+              overdueReminders.length
+                ? `${overdueReminders.length} overdue`
+                : healthReminders.length
+                  ? `${healthReminders.length} tasks pending`
+                  : 'All caught up'
+            }
+            statusTone={overdueReminders.length ? 'danger' : healthReminders.length ? 'warning' : 'neutral'}
             onPress={() => navigation.navigate('Health')}
           />
-          <SummaryCard
-            Icon={WalletCards}
-            tone={renewalsDue.length ? 'info' : 'success'}
-            badge={String(renewalsDue.length)}
-            label="Wealth"
-            value={String(renewalsDue.length)}
-            note="Renewals due"
+          <Tile
+            icon={WalletCards}
+            title="Wealth"
+            status={renewalsDue.length ? `${renewalsDue.length} renewals due` : 'No renewals due'}
+            statusTone={renewalsDue.length ? 'info' : 'neutral'}
             onPress={() => navigation.navigate('Wealth')}
           />
         </View>
@@ -559,24 +513,6 @@ const styles = StyleSheet.create({
   viewButtonText: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  summaryCard: {
-    width: '47.9%',
-    flexGrow: 1,
-    height: 148,
-    padding: 14,
-    borderRadius: radius.tile,
-    justifyContent: 'space-between',
-  },
-  summaryTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  summaryIcon: { width: 32, height: 32, borderRadius: radius.control, alignItems: 'center', justifyContent: 'center' },
-  summaryBadge: { minWidth: 20, height: 20, borderRadius: radius.surface, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
-  summaryBadgeText: { fontSize: fontSize.caption, lineHeight: lineHeight.caption, fontWeight: '700' },
-  summaryBody: { gap: 3 },
-  summaryLabel: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
-  summaryValue: { fontSize: fontSize.headingMd, lineHeight: lineHeight.headingMd, fontWeight: '700' },
-  summaryNote: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
-  viewAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  viewAllText: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
 
   needsBanner: {
     flexDirection: 'row',

@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { AppText } from './AppText';
-import { staticColors } from '../../design/tokens/colors';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
@@ -45,7 +44,7 @@ export function ActionSheet({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Close ${title} sheet`}
-          style={styles.backdrop}
+          style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}
           onPress={onClose}
         />
         <View
@@ -113,7 +112,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: staticColors.scrim,
   },
   sheet: {
     borderTopLeftRadius: radius.overlay,

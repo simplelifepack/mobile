@@ -66,7 +66,6 @@ import { EmptyState } from '../../components/feedback/EmptyState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-import { staticColors } from '../../design/tokens/colors';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 import { formatDate } from '../../utils/format';
@@ -979,7 +978,7 @@ export function DocumentsScreen() {
       />
 
       <Modal visible={isImporting} transparent animationType="fade">
-        <View style={styles.importProgressRoot}>
+        <View style={[styles.importProgressRoot, { backgroundColor: theme.colors.overlay.scrim }]}>
           <View
             style={[
               styles.importProgressCard,
@@ -1372,7 +1371,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: staticColors.scrim,
     padding: 24,
   },
 
