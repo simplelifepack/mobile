@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import { Check, ChevronRight } from 'lucide-react-native';
 
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { radius } from '../../design/tokens/radius';
@@ -15,40 +15,65 @@ type ListRowProps = {
   danger?: boolean;
   disabled?: boolean;
   trailing?: React.ReactNode;
+  selected?: boolean;
+  // Detail content revealed under the row (e.g. an expanded document).
+  children?: React.ReactNode;
   onPress?: () => void;
 };
 
 // Design System 3.2 list row. Dividers between rows come from ListGroup.
-export function ListRow({ icon, title, subtitle, danger, disabled, trailing, onPress }: ListRowProps) {
+export function ListRow({ icon, title, subtitle, danger, disabled, trailing, selected, children, onPress }: ListRowProps) {
   const { theme } = useAppTheme();
 
   return (
-    <Pressable
-      accessibilityRole={onPress ? 'button' : undefined}
-      disabled={disabled || !onPress}
-      onPress={onPress}
-      style={[styles.row, { opacity: disabled ? 0.55 : 1 }]}
-    >
-      {icon ? (
-        <View style={[styles.well, { backgroundColor: theme.colors.surface.brandTint }]}>{icon}</View>
-      ) : null}
-      <View style={styles.copy}>
-        <AppText
-          variant="label"
-          style={danger ? { color: theme.colors.status.danger.text } : undefined}
-          numberOfLines={2}
-        >
-          {title}
-        </AppText>
-        {subtitle ? (
-          <AppText variant="caption" color="secondary" numberOfLines={3}>{subtitle}</AppText>
+    <View style={selected ? { backgroundColor: theme.colors.selection.surface } : undefined}>
+      <Pressable
+        accessibilityRole={onPress ? 'button' : undefined}
+        accessibilityState={selected === undefined ? undefined : { selected }}
+        disabled={disabled || !onPress}
+        onPress={onPress}
+        style={({ pressed }) => [styles.row, { opacity: disabled ? 0.55 : pressed ? 0.82 : 1 }]}
+      >
+        {icon ? (
+          <View style={[styles.well, { backgroundColor: theme.colors.surface.brandTint }]}>{icon}</View>
         ) : null}
-      </View>
-      {trailing ??
-        (onPress ? (
-          <ChevronRight size={sizes.icon.sm} color={theme.colors.icon.secondary} strokeWidth={2} />
-        ) : null)}
-    </Pressable>
+        <View style={styles.copy}>
+          <AppText
+            variant="label"
+            style={danger ? { color: theme.colors.status.danger.text } : undefined}
+            numberOfLines={2}
+          >
+            {title}
+          </AppText>
+          {subtitle ? (
+            <AppText variant="caption" color="secondary" numberOfLines={3}>{subtitle}</AppText>
+          ) : null}
+        </View>
+        {trailing ??
+          (onPress ? (
+            <ChevronRight size={sizes.icon.sm} color={theme.colors.icon.secondary} strokeWidth={2} />
+          ) : null)}
+      </Pressable>
+      {children ? <View style={styles.details}>{children}</View> : null}
+    </View>
+  );
+}
+
+// Leading/trailing checkbox for selection mode.
+export function SelectionMark({ checked }: { checked: boolean }) {
+  const { theme } = useAppTheme();
+  return (
+    <View
+      style={[
+        styles.mark,
+        {
+          borderColor: checked ? theme.colors.border.interactive : theme.colors.border.default,
+          backgroundColor: checked ? theme.colors.action.primary.default : 'transparent',
+        },
+      ]}
+    >
+      {checked ? <Check size={sizes.icon.sm} color={theme.colors.text.onBrand} strokeWidth={3} /> : null}
+    </View>
   );
 }
 
@@ -87,5 +112,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   copy: { flex: 1, minWidth: 0 },
+  details: { paddingHorizontal: 16, paddingBottom: 12, gap: 4 },
+  mark: {
+    width: 24,
+    height: 24,
+    borderRadius: radius.control,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   divider: { height: StyleSheet.hairlineWidth },
 });

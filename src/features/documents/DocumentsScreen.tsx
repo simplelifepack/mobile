@@ -60,6 +60,8 @@ import { Button } from '../../components/primitives/Button';
 import { FloatingActionButton } from '../../components/primitives/FloatingActionButton';
 import { Card } from '../../components/primitives/Card';
 import { Row } from '../../components/primitives/Row';
+import { sizes } from '../../design/tokens/sizes';
+import { ListGroup, ListRow, SelectionMark } from '../../components/primitives/ListRow';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { EmptyState } from '../../components/feedback/EmptyState';
@@ -166,31 +168,6 @@ function getDocumentIcon(type: string) {
 
     default:
       return FileText;
-  }
-}
-
-function getDocumentIconColor(
-  category: string,
-  theme: ReturnType<typeof useAppTheme>['theme'],
-) {
-  switch (category) {
-    case 'Identity':
-      return theme.colors.text.interactive;
-
-    case 'Health':
-      return theme.colors.status.danger.text;
-
-    case 'Finance':
-      return theme.colors.status.warning.text;
-
-    case 'Home':
-      return theme.colors.status.success.text;
-
-    case 'Travel':
-      return theme.colors.text.interactive;
-
-    default:
-      return theme.colors.text.secondary;
   }
 }
 
@@ -736,217 +713,41 @@ export function DocumentsScreen() {
 
         {/* Document list */}
         {documents.length > 0 ? (
-          <View
-            style={[
-              styles.documentList,
-              {
-                backgroundColor:
-                  theme.colors.surface.default,
-                borderColor: theme.colors.border.default,
-              },
-            ]}
-          >
-            {documents.map((document, index) => {
-              const categoryName = categoryFor(
-                document.documentType,
-              );
-
-              const Icon = getDocumentIcon(
-                document.documentType,
-              );
-
-              const iconColor =
-                getDocumentIconColor(
-                  categoryName,
-                  theme,
-                );
-
-              const isSelected =
-                selectedIds.includes(document.id);
-
-              const isExpanded =
-                expandedId === document.id;
-
-              const isLast =
-                index === documents.length - 1;
-
-              const dateText =
-                formatDocumentDate(
-                  document.createdAt,
-                  document.expiryDate,
-                );
+          <ListGroup>
+            {documents.map(document => {
+              const isSelected = selectedIds.includes(document.id);
+              const isExpanded = expandedId === document.id;
+              const Icon = getDocumentIcon(document.documentType);
+              const dateText = formatDocumentDate(document.createdAt, document.expiryDate);
 
               return (
-                <Pressable
+                <ListRow
                   key={document.id}
+                  icon={<Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
+                  title={getDocumentTitle(document)}
+                  subtitle={`${document.documentType}${dateText ? ` · ${dateText}` : ''}`}
+                  selected={selectionMode ? isSelected : undefined}
+                  trailing={selectionMode ? <SelectionMark checked={isSelected} /> : undefined}
                   onPress={() => {
-                    if (selectionMode) {
-                      toggleSelection(document.id);
-                    } else {
-                      setExpandedId(
-                        isExpanded
-                          ? undefined
-                          : document.id,
-                      );
-                    }
+                    if (selectionMode) toggleSelection(document.id);
+                    else setExpandedId(isExpanded ? undefined : document.id);
                   }}
-                  style={({ pressed }) => [
-                    styles.documentRow,
-                    !isLast && {
-                      borderBottomColor:
-                        theme.colors.border.default,
-                      borderBottomWidth: 1,
-                    },
-                    isSelected && {
-                      backgroundColor:
-                        theme.colors.surface.raised,
-                    },
-                    pressed && styles.rowPressed,
-                  ]}
                 >
-                  {/* Icon */}
-                  <View
-                    style={[
-                      styles.documentIcon,
-                      {
-                        backgroundColor:
-                          `${iconColor}22`,
-                      },
-                    ]}
-                  >
-                    <Icon
-                      size={23}
-                      color={iconColor}
-                      strokeWidth={2}
-                    />
-                  </View>
-
-                  {/* Content */}
-                  <View
-                    style={styles.documentCopy}
-                  >
-                    <AppText
-                      variant="heading"
-                      style={
-                        styles.documentTitle
-                      }
-                      numberOfLines={1}
-                    >
-                      {getDocumentTitle(
-                        document,
-                      )}
-                    </AppText>
-
-                    <AppText
-                      variant="body"
-                      color="secondary"
-                      style={
-                        styles.documentMeta
-                      }
-                      numberOfLines={1}
-                    >
-                      {document.documentType}
-                      {dateText
-                        ? ` · ${dateText}`
-                        : ''}
-                    </AppText>
-                  </View>
-
-                  {/* Selection / Chevron */}
-                  {selectionMode ? (
-                    <View
-                      style={[
-                        styles.selectionCircle,
-                        {
-                          borderColor:
-                            isSelected
-                              ? theme.colors.border.interactive
-                              : theme.colors.border.default,
-                          backgroundColor:
-                            isSelected
-                              ? theme.colors.action.primary.default
-                              : 'transparent',
-                        },
-                      ]}
-                    >
-                      {isSelected ? (
-                        <Check
-                          size={15}
-                          color={
-                            theme.colors.text.onBrand
-                          }
-                          strokeWidth={3}
-                        />
-                      ) : null}
-                    </View>
-                  ) : (
-                    <ChevronRight
-                      size={22}
-                      color={
-                        theme.colors.text.secondary
-                      }
-                      strokeWidth={2}
-                    />
-                  )}
-
-                  {/* Expanded details */}
-                  {isExpanded &&
-                  !selectionMode ? (
-                    <View
-                      style={[
-                        styles.expandedDetails,
-                        {
-                          borderTopColor:
-                            theme.colors.border.default,
-                        },
-                      ]}
-                    >
-                      <AppText
-                        variant="caption"
-                        color="secondary"
-                      >
-                        File: {document.originalName}
-                      </AppText>
-
-                      <AppText
-                        variant="caption"
-                        color="secondary"
-                      >
-                        Category: {categoryName}
-                      </AppText>
-
-                      <AppText
-                        variant="caption"
-                        color="secondary"
-                      >
-                        Status:{' '}
-                        {document.classificationStatus}
-                      </AppText>
-
+                  {isExpanded && !selectionMode ? (
+                    <>
+                      <AppText variant="caption" color="secondary">File: {document.originalName}</AppText>
+                      <AppText variant="caption" color="secondary">Category: {categoryFor(document.documentType)}</AppText>
+                      <AppText variant="caption" color="secondary">Status: {document.classificationStatus}</AppText>
                       {document.expiryDate ? (
-                        <AppText
-                          variant="caption"
-                          color="secondary"
-                        >
-                          Expires:{' '}
-                          {formatDate(document.expiryDate)}
-                        </AppText>
+                        <AppText variant="caption" color="secondary">Expires: {formatDate(document.expiryDate)}</AppText>
                       ) : null}
-
-                      <Button
-                        title="Preview document"
-                        variant="secondary"
-                        onPress={event => {
-                          event.stopPropagation();
-                          openPreview(document);
-                        }}
-                      />
-                    </View>
+                      <Button title="Preview document" variant="secondary" onPress={() => openPreview(document)} />
+                    </>
                   ) : null}
-                </Pressable>
+                </ListRow>
               );
             })}
-          </View>
+          </ListGroup>
         ) : (
           <Card style={styles.emptyCard}>
             <EmptyState
@@ -1247,71 +1048,14 @@ const styles = StyleSheet.create({
 
   /* Document list */
 
-  documentList: {
-    borderWidth: 1,
-    borderRadius: radius.overlay,
-    overflow: 'hidden',
-  },
 
-  documentRow: {
-    minHeight: 72,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
 
-  rowPressed: {
-    opacity: 0.82,
-  },
 
-  documentIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
 
-  documentCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
 
-  documentTitle: {
-    fontSize: fontSize.body,
-    lineHeight: lineHeight.body,
-    fontWeight: '600',
-  },
 
-  documentMeta: {
-    marginTop: 4,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
 
-  selectionCircle: {
-    width: 25,
-    height: 25,
-    borderRadius: radius.surface,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
 
-  expandedDetails: {
-    width: '100%',
-    marginTop: 2,
-    marginLeft: 40,
-    paddingLeft: 40,
-    paddingTop: 12,
-    gap: 4,
-    borderTopWidth: 1,
-  },
 
   /* Empty */
 
