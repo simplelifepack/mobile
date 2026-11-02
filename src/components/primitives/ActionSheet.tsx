@@ -61,7 +61,7 @@ export function ActionSheet({
             style={[styles.handle, { backgroundColor: theme.colors.border.default }]}
           />
           <View style={styles.header}>
-            <AppText variant="heading">{title}</AppText>
+            <AppText variant="title">{title}</AppText>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Done"

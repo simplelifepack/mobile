@@ -3,13 +3,20 @@ import type { TextProps } from 'react-native';
 import styled from 'styled-components/native';
 import type { TypographyVariant } from '../../design/tokens/typography';
 type TextColor =
-  'primary' | 'secondary' | 'muted' | 'danger' | 'success' | 'onPrimary';
+  'primary' | 'heading' | 'secondary' | 'muted' | 'danger' | 'success' | 'onPrimary';
 type Props = TextProps & {
   variant?: TypographyVariant;
   color?: TextColor;
   align?: 'left' | 'center' | 'right';
 };
-const headingVariants: TypographyVariant[] = ['display', 'title', 'heading'];
+const headingVariants: TypographyVariant[] = [
+  'display',
+  'title',
+  'heading',
+  'listTitle',
+  'numeric',
+  'amount',
+];
 
 const StyledText = styled.Text<{
   variant: TypographyVariant;
@@ -21,6 +28,7 @@ const StyledText = styled.Text<{
     primary: headingVariants.includes(variant)
       ? theme.colors.text.heading
       : theme.colors.text.primary,
+    heading: theme.colors.text.heading,
     secondary: theme.colors.text.secondary,
     muted: theme.colors.text.tertiary,
     danger: theme.colors.status.danger.text,

@@ -95,8 +95,7 @@ export function AddToHealthSheet({
 
           <Stack gap="xs">
             <AppText
-              variant="heading"
-              style={styles.addHealthTitle}
+              variant="title"
             >
               Add to Health
             </AppText>
@@ -104,7 +103,6 @@ export function AddToHealthSheet({
             <AppText
               variant="body"
               color="secondary"
-              style={styles.addHealthSubtitle}
             >
               For {memberName}
             </AppText>
@@ -356,7 +354,7 @@ export function MetricPickerModal({
             ]}
           />
 
-          <AppText variant="heading" style={styles.metricPickerTitle}>
+          <AppText variant="title" style={styles.metricPickerTitle}>
             Which tests to chart
           </AppText>
 

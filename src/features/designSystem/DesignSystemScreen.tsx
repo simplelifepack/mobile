@@ -40,7 +40,7 @@ export function DesignSystemScreen() {
         <LoadingState />
         <Button title="Show modal" onPress={() => setModal(true)} />
         <AppModal visible={modal} onClose={() => setModal(false)}>
-          <AppText variant="heading">Reusable modal</AppText>
+          <AppText variant="title">Reusable modal</AppText>
         </AppModal>
       </Stack>
     </Screen>

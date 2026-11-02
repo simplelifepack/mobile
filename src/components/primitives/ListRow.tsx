@@ -43,17 +43,17 @@ export function ListRow({ icon, leading, title, subtitle, extra, danger, disable
         ) : null)}
         <View style={styles.copy}>
           <AppText
-            variant="label"
+            variant="listTitle"
             style={danger ? { color: theme.colors.status.danger.text } : undefined}
             numberOfLines={2}
           >
             {title}
           </AppText>
           {subtitle ? (
-            <AppText variant="caption" color="secondary" numberOfLines={3}>{subtitle}</AppText>
+            <AppText variant="bodySm" color="secondary" numberOfLines={3}>{subtitle}</AppText>
           ) : null}
           {extra ? (
-            <AppText variant="caption" style={{ color: theme.colors.status.danger.text }} numberOfLines={2}>{extra}</AppText>
+            <AppText variant="bodySm" style={{ color: theme.colors.status.danger.text }} numberOfLines={2}>{extra}</AppText>
           ) : null}
         </View>
         {trailing ??

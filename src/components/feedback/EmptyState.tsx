@@ -10,7 +10,7 @@ export function EmptyState({
 }) {
   return (
     <Stack align="center">
-      <AppText variant="heading" align="center">
+      <AppText variant="title" align="center">
         {title}
       </AppText>
       <AppText color="muted" align="center">

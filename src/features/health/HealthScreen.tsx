@@ -488,7 +488,7 @@ floatingAction={
         ) : (
           <Card>
             <Stack gap="sm">
-              <AppText variant="heading">No health profiles yet</AppText>
+              <AppText variant="title">No health profiles yet</AppText>
               <AppText color="secondary">
                 Add a family health profile to start organizing care.
               </AppText>
@@ -978,7 +978,7 @@ floatingAction={
           <Modal visible transparent animationType="slide" onRequestClose={() => setResolution(undefined)}>
             <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
               <View style={[styles.modalPanel, { backgroundColor: theme.colors.surface.canvas }]}>
-                <AppText variant="heading">Choose a profile</AppText>
+                <AppText variant="title">Choose a profile</AppText>
                 <AppText variant="caption" color="secondary">
                   {resolutionMessage(resolution)}
                 </AppText>
