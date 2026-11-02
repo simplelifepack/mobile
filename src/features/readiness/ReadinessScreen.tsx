@@ -2015,7 +2015,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sheetTitle: {
-    flex: 1,
     minWidth: 0,
   },
   sheetCloseButton: {
