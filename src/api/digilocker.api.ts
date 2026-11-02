@@ -36,6 +36,7 @@ export type LockerSession = {
 };
 
 export const DIGILOCKER_CONSENT_VERSION = 'digilocker-copy-v1';
+export const DIGILOCKER_REDIRECT_URL = 'readiness://digilocker';
 
 const base = '/api/integrations/digilocker';
 const sessionPath = (id: string) => `${base}/sessions/${encodeURIComponent(id)}`;
@@ -48,7 +49,7 @@ export const digilockerApi = {
   start: () =>
     request<LockerSession & { authorizationUrl: string }>(`${base}/sessions`, {
       method: 'POST',
-      body: {},
+      body: { redirectUrl: DIGILOCKER_REDIRECT_URL, returnFormat: 'session-v1' },
       requiresAuth: true,
     }),
   session: (id: string) =>

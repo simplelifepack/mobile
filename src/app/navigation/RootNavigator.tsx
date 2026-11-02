@@ -23,6 +23,7 @@ import { fontWeights } from '../../design/tokens/typography';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['readiness://'],
+  config: { screens: { DigiLocker: 'digilocker' } },
 };
 export function RootNavigator() {
   const onboardingComplete = useAppSelector(
