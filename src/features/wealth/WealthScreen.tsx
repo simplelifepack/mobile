@@ -499,12 +499,18 @@ function LendingSection({
             strokeWidth={2}
           />
 
-          <AppText
-            variant="heading"
-            style={styles.lendingTitle}
-          >
-            {openCount} open
-          </AppText>
+          <View style={styles.lendingTitleText}>
+            <AppText
+              variant="heading"
+              numberOfLines={1}
+              style={styles.lendingTitle}
+            >
+              Lent and borrowed
+            </AppText>
+            <AppText variant="caption" color="secondary">
+              {openCount} open
+            </AppText>
+          </View>
         </Row>
 
         <Pressable
@@ -1939,6 +1945,11 @@ const styles = StyleSheet.create({
   },
 
   lendingTitleRow: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  lendingTitleText: {
     flex: 1,
     minWidth: 0,
   },
