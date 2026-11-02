@@ -53,7 +53,6 @@ export function Header({
     >
       <AppText
         variant="title"
-        style={styles.headerTitle}
       >
         Health
       </AppText>

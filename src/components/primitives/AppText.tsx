@@ -9,6 +9,8 @@ type Props = TextProps & {
   color?: TextColor;
   align?: 'left' | 'center' | 'right';
 };
+const headingVariants: TypographyVariant[] = ['display', 'title', 'heading'];
+
 const StyledText = styled.Text<{
   variant: TypographyVariant;
   colorName: TextColor;
@@ -16,7 +18,9 @@ const StyledText = styled.Text<{
 }>(({ theme, variant, colorName, align }) => ({
   ...theme.typography[variant],
   color: {
-    primary: theme.colors.text.primary,
+    primary: headingVariants.includes(variant)
+      ? theme.colors.text.heading
+      : theme.colors.text.primary,
     secondary: theme.colors.text.secondary,
     muted: theme.colors.text.tertiary,
     danger: theme.colors.status.danger.text,

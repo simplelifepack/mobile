@@ -69,7 +69,7 @@ import { EmptyState } from '../../components/feedback/EmptyState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
+import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 import { formatDate } from '../../utils/format';
 
@@ -491,7 +491,6 @@ export function DocumentsScreen() {
         >
           <AppText
             variant="title"
-            style={styles.headerTitle}
           >
             Documents
           </AppText>
@@ -934,12 +933,6 @@ const styles = StyleSheet.create({
   },
 
   /* Header */
-
-  headerTitle: {
-    fontSize: fontSize.headingLg,
-    lineHeight: lineHeight.headingLg,
-    fontWeight: fontWeights.bold,
-  },
 
   headerButton: {
     width: 44,

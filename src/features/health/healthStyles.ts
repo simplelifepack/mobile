@@ -412,12 +412,6 @@ export const styles = StyleSheet.create({
     minHeight: 44,
   },
 
-headerTitle: {
-  fontSize: fontSize.headingLg,
-  lineHeight: lineHeight.headingLg,
-  fontWeight: fontWeights.bold,
-},
-
 headerButton: {
   width: sizes.minimumTouchTarget,
   height: sizes.minimumTouchTarget,

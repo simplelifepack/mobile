@@ -205,7 +205,6 @@ export function ProfileScreen() {
 
           <AppText
             variant="title"
-            style={styles.headerTitle}
           >
             Settings
           </AppText>
@@ -545,12 +544,6 @@ const styles = StyleSheet.create({
     height: sizes.minimumTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  headerTitle: {
-    fontSize: fontSize.headingLg,
-    lineHeight: lineHeight.headingLg,
-    fontWeight: fontWeights.bold,
   },
 
   sectionTitle: {

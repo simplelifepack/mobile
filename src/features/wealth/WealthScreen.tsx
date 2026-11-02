@@ -149,7 +149,7 @@ function Header({
 
   return (
     <Row align="center" justify="space-between">
-      <AppText variant="title" style={styles.headerTitle}>
+      <AppText variant="title">
         Wealth
       </AppText>
 
@@ -1579,12 +1579,6 @@ const styles = StyleSheet.create({
   },
 
   /* Header */
-
-  headerTitle: {
-    fontSize: fontSize.body,
-    lineHeight: lineHeight.body,
-    fontWeight: fontWeights.bold,
-  },
 
   headerButton: {
     width: sizes.minimumTouchTarget,

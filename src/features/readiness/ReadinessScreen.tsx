@@ -1387,7 +1387,7 @@ export function ReadinessScreen() {
           {/* Title */}
 
           <Row align="center" gap="sm">
-            <AppText variant="title" style={styles.pageTitle}>
+            <AppText variant="title">
               Packages
             </AppText>
 
@@ -1695,12 +1695,6 @@ const styles = StyleSheet.create({
 
   header: {
     minHeight: 44,
-  },
-
-  pageTitle: {
-    fontSize: fontSize.headingLg,
-    lineHeight: lineHeight.headingLg,
-    fontWeight: fontWeights.bold,
   },
 
   countBadge: {
