@@ -21,7 +21,7 @@ export function AppHeader({
           size={theme.sizes.icon.lg}
         />
       ) : null}
-      <AppText variant="title">{title}</AppText>
+      <AppText variant="heading">{title}</AppText>
     </Row>
   );
 }

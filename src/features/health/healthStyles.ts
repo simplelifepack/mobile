@@ -123,6 +123,9 @@ export const styles = StyleSheet.create({
     marginBottom: 36,
   },
   metricPickerTitle: {
+    fontSize: fontSize.headingMd,
+    lineHeight: lineHeight.headingMd,
+    fontWeight: fontWeights.bold,
     marginBottom: 16,
   },
   metricPickerSubtitle: {
@@ -825,6 +828,17 @@ addHealthGrabber: {
   borderRadius: radius.pill,
   alignSelf: 'center',
   marginBottom: 16,
+},
+
+addHealthTitle: {
+  fontSize: fontSize.headingMd,
+  lineHeight: lineHeight.headingMd,
+  fontWeight: fontWeights.bold,
+},
+
+addHealthSubtitle: {
+  fontSize: fontSize.body,
+  lineHeight: lineHeight.body,
 },
 
 addHealthList: {

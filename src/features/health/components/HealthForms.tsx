@@ -284,7 +284,7 @@ export function FormSheet({
         >
           <View style={[styles.formGrabber, { backgroundColor: theme.colors.border.default }]} />
           <Row align="center" justify="space-between">
-            <AppText variant="title">{title}</AppText>
+            <AppText variant="heading">{title}</AppText>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.formClose}>
               <X size={sizes.icon.md} color={theme.colors.text.secondary} />
             </Pressable>

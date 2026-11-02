@@ -49,7 +49,7 @@ import {
   type WealthRecord,
 } from '../../api/wealth.api';
 import { readinessTone } from '../readiness/readinessTone';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
+import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 import { formatDate } from '../../utils/format';
 import { humanizeLabel } from '../../utils/format';
@@ -234,8 +234,11 @@ function ReadinessCard({
         </Row>
 
         <AppText
-          variant="numeric"
-          style={{ color: theme.colors.status[readinessTone(readiness)].text }}
+          variant="display"
+          style={[
+            styles.readinessPercentage,
+            { color: theme.colors.status[readinessTone(readiness)].text },
+          ]}
         >
           {readiness}%
         </AppText>
@@ -304,7 +307,7 @@ function ReadinessCard({
           Owed to you
         </AppText>
 
-        <AppText variant="body">
+        <AppText variant="body" style={styles.moneyText}>
           {formatMoney(owedToYou)}
         </AppText>
 
@@ -316,7 +319,7 @@ function ReadinessCard({
           You owe
         </AppText>
 
-        <AppText variant="body">
+        <AppText variant="body" style={styles.moneyText}>
           {formatMoney(youOwe)}
         </AppText>
 
@@ -347,7 +350,7 @@ function WealthGroupCard({
     <View style={styles.groupCard}>
       <Row align="center" justify="space-between" style={styles.groupHeader}>
         <AppText variant="heading">{title}</AppText>
-        <AppText variant="amount" color="secondary">{formatMoney(total)}</AppText>
+        <AppText variant="heading" color="secondary">{formatMoney(total)}</AppText>
       </Row>
       <ListGroup>
         {records.map(record => (
@@ -391,7 +394,7 @@ function WealthRecordRow({ record }: { record: WealthRecord }) {
       extra={record.notes || undefined}
       trailing={
         <AppText
-          variant="amount"
+          variant="heading"
           color={record.type === 'LOAN_TAKEN' ? 'danger' : 'primary'}
           numberOfLines={1}
         >
@@ -539,7 +542,7 @@ function LendingSection({
             trailing={
               <Row align="center" gap="sm">
                 <View style={styles.amountColumn}>
-                  <AppText variant="amount" color={item.direction === 'owedToYou' ? 'success' : 'danger'}>
+                  <AppText variant="heading" color={item.direction === 'owedToYou' ? 'success' : 'danger'}>
                     {formatMoney(item.amount)}
                   </AppText>
                   <AppText variant="caption" color="secondary">
@@ -994,8 +997,8 @@ export function WealthScreen({
           />
 
           <AppText
-            variant="title"
-            style={{ color: theme.colors.text.onBrand }}
+            variant="heading"
+            style={[styles.sosText, { color: theme.colors.text.onBrand }]}
           >
             SOS handoff
           </AppText>
@@ -1013,7 +1016,7 @@ export function WealthScreen({
               color={theme.colors.text.interactive}
               strokeWidth={1.8}
             />
-            <AppText variant="title" style={styles.emptyTitle}>
+            <AppText variant="heading" style={styles.emptyTitle}>
               {records.length ? `No ${selectedCategory.toLowerCase()} yet` : 'No wealth records yet'}
             </AppText>
             <AppText
@@ -1191,7 +1194,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
           <Row align="center" justify="space-between">
             <Row align="center" gap="sm">
               <Siren size={sizes.icon.md} color={theme.colors.status.danger.text} strokeWidth={2} />
-              <AppText variant="title">SOS handoff</AppText>
+              <AppText variant="heading">SOS handoff</AppText>
             </Row>
             <Pressable
               accessibilityRole="button"
@@ -1218,7 +1221,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
                 color={theme.colors.text.interactive}
                 strokeWidth={1.8}
               />
-              <AppText variant="title">SOS handoff released</AppText>
+              <AppText variant="heading">SOS handoff released</AppText>
               <AppText color="secondary">
                 {sent} sent, {done.results.length - sent} failed.
               </AppText>
@@ -1665,6 +1668,14 @@ const styles = StyleSheet.create({
 
   readinessTitle: {
     flexShrink: 1,
+    fontSize: fontSize.bodySm,
+    lineHeight: lineHeight.bodySm,
+  },
+
+  readinessPercentage: {
+    fontSize: fontSize.headingXl,
+    lineHeight: lineHeight.headingXl,
+    fontWeight: fontWeights.bold,
   },
 
   progressTrack: {
@@ -1700,6 +1711,11 @@ const styles = StyleSheet.create({
   debtSummary: {
     gap: 4,
     flexWrap: 'wrap',
+  },
+
+  moneyText: {
+    fontWeight: fontWeights.bold,
+    fontSize: fontSize.caption,
   },
 
   readinessActions: {
@@ -1872,6 +1888,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingHorizontal: 12,
+  },
+
+  sosText: {
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
+    fontWeight: fontWeights.bold,
   },
 
   groupCard: {

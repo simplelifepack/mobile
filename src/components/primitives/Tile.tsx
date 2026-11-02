@@ -42,8 +42,8 @@ export function Tile({ icon: Icon, title, status, statusTone = 'neutral', onPres
         <Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />
       </View>
       <View>
-        <AppText variant="labelMd" color="heading" numberOfLines={1}>{title}</AppText>
-        <AppText variant="bodySm" style={{ color: statusColor }} numberOfLines={1}>{status}</AppText>
+        <AppText variant="label" numberOfLines={1}>{title}</AppText>
+        <AppText variant="caption" style={{ color: statusColor }} numberOfLines={1}>{status}</AppText>
       </View>
     </Pressable>
   );

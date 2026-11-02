@@ -152,7 +152,7 @@ export function ChangeDocumentSheet({
         >
           <View style={styles.head}>
             <View style={styles.headCopy}>
-              <AppText variant="title">
+              <AppText variant="heading">
                 {warning
                   ? 'This document may not match'
                   : current
