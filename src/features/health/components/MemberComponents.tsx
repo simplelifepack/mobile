@@ -20,6 +20,7 @@ import { AppText } from '../../../components/primitives/AppText';
 import { Row } from '../../../components/primitives/Row';
 import type { ThemeColors } from '../../../design/tokens/colors';
 import { Stack } from '../../../components/primitives/Stack';
+import { ProfileAvatarButton } from '../../../components/navigation/ProfileAvatarButton';
 import { styles } from '../healthStyles';
 import { humanizeLabel } from '../../../utils/format';
 import { sizes } from '../../../design/tokens/sizes';
@@ -81,29 +82,7 @@ export function Header({
           />
         </Pressable>
 
-        <View
-          style={[
-            styles.profileButton,
-            {
-              backgroundColor:
-                theme.colors.surface.raised,
-              borderColor:
-                theme.colors.border.default,
-            },
-          ]}
-        >
-          <AppText
-            style={[
-              styles.profileInitial,
-              {
-                color:
-                  theme.colors.status.warning.text,
-              },
-            ]}
-          >
-            A
-          </AppText>
-        </View>
+        <ProfileAvatarButton />
       </Row>
     </Row>
   );

@@ -420,20 +420,6 @@ headerButton: {
   alignItems: 'center',
   justifyContent: 'center',
 },
-profileButton: {
-  width: 40,
-  height: 40,
-  borderRadius: radius.overlay,
-  borderWidth: 1,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-
-  profileInitial: {
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
-    fontWeight: fontWeights.bold,
-  },
 
   // --------------------------------------------------------------------------
   // Members
