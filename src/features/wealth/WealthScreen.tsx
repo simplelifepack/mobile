@@ -866,7 +866,7 @@ export function WealthScreen({
       () => setImporting(false),
     );
     Alert.alert('From a document', 'Choose where the document comes from.', [
-      ...sources,
+      ...sources.map(({ label, onPress }) => ({ text: label, onPress })),
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
