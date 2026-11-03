@@ -66,6 +66,7 @@ import { AddToHealthSheet,MetricPickerModal } from './components/AddToHealthShee
 import { HealthMemberForm,HealthReadingForm,HealthReminderForm,MedicationForm } from './components/HealthForms';
 import { HealthTabs,PrepareVisit,QuickActions } from './components/HealthNavigation';
 import { EmergencyInfoSheet } from './components/EmergencyInfoSheet';
+import { VisitPackSheet } from './components/VisitPackSheet';
 import { MedicalReadiness,Reminders } from './components/HealthPanels';
 import { Header,MemberProfile,MemberSelector } from './components/MemberComponents';
 import { ReadingCard } from './components/ReadingViews';
@@ -98,6 +99,7 @@ export function HealthScreen() {
   const [recordSourceVisible, setRecordSourceVisible] = useState(false);
   const [memberFormVisible, setMemberFormVisible] = useState(false);
   const [emergencyVisible, setEmergencyVisible] = useState(false);
+  const [visitPackVisible, setVisitPackVisible] = useState(false);
   const [reminderFormVisible, setReminderFormVisible] = useState(false);
   const [metricPickerVisible, setMetricPickerVisible] = useState(false);
   const [medicationFormVisible, setMedicationFormVisible] = useState(false);
@@ -504,7 +506,7 @@ floatingAction={
 
         {/* PREPARE */}
 
-        <PrepareVisit onPress={() => setActiveTab('Records')} />
+        <PrepareVisit onPress={() => setVisitPackVisible(true)} />
 
         {/* QUICK ACTIONS */}
 
@@ -970,7 +972,12 @@ floatingAction={
           </Stack>
         )}
         </Stack>
-        <EmergencyInfoSheet
+        <VisitPackSheet
+        member={member}
+        visible={visitPackVisible}
+        onClose={() => setVisitPackVisible(false)}
+      />
+      <EmergencyInfoSheet
           member={member}
           visible={emergencyVisible}
           onClose={() => setEmergencyVisible(false)}
