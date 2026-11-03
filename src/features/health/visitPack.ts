@@ -69,11 +69,49 @@ export function buildVisitContexts(records: HealthRecord[]): VisitContext[] {
   );
 }
 
+const datedValues = (items: VisitItem[]) =>
+  items.map(visitDate).filter(date => date !== 'Undated').sort();
+
+export function formatVisitDate(value: string) {
+  return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString('en', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+export const visitAppointmentDate = (items: VisitItem[]) => datedValues(items).pop() ?? '';
+
 export function visitSummary(items: VisitItem[]) {
-  const dates = [...new Set(items.map(visitDate).filter(date => date !== 'Undated'))].sort();
+  const dates = [...new Set(datedValues(items))];
   const visits = dates.length || (items.length ? 1 : 0);
   const noun = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
-  return `${noun(items.length, 'document')} from ${noun(visits, 'visit')}`;
+  const range = dates.length > 1
+    ? `${formatVisitDate(dates[0]!)} – ${formatVisitDate(dates[dates.length - 1]!)}`
+    : dates.length
+      ? formatVisitDate(dates[0]!)
+      : 'date unavailable';
+  return `${noun(items.length, 'document')} from ${noun(visits, 'visit')} · ${range}`;
+}
+
+export function visitItemDetail(item: VisitItem) {
+  const fileName = item.document?.originalName || item.document?.displayName || item.document?.title;
+  const date = visitDate(item) === 'Undated' ? 'Date unavailable' : formatVisitDate(visitDate(item));
+  return fileName ? `${fileName} · ${date}` : date;
+}
+
+export function visitChooserGroups(contexts: VisitContext[], selectedId: string, query: string) {
+  const needle = query.trim().toLowerCase();
+  return (['doctor', 'provider', 'recent'] as const)
+    .map(kind => ({
+      kind,
+      items: contexts
+        .filter(context => context.kind === kind && (!needle || context.label.toLowerCase().includes(needle)))
+        .sort((a, b) =>
+          a.id === selectedId ? -1 : b.id === selectedId ? 1 : a.label.localeCompare(b.label),
+        ),
+    }))
+    .filter(group => group.items.length);
 }
 
 const safeName = (value: string) =>
