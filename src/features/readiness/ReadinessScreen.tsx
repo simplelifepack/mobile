@@ -129,11 +129,6 @@ function formatPackageDate(value?: string) {
   return formatDate(value) || undefined;
 }
 
-function isPackageSourceStale(value?: string) {
-  const timestamp = value ? Date.parse(value) : Number.NaN;
-  return !Number.isNaN(timestamp) && Date.now() - timestamp > 30 * 86_400_000;
-}
-
 function getPackageIcon(title: string) {
   const value = title.toLowerCase();
 
@@ -219,7 +214,7 @@ function ReadinessRing({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={theme.colors.surface.raised}
+          stroke={theme.colors.border.emphasis}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -409,11 +404,6 @@ function PackageDetailBottomSheet({
       selected?.verificationSources?.[0]?.retrievedAt,
   );
 
-  const sourceIsStale = isPackageSourceStale(
-    selected?.source?.lastCheckedAt ??
-      selected?.verificationSources?.[0]?.retrievedAt,
-  );
-
   const checkSource = async () => {
     if (refreshing) return;
     setRefreshing(true);
@@ -576,8 +566,10 @@ function PackageDetailBottomSheet({
                           >
                             <AppText
                               variant="label"
-                              color="primary"
-                              style={styles.sourceProvider}
+                              style={[
+                                styles.sourceProvider,
+                                { color: theme.colors.text.link },
+                              ]}
                             >
                               {link.name}
                             </AppText>
@@ -622,12 +614,6 @@ function PackageDetailBottomSheet({
                     </AppText>
                   ) : null}
                 </View>
-
-                {sourceIsStale ? (
-                  <AppText variant="caption" color="danger">
-                    These requirements were last checked over 30 days ago.
-                  </AppText>
-                ) : null}
 
                 <View style={styles.readinessSummaryRow}>
                   <ReadinessRing percentage={readiness.percentage} size={88} />
@@ -2025,7 +2011,7 @@ const styles = StyleSheet.create({
   },
   packageHeaderCopy: { flex: 1, minWidth: 0, gap: 4 },
   packageSubtitle: { fontSize: fontSize.body, lineHeight: lineHeight.body },
-  sourceProvider: { fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: fontWeights.bold },
+  sourceProvider: { fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: fontWeights.bold, textDecorationLine: 'underline' },
   sourceCheckedDate: { fontWeight: fontWeights.semibold },
   sourceLinks: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   sourcesNote: { padding: 12 },

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 
-import { CalendarDays, Shield } from 'lucide-react-native';
+import { CalendarDays, Shield, Siren } from 'lucide-react-native';
 
 import { useAppTheme } from '../../../design/theme/ThemeProvider';
 
@@ -47,7 +47,7 @@ export function PrepareVisit({ onPress }: { onPress: () => void }) {
 // QUICK ACTIONS
 // ============================================================================
 
-export function QuickActions({ onInsurance }: { onInsurance: () => void }) {
+export function QuickActions({ onInsurance, onEmergency }: { onInsurance: () => void; onEmergency: () => void }) {
   const { theme } = useAppTheme();
 
   return (
@@ -70,6 +70,27 @@ export function QuickActions({ onInsurance }: { onInsurance: () => void }) {
 
         <AppText style={styles.quickActionText} numberOfLines={1}>
           Insurance card
+        </AppText>
+      </Pressable>
+
+      <Pressable
+        onPress={onEmergency}
+        style={[
+          styles.quickAction,
+          {
+            backgroundColor: theme.colors.surface.raised,
+            borderColor: theme.colors.border.default,
+          },
+        ]}
+      >
+        <Siren
+          size={sizes.icon.md}
+          color={theme.colors.text.primary}
+          strokeWidth={2}
+        />
+
+        <AppText style={styles.quickActionText} numberOfLines={1}>
+          Emergency info
         </AppText>
       </Pressable>
     </View>

@@ -30,7 +30,11 @@ import type {
   PackageSummary,
   VerificationSource,
 } from '../../api/types';
-import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
+import {
+  fontSize,
+  lineHeight,
+  fontWeights,
+} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
 
 /* ============================================================================
@@ -699,7 +703,11 @@ export function CustomPackBottomSheet({
                   },
                 ]}
               >
-                <X size={sizes.icon.md} color={theme.colors.text.primary} strokeWidth={2} />
+                <X
+                  size={sizes.icon.md}
+                  color={theme.colors.text.primary}
+                  strokeWidth={2}
+                />
               </Pressable>
             </View>
 
@@ -839,13 +847,19 @@ function LookupStep({
 
         <View style={styles.orRow}>
           <View
-            style={[styles.orLine, { backgroundColor: theme.colors.border.default }]}
+            style={[
+              styles.orLine,
+              { backgroundColor: theme.colors.border.default },
+            ]}
           />
           <AppText variant="caption" color="secondary">
             or
           </AppText>
           <View
-            style={[styles.orLine, { backgroundColor: theme.colors.border.default }]}
+            style={[
+              styles.orLine,
+              { backgroundColor: theme.colors.border.default },
+            ]}
           />
         </View>
 
@@ -950,17 +964,6 @@ function ResultStep({
   source?: CustomPackPayload['source'];
 }) {
   /*
-   * Calculate archive matches.
-   */
-  const archiveMatches = requirements.filter(requirement =>
-    requirementExistsInArchive(requirement, documentLabels),
-  ).length;
-
-  const totalRequirements = requirements.filter(
-    requirement => requirement.trim().length > 0,
-  ).length;
-
-  /*
    * API can provide confidence.
    */
   const confidence = generationJob?.confidence ?? 'low';
@@ -977,340 +980,375 @@ function ResultStep({
   const isVerified = Boolean(generationJob?.hasVerifiedOfficialSource);
 
   return (
-    <ScrollView
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.resultContent}
-    >
-      {generating ? (
-        <View style={styles.generationState}>
-          <ActivityIndicator size="small" color={theme.colors.text.interactive} />
-          <AppText
-            variant="body"
-            color="secondary"
-            style={styles.generationText}
-          >
-            {generationJob?.statusMessage || 'Looking up requirements…'}
-          </AppText>
-        </View>
-      ) : null}
+    <View style={styles.resultRoot}>
+      <ScrollView
+        style={styles.resultScroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.resultContent}
+      >
+        {generating ? (
+          <View style={styles.generationState}>
+            <ActivityIndicator
+              size="small"
+              color={theme.colors.text.interactive}
+            />
+            <AppText
+              variant="body"
+              color="secondary"
+              style={styles.generationText}
+            >
+              {generationJob?.statusMessage || 'Looking up requirements…'}
+            </AppText>
+          </View>
+        ) : null}
 
-      {/* ==========================================================
+        {/* ==========================================================
           PACK NAME
       ========================================================== */}
 
-      <AppText variant="label" color="secondary" style={styles.fieldLabel}>
-        PACK NAME
-      </AppText>
+        <AppText variant="label" color="secondary" style={styles.fieldLabel}>
+          PACK NAME
+        </AppText>
 
-      <TextInput
-        value={packName}
-        onChangeText={setPackName}
-        placeholder="Name this pack"
-        placeholderTextColor={theme.colors.text.secondary}
-        style={[
-          styles.input,
-          {
-            backgroundColor: theme.colors.surface.raised,
+        <TextInput
+          value={packName}
+          onChangeText={setPackName}
+          placeholder="Name this pack"
+          placeholderTextColor={theme.colors.text.secondary}
+          style={[
+            styles.input,
+            {
+              backgroundColor: theme.colors.surface.raised,
 
-            borderColor: theme.colors.border.default,
+              borderColor: theme.colors.border.default,
 
-            color: theme.colors.text.primary,
-          },
-        ]}
-      />
+              color: theme.colors.text.primary,
+            },
+          ]}
+        />
 
-      <AppText variant="label" color="secondary" style={styles.fieldLabel}>
-        DESCRIPTION
-      </AppText>
+        <AppText variant="label" color="secondary" style={styles.fieldLabel}>
+          DESCRIPTION
+        </AppText>
 
-      <TextInput
-        value={purpose}
-        onChangeText={setPurpose}
-        placeholder="What is this pack for?"
-        placeholderTextColor={theme.colors.text.secondary}
-        multiline
-        style={[
-          styles.input,
-          {
-            backgroundColor: theme.colors.surface.raised,
-            borderColor: theme.colors.border.default,
-            color: theme.colors.text.primary,
-            minHeight: 64,
-            textAlignVertical: 'top',
-          },
-        ]}
-      />
+        <TextInput
+          value={purpose}
+          onChangeText={setPurpose}
+          placeholder="What is this pack for?"
+          placeholderTextColor={theme.colors.text.secondary}
+          multiline
+          style={[
+            styles.input,
+            {
+              backgroundColor: theme.colors.surface.raised,
+              borderColor: theme.colors.border.default,
+              color: theme.colors.text.primary,
+              minHeight: 64,
+              textAlignVertical: 'top',
+            },
+          ]}
+        />
 
-      {/* ==========================================================
+        {/* ==========================================================
           DOCUMENTS NEEDED
       ========================================================== */}
 
-      <AppText
-        variant="label"
-        color="secondary"
-        style={[styles.fieldLabel, styles.documentsLabel]}
-      >
-        DOCUMENTS NEEDED
-      </AppText>
+        <AppText
+          variant="label"
+          color="secondary"
+          style={[styles.fieldLabel, styles.documentsLabel]}
+        >
+          DOCUMENTS NEEDED
+        </AppText>
 
-      <AppText variant="body" color="secondary" style={styles.description}>
-        List what you were asked for. You can attach the actual documents once
-        the pack is saved.
-      </AppText>
+        <AppText variant="body" color="secondary" style={styles.description}>
+          List what you were asked for. You can attach the actual documents once
+          the pack is saved.
+        </AppText>
 
-      {/* ==========================================================
+        {/* ==========================================================
           VERIFICATION MESSAGE
       ========================================================== */}
 
-      {/* ==========================================================
+        {/* ==========================================================
           REQUIREMENTS
       ========================================================== */}
 
-      <Stack gap="sm" style={styles.requirements}>
-        {requirements.map((requirement, index) => {
-          const hasDocument = requirementExistsInArchive(
-            requirement,
-            documentLabels,
-          );
+        <Stack gap="sm" style={styles.requirements}>
+          {requirements.map((requirement, index) => {
+            const hasDocument = requirementExistsInArchive(
+              requirement,
+              documentLabels,
+            );
 
-          return (
-            <Row key={`${requirement}-${index}`} align="center" gap="sm">
-              <TextInput
-                value={requirement}
-                onChangeText={value => updateRequirement(index, value)}
-                placeholder="Document name"
-                placeholderTextColor={theme.colors.text.secondary}
-                style={[
-                  styles.requirementInput,
-                  hasDocument && styles.requirementMatched,
-                  {
-                    backgroundColor: theme.colors.surface.raised,
-                    borderColor: hasDocument
-                      ? theme.colors.status.success.border
-                      : theme.colors.border.default,
-                    color: theme.colors.text.primary,
-                  },
-                ]}
-              />
-              {hasDocument ? (
-                <Check size={sizes.icon.md} color={theme.colors.status.success.text} strokeWidth={3} />
-              ) : null}
-              <Pressable
-                onPress={() => removeRequirement(index)}
-                style={[
-                  styles.deleteButton,
-                  {
-                    backgroundColor: theme.colors.surface.raised,
-                    borderColor: theme.colors.border.default,
-                  },
-                ]}
-              >
-                <Trash2
-                  size={sizes.icon.sm}
-                  color={theme.colors.text.primary}
-                  strokeWidth={2}
-                />
-              </Pressable>
-            </Row>
-          );
-        })}
-      </Stack>
-
-      <Pressable
-        onPress={addRequirement}
-        style={[
-          styles.addRequirementButton,
-          {
-            backgroundColor: theme.colors.surface.raised,
-            borderColor: theme.colors.border.default,
-          },
-        ]}
-      >
-        <Plus size={sizes.icon.sm} color={theme.colors.text.primary} strokeWidth={2} />
-        <AppText variant="label" style={styles.addRequirementText}>
-          Add requirement
-        </AppText>
-      </Pressable>
-
-      {documentLabels.filter(
-        label =>
-          !requirements.some(
-            item => item.trim().toLowerCase() === label.trim().toLowerCase(),
-          ),
-      ).length ? (
-        <View style={styles.vaultBlock}>
-          <AppText variant="label" color="secondary" style={styles.fieldLabel}>
-            ADD FROM YOUR DOCUMENTS
-          </AppText>
-          <View style={styles.vaultChips}>
-            {documentLabels
-              .filter(
-                label =>
-                  !requirements.some(
-                    item =>
-                      item.trim().toLowerCase() === label.trim().toLowerCase(),
-                  ),
-              )
-              .slice(0, 12)
-              .map(label => (
-                <Pressable
-                  key={label}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Add ${label}`}
-                  onPress={() => addFromArchive(label)}
+            return (
+              <Row key={index} align="center" gap="sm">
+                <TextInput
+                  value={requirement}
+                  onChangeText={value => updateRequirement(index, value)}
+                  placeholder="Document name"
+                  placeholderTextColor={theme.colors.text.secondary}
                   style={[
-                    styles.vaultChip,
+                    styles.requirementInput,
+                    hasDocument && styles.requirementMatched,
+                    {
+                      backgroundColor: theme.colors.surface.raised,
+                      borderColor: hasDocument
+                        ? theme.colors.status.success.border
+                        : theme.colors.border.default,
+                      color: theme.colors.text.primary,
+                    },
+                  ]}
+                />
+                {hasDocument ? (
+                  <Check
+                    size={sizes.icon.md}
+                    color={theme.colors.status.success.text}
+                    strokeWidth={3}
+                  />
+                ) : null}
+                <Pressable
+                  onPress={() => removeRequirement(index)}
+                  style={[
+                    styles.deleteButton,
                     {
                       backgroundColor: theme.colors.surface.raised,
                       borderColor: theme.colors.border.default,
                     },
                   ]}
                 >
-                  <Plus
+                  <Trash2
                     size={sizes.icon.sm}
-                    color={theme.colors.text.interactive}
-                    strokeWidth={2.4}
+                    color={theme.colors.text.primary}
+                    strokeWidth={2}
                   />
-                  <AppText variant="caption">{label}</AppText>
                 </Pressable>
-              ))}
-          </View>
-        </View>
-      ) : null}
+              </Row>
+            );
+          })}
+        </Stack>
 
-      <AppText style={[styles.archiveCount, { color: theme.colors.status.success.text }]}>
-        {archiveMatches} of {totalRequirements} already in your archive.
-      </AppText>
-
-      <View
-        style={[
-          styles.infoCard,
-          {
-            backgroundColor: theme.colors.surface.raised,
-
-            borderColor: isVerified
-              ? theme.colors.status.success.border
-              : theme.colors.border.interactive,
-          },
-        ]}
-      >
-        <AppText
+        <Pressable
+          onPress={addRequirement}
           style={[
-            styles.infoText,
+            styles.addRequirementButton,
             {
-              color: isVerified ? theme.colors.status.success.text : theme.colors.text.interactive,
+              backgroundColor: theme.colors.surface.raised,
+              borderColor: theme.colors.border.default,
             },
           ]}
         >
-          {isVerified
-            ? 'Based on an official source. Review it and edit to match what you were asked for.'
-            : 'A starting draft, not officially verified. Edit it to match what you were asked for.'}
-        </AppText>
-      </View>
+          <Plus
+            size={sizes.icon.sm}
+            color={theme.colors.text.primary}
+            strokeWidth={2}
+          />
+          <AppText variant="label" style={styles.addRequirementText}>
+            Add requirement
+          </AppText>
+        </Pressable>
 
-      {verificationSources.length ? (
-        <View
-          style={[
-            styles.infoCard,
-            { backgroundColor: theme.colors.surface.raised },
-          ]}
-        >
-          <AppText variant="label">Official sources</AppText>
-          {verificationSources.slice(0, 4).map(verificationSource => (
+        {documentLabels.filter(
+          label =>
+            !requirements.some(
+              item => item.trim().toLowerCase() === label.trim().toLowerCase(),
+            ),
+        ).length ? (
+          <View style={styles.vaultBlock}>
             <AppText
-              key={verificationSource.url}
-              variant="caption"
+              variant="label"
               color="secondary"
+              style={styles.fieldLabel}
             >
-              {verificationSource.organization}: {verificationSource.title}
+              ADD FROM YOUR DOCUMENTS
             </AppText>
-          ))}
-        </View>
-      ) : null}
+            <View style={styles.vaultChips}>
+              {documentLabels
+                .filter(
+                  label =>
+                    !requirements.some(
+                      item =>
+                        item.trim().toLowerCase() ===
+                        label.trim().toLowerCase(),
+                    ),
+                )
+                .slice(0, 12)
+                .map(label => (
+                  <Pressable
+                    key={label}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Add ${label}`}
+                    onPress={() => addFromArchive(label)}
+                    style={[
+                      styles.vaultChip,
+                      {
+                        backgroundColor: theme.colors.surface.raised,
+                        borderColor: theme.colors.border.default,
+                      },
+                    ]}
+                  >
+                    <Plus
+                      size={sizes.icon.sm}
+                      color={theme.colors.text.interactive}
+                      strokeWidth={2.4}
+                    />
+                    <AppText variant="caption">{label}</AppText>
+                  </Pressable>
+                ))}
+            </View>
+          </View>
+        ) : null}
 
-      {/* ==========================================================
-          OFFLINE ESTIMATE
-      ========================================================== */}
-
-      <View
-        style={[
-          styles.estimateCard,
-          {
-            backgroundColor: theme.colors.surface.canvas,
-
-            borderColor: theme.colors.border.default,
-          },
-        ]}
-      >
-        <View style={styles.estimateHeader}>
-          <AppText
+        {generationJob ? (
+          <View
             style={[
-              styles.estimateTitle,
+              styles.infoCard,
               {
-                color: isVerified
-                  ? theme.colors.status.success.text
-                  : theme.colors.status.warning.text,
+                backgroundColor: theme.colors.surface.raised,
+
+                borderColor: isVerified
+                  ? theme.colors.status.success.border
+                  : theme.colors.border.interactive,
               },
             ]}
           >
-            {isVerified ? 'Official estimate' : 'Offline estimate'}
-          </AppText>
-
-          <AppText style={[styles.estimateMeta, { color: theme.colors.text.secondary }]}>
-            · confidence: {String(confidence)}
-          </AppText>
-
-          <AppText style={[styles.estimateMeta, { color: theme.colors.text.secondary }]}>· checked {checkedDate}</AppText>
-        </View>
-
-        <AppText style={styles.estimateDescription} color="secondary">
-          {disclaimer ||
-            'Offline estimate. Connect to get the current official list.'}
-        </AppText>
-        {!isVerified ? (
-          <AppText style={styles.estimateDescription} color="secondary">
-            Next: save this pack to keep working offline, then refresh it from
-            the pack details when you are back online to confirm the official list.
-          </AppText>
+            <AppText
+              style={[
+                styles.infoText,
+                {
+                  color: isVerified
+                    ? theme.colors.status.success.text
+                    : theme.colors.text.interactive,
+                },
+              ]}
+            >
+              {isVerified
+                ? 'Based on an official source. Review it and edit to match what you were asked for.'
+                : 'A starting draft, not officially verified. Edit it to match what you were asked for.'}
+            </AppText>
+          </View>
         ) : null}
-      </View>
 
-      {/* ==========================================================
+        {verificationSources.length ? (
+          <View
+            style={[
+              styles.infoCard,
+              { backgroundColor: theme.colors.surface.raised },
+            ]}
+          >
+            <AppText variant="label">Official sources</AppText>
+            {verificationSources.slice(0, 4).map(verificationSource => (
+              <AppText
+                key={verificationSource.url}
+                variant="caption"
+                color="secondary"
+              >
+                {verificationSource.organization}: {verificationSource.title}
+              </AppText>
+            ))}
+          </View>
+        ) : null}
+
+        {/* ==========================================================
+          OFFLINE ESTIMATE
+      ========================================================== */}
+
+        {generationJob ? (
+          <View
+            style={[
+              styles.estimateCard,
+              {
+                backgroundColor: theme.colors.surface.canvas,
+
+                borderColor: theme.colors.border.default,
+              },
+            ]}
+          >
+            <View style={styles.estimateHeader}>
+              <AppText
+                style={[
+                  styles.estimateTitle,
+                  {
+                    color: isVerified
+                      ? theme.colors.status.success.text
+                      : theme.colors.status.warning.text,
+                  },
+                ]}
+              >
+                {isVerified ? 'Official estimate' : 'Offline estimate'}
+              </AppText>
+
+              <AppText
+                style={[
+                  styles.estimateMeta,
+                  { color: theme.colors.text.secondary },
+                ]}
+              >
+                · confidence: {String(confidence)}
+              </AppText>
+
+              <AppText
+                style={[
+                  styles.estimateMeta,
+                  { color: theme.colors.text.secondary },
+                ]}
+              >
+                · checked {checkedDate}
+              </AppText>
+            </View>
+
+            <AppText style={styles.estimateDescription} color="secondary">
+              {disclaimer ||
+                'Offline estimate. Connect to get the current official list.'}
+            </AppText>
+            {!isVerified ? (
+              <AppText style={styles.estimateDescription} color="secondary">
+                Next: save this pack to keep working offline, then refresh it
+                from the pack details when you are back online to confirm the
+                official list.
+              </AppText>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* ==========================================================
           ERROR
       ========================================================== */}
 
-      {error ? (
-        <AppText variant="caption" color="danger" style={styles.errorText}>
-          {error}
-        </AppText>
-      ) : null}
-
-      {/* ==========================================================
+        {error ? (
+          <AppText variant="caption" color="danger" style={styles.errorText}>
+            {error}
+          </AppText>
+        ) : null}
+      </ScrollView>
+      <View style={styles.footer}>
+        {/* ==========================================================
           SAVE
       ========================================================== */}
 
-      <Pressable
-        onPress={onSave}
-        disabled={!canSave || saving}
-        style={[
-          styles.saveButton,
-          {
-            backgroundColor: theme.colors.action.primary.default,
-          },
+        <Pressable
+          onPress={onSave}
+          disabled={!canSave || saving}
+          style={[
+            styles.saveButton,
+            {
+              backgroundColor: theme.colors.action.primary.default,
+            },
 
-          (!canSave || saving) && styles.disabledButton,
-        ]}
-      >
-        <AppText
-          variant="label"
-          color="onPrimary"
-          style={styles.saveButtonText}
+            (!canSave || saving) && styles.disabledButton,
+          ]}
         >
-          {saving ? 'Saving…' : 'Save pack'}
-        </AppText>
-      </Pressable>
-    </ScrollView>
+          <AppText
+            variant="label"
+            color="onPrimary"
+            style={styles.saveButtonText}
+          >
+            {saving ? 'Saving…' : 'Save pack'}
+          </AppText>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -1453,7 +1491,7 @@ const styles = StyleSheet.create({
   },
 
   primaryButton: {
-    height: 48,
+    minHeight: 48,
 
     borderRadius: radius.surface,
 
@@ -1469,7 +1507,7 @@ const styles = StyleSheet.create({
   },
 
   secondaryButton: {
-    height: 48,
+    minHeight: 48,
 
     borderRadius: radius.surface,
 
@@ -1539,6 +1577,18 @@ const styles = StyleSheet.create({
   /* ------------------------------------------------------------
        RESULT CONTENT
     ------------------------------------------------------------ */
+
+  resultRoot: {
+    flexShrink: 1,
+  },
+
+  resultScroll: {
+    flexShrink: 1,
+  },
+
+  footer: {
+    paddingTop: 8,
+  },
 
   resultContent: {
     paddingTop: 4,
@@ -1653,7 +1703,7 @@ const styles = StyleSheet.create({
   addRequirementButton: {
     alignSelf: 'flex-start',
 
-    height: sizes.minimumTouchTarget,
+    minHeight: sizes.minimumTouchTarget,
 
     borderRadius: radius.surface,
 
@@ -1726,7 +1776,6 @@ const styles = StyleSheet.create({
   estimateMeta: {
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,
-
   },
 
   estimateDescription: {
@@ -1752,7 +1801,7 @@ const styles = StyleSheet.create({
     ------------------------------------------------------------ */
 
   saveButton: {
-    height: 50,
+    minHeight: 50,
 
     borderRadius: radius.surface,
 
