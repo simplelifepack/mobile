@@ -25,10 +25,13 @@ export async function saveSelectedDocument(
   const doc = analysis.document;
   const saved = await documentsApi.save({
     tempFileIds: analysis.files.map(file => file.tempFileId),
-    title: doc.title,
-    category: doc.category,
-    documentType: doc.documentType,
-    confidence: doc.confidence,
+    originalName: analysis.files[0]?.originalName,
+    mimeType: analysis.files[0]?.mimeType,
+    size: analysis.files.reduce((sum, file) => sum + file.size, 0),
+    title: doc.title?.trim() || analysis.files[0]?.originalName || selected.fileName,
+    category: doc.category?.trim() || 'Other',
+    documentType: doc.documentType?.trim() || 'Unknown',
+    confidence: Number(doc.confidence) || 0,
     fields: doc.fields ?? {},
     reviewFields: doc.reviewFields ?? [],
     rawExtractedText: doc.rawExtractedText ?? '',
