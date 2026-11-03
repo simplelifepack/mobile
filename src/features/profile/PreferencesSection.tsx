@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Switch, View } from 'react-native';
-import { Bell, ChevronDown, Coins, Moon } from 'lucide-react-native';
+import { Bell, Brain, ChevronDown, Coins, Moon } from 'lucide-react-native';
 
 import { preferencesApi, type UserPreferences } from '../../api/preferences.api';
 import { AppText } from '../../components/primitives/AppText';
@@ -134,6 +134,29 @@ export function PreferencesSection() {
           </View>
         </View>
 
+        <View style={[styles.divider, { backgroundColor: theme.colors.border.default }]} />
+        <View style={[styles.row, !preferences && styles.disabledRow]}>
+          <View style={styles.icon}>
+            <Brain size={sizes.icon.md} color={theme.colors.text.interactive} strokeWidth={1.8} />
+          </View>
+          <View style={styles.content}>
+            <AppText style={styles.rowTitle}>AI processing</AppText>
+            <AppText style={styles.rowSubtitle} color="secondary">
+              Extract details and classify documents you add
+            </AppText>
+          </View>
+          <Switch
+            disabled={!preferences}
+            value={preferences?.aiProcessingEnabled ?? false}
+            onValueChange={aiProcessingEnabled => updatePreferences({ aiProcessingEnabled })}
+            trackColor={{
+              false: theme.colors.surface.raised,
+              true: theme.colors.text.interactive,
+            }}
+            thumbColor={preferences?.aiProcessingEnabled ? theme.colors.text.onBrand : theme.colors.icon.secondary}
+            ios_backgroundColor={theme.colors.surface.raised}
+          />
+        </View>
         <View style={[styles.divider, { backgroundColor: theme.colors.border.default }]} />
 
         <View style={styles.row}>

@@ -1,46 +1,35 @@
 import { Alert } from 'react-native';
-import { discardSelectedDocument } from './analysis';
+import { preferencesApi } from '../../../api/preferences.api';
 import type { SelectedDocument } from './types';
 
 type ConsentedImportOptions = {
   select: () => Promise<SelectedDocument | undefined>;
   onConsent: (selected: SelectedDocument, aiConsent: boolean) => void;
-  promptTitle?: string;
-  promptMessage?: string;
   selectionErrorTitle?: string;
 };
 
-const DEFAULT_PROMPT_MESSAGE =
-  'The file is encrypted on this device before upload. Choose whether to allow AI analysis.';
+/** Falls back to rules-only analysis if the preference cannot be loaded. */
+async function aiProcessingEnabled() {
+  try {
+    return (await preferencesApi.get()).aiProcessingEnabled;
+  } catch {
+    return false;
+  }
+}
 
 /**
- * Picks a document, asks the user whether AI analysis is allowed, then hands off.
- * The local copy is discarded if the user cancels.
+ * Picks a document and hands it off with the AI consent taken from the
+ * account's AI processing preference (Profile > Preferences), without prompting.
  */
 export async function startConsentedImport({
   select,
   onConsent,
-  promptTitle = 'Analyze document?',
-  promptMessage = DEFAULT_PROMPT_MESSAGE,
   selectionErrorTitle = 'Unable to select document',
 }: ConsentedImportOptions) {
   try {
     const selected = await select();
     if (!selected) return;
-    Alert.alert(
-      promptTitle,
-      promptMessage,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => discardSelectedDocument(selected),
-        },
-        { text: 'Rules only', onPress: () => onConsent(selected, false) },
-        { text: 'Allow AI', onPress: () => onConsent(selected, true) },
-      ],
-      { cancelable: false },
-    );
+    onConsent(selected, await aiProcessingEnabled());
   } catch (error) {
     Alert.alert(
       selectionErrorTitle,

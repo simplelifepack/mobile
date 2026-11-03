@@ -361,9 +361,6 @@ export function HealthScreen() {
     startConsentedImport({
       select,
       onConsent: chooseRecordType,
-      promptTitle: 'Analyze health record?',
-      promptMessage:
-        'The file is encrypted on this device before upload. Choose whether to allow AI analysis to extract measurements and medicines.',
       selectionErrorTitle: 'Unable to select file',
     });
 
