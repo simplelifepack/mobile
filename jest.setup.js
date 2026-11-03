@@ -61,3 +61,8 @@ jest.mock('@react-native-google-signin/google-signin', () => ({
   isErrorWithCode: error => Boolean(error?.code),
   isSuccessResponse: jest.fn(),
 }));
+
+jest.mock('react-native-blob-util', () => ({
+  __esModule: true,
+  default: { ios: { openDocument: jest.fn() }, android: { actionViewIntent: jest.fn() } },
+}));

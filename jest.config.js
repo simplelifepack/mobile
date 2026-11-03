@@ -1,7 +1,7 @@
 module.exports = {
   preset: '@react-native/jest-preset',
   transformIgnorePatterns: [
-    'node_modules/(?!((@)?react-native|@react-native(-community)?|react-redux|@reduxjs/toolkit|@react-navigation|react-native-safe-area-context|react-native-screens|react-native-gesture-handler|styled-components|lucide-react-native|react-native-svg|react-native-blob-util|immer|redux|redux-thunk|reselect)/)',
+    'node_modules/(?!((@)?react-native|@react-native(-community)?|react-redux|@reduxjs/toolkit|@react-navigation|react-native-safe-area-context|react-native-screens|react-native-gesture-handler|styled-components|lucide-react-native|react-native-svg|immer|redux|redux-thunk|reselect)/)',
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
