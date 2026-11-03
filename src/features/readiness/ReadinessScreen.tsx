@@ -86,7 +86,6 @@ import type { DocumentRecord, PackageSummary } from '../../api/types';
 import { readinessTone } from './readinessTone';
 import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
-import { formatDate } from '../../utils/format';
 
 // ============================================================================
 // Categories
@@ -123,10 +122,6 @@ function readinessColor(
   theme: ReturnType<typeof useAppTheme>['theme'],
 ) {
   return theme.colors.status[readinessTone(percentage)].text;
-}
-
-function formatPackageDate(value?: string) {
-  return formatDate(value) || undefined;
 }
 
 function getPackageIcon(title: string) {
@@ -399,11 +394,6 @@ function PackageDetailBottomSheet({
 
   const sourceLinks = packageSourceLinks(selected);
 
-  const sourceCheckedDate = formatPackageDate(
-    selected?.source?.lastCheckedAt ??
-      selected?.verificationSources?.[0]?.retrievedAt,
-  );
-
   const checkSource = async () => {
     if (refreshing) return;
     setRefreshing(true);
@@ -599,12 +589,6 @@ function PackageDetailBottomSheet({
                       )}
                     </Pressable>
                   </Row>
-                  <AppText variant="body" color="secondary">
-                    Last checked{' '}
-                    <AppText variant="body" style={styles.sourceCheckedDate}>
-                      {sourceCheckedDate ?? 'Not yet checked'}
-                    </AppText>
-                  </AppText>
                   {refreshNote ? (
                     <AppText
                       variant="caption"
@@ -1011,7 +995,6 @@ function PackageDetailBottomSheet({
                             {[
                               source.title,
                               sourceHostname(source.url),
-                              `checked ${formatPackageDate(source.retrievedAt) ?? 'recently'}`,
                             ]
                               .filter(Boolean)
                               .join(' · ')}
@@ -2012,7 +1995,6 @@ const styles = StyleSheet.create({
   packageHeaderCopy: { flex: 1, minWidth: 0, gap: 4 },
   packageSubtitle: { fontSize: fontSize.body, lineHeight: lineHeight.body },
   sourceProvider: { fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: fontWeights.bold, textDecorationLine: 'underline' },
-  sourceCheckedDate: { fontWeight: fontWeights.semibold },
   sourceLinks: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   sourcesNote: { padding: 12 },
   readinessSummaryRow: {
