@@ -341,7 +341,7 @@ export function VisitPackSheet({
             Cover sheet included: allergies, conditions, medicines, and latest
             readings.
           </AppText>
-          <AppText variant="label" color="tertiary">
+          <AppText variant="label" color="muted">
             Preview
           </AppText>
         </View>
