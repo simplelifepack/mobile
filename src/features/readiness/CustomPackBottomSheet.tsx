@@ -655,7 +655,7 @@ export function CustomPackBottomSheet({
         <KeyboardAvoidingView
           style={[
             styles.keyboardContainer,
-            { paddingBottom: Math.max(insets.bottom, 12) },
+            { paddingBottom: Math.max(insets.bottom, 12) + 16 },
           ]}
           behavior="padding"
           pointerEvents="box-none"
@@ -1459,6 +1459,7 @@ const styles = StyleSheet.create({
 
   lookupScrollContent: {
     flexGrow: 1,
+    paddingBottom: 24,
   },
 
   intro: {
