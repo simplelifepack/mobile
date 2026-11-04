@@ -66,6 +66,7 @@ import { AddToHealthSheet,MetricPickerModal } from './components/AddToHealthShee
 import { HealthMemberForm,HealthReadingForm,HealthReminderForm,MedicationForm } from './components/HealthForms';
 import { HealthTabs,PrepareVisit,QuickActions } from './components/HealthNavigation';
 import { EmergencyInfoSheet } from './components/EmergencyInfoSheet';
+import { InsuranceCardSheet } from './components/InsuranceCardSheet';
 import { VisitPackSheet } from './components/VisitPackSheet';
 import { MedicalReadiness,Reminders } from './components/HealthPanels';
 import { Header,MemberProfile,MemberSelector } from './components/MemberComponents';
@@ -92,6 +93,7 @@ export function HealthScreen() {
   const [selectedMember, setSelectedMember] = useState('');
   const [overview, setOverview] = useState<HealthOverview>();
   const { data: documents } = useDocumentsQuery();
+  const [insuranceVisible, setInsuranceVisible] = useState(false);
   const [timeline, setTimeline] = useState<HealthTimelineEvent[]>([]);
   const [reminders, setReminders] = useState<HealthHomeReminder[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
@@ -512,7 +514,7 @@ floatingAction={
         {/* QUICK ACTIONS */}
 
         <QuickActions
-  onInsurance={() => navigation.navigate('Documents')}
+  onInsurance={() => setInsuranceVisible(true)}
   onEmergency={() => setEmergencyVisible(true)}
 />
 
@@ -977,6 +979,16 @@ floatingAction={
         member={member}
         visible={visitPackVisible}
         onClose={() => setVisitPackVisible(false)}
+      />
+      <InsuranceCardSheet
+        visible={insuranceVisible}
+        records={overview?.recentRecords ?? []}
+        documents={documents ?? []}
+        onClose={() => setInsuranceVisible(false)}
+        onAddDocument={() => {
+          setInsuranceVisible(false);
+          navigation.navigate('Documents');
+        }}
       />
       <EmergencyInfoSheet
           member={member}

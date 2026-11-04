@@ -11,7 +11,7 @@ const isInsuranceDocument = (document: DocumentRecord) =>
   /insurance|policy/.test(`${document.category} ${document.documentType}`.toLowerCase());
 
 // Prefer an insurance document already attached to a health record, as the web card does.
-function findInsuranceDocument(records: HealthRecord[], documents: DocumentRecord[]) {
+export function findInsuranceDocument(records: HealthRecord[], documents: DocumentRecord[]) {
   const ids = new Set(records.map(record => record.documentId));
   return documents.find(document => ids.has(document.id) && isInsuranceDocument(document))
     ?? documents.find(isInsuranceDocument);
