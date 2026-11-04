@@ -26,7 +26,9 @@ import { AppText } from '../../components/primitives/AppText';
 import { Button } from '../../components/primitives/Button';
 import { SectionHeader } from '../../components/primitives/SectionHeader';
 import { DatePickerInput } from '../../components/primitives/DatePickerInput';
-import { ListGroup, ListRow, SelectionMark } from '../../components/primitives/ListRow';
+import { ActionSheet } from '../../components/primitives/ActionSheet';
+import { Dropdown } from '../../components/primitives/Dropdown';
+import { ListGroup, ListRow } from '../../components/primitives/ListRow';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { radius } from '../../design/tokens/radius';
 import { sizes } from '../../design/tokens/sizes';
@@ -82,6 +84,7 @@ export function DocumentDetailSheet({
   const [people, setPeople] = useState<Person[]>([]);
   const [packages, setPackages] = useState<PackageSummary[]>();
   const [notes, setNotes] = useState('');
+  const [peopleOpen, setPeopleOpen] = useState(false);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string>();
   const documentId = document?.id;
@@ -219,24 +222,24 @@ export function DocumentDetailSheet({
 
             <View style={styles.section}>
               <SectionHeader title="Belongs to" />
-              {people.length ? (
-                <ListGroup>
-                  {people.map(person => {
-                    const selected = person.id === personId;
-                    return (
-                      <ListRow
-                        key={person.id}
-                        title={person.name}
-                        disabled={busy !== null}
-                        trailing={<SelectionMark checked={selected} />}
-                        onPress={() => !selected && run('assign', () => documentsApi.bulkAssign([document.id], person.id))}
-                      />
-                    );
-                  })}
-                </ListGroup>
-              ) : (
-                <AppText color="secondary">Loading people…</AppText>
-              )}
+              <Dropdown
+                label="Belongs to"
+                value={people.find(person => person.id === personId)?.name ?? 'Select a person'}
+                onPress={() => people.length && setPeopleOpen(true)}
+              />
+              <ActionSheet
+                visible={peopleOpen}
+                title="Belongs to"
+                onClose={() => setPeopleOpen(false)}
+                options={people.map(person => ({
+                  label: person.name,
+                  selected: person.id === personId,
+                  onPress: () => {
+                    setPeopleOpen(false);
+                    if (person.id !== personId) run('assign', () => documentsApi.bulkAssign([document.id], person.id));
+                  },
+                }))}
+              />
             </View>
 
             <View style={styles.section}>
