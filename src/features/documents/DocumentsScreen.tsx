@@ -703,15 +703,15 @@ export function DocumentsScreen() {
 
         {/* Document list */}
         {documents.length > 0 ? (
-          <ListGroup>
+          <Stack gap="sm">
             {documents.map(document => {
               const isSelected = selectedIds.includes(document.id);
               const Icon = getDocumentIcon(document.documentType);
               const dateText = formatDocumentDate(document.createdAt, document.expiryDate);
 
               return (
+                <ListGroup key={document.id}>
                 <ListRow
-                  key={document.id}
                   icon={<Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
                   title={getDocumentTitle(document)}
                   subtitle={`${document.documentType}${dateText ? ` · ${dateText}` : ''}`}
@@ -722,9 +722,10 @@ export function DocumentsScreen() {
                     else setDetailId(document.id);
                   }}
                 />
+                </ListGroup>
               );
             })}
-          </ListGroup>
+          </Stack>
         ) : (
           <Card style={styles.emptyCard}>
             <EmptyState
