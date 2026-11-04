@@ -28,7 +28,6 @@ import {
   Image as ImageIcon,
   Landmark,
   Plane,
-  FileCheck2,
   Search,
   SlidersHorizontal,
   Trash2,
@@ -922,6 +921,7 @@ function SearchInput({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
+        autoFocus
         placeholderTextColor={
           theme.colors.text.secondary
         }
