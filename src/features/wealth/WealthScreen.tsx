@@ -15,7 +15,6 @@ import {
   ChevronRight,
   CircleCheck,
   CircleDollarSign,
-  HandCoins,
   KeyRound,
   Landmark,
   Plus,
@@ -472,35 +471,11 @@ function LendingSection({
   ).length;
 
   return (
-    <Card style={styles.lendingCard}>
-      <Row
-        align="center"
-        justify="space-between"
-        style={styles.lendingHeader}
-      >
-        <Row
-          align="center"
-          gap="sm"
-          style={styles.lendingTitleRow}
-        >
-          <HandCoins
-            size={sizes.icon.md}
-            color={theme.colors.text.secondary}
-            strokeWidth={2}
-          />
-
-          <View style={styles.lendingTitleText}>
-            <AppText
-              variant="heading"
-              numberOfLines={1}
-              style={styles.lendingTitle}
-            >
-              Lent and borrowed
-            </AppText>
-            <AppText variant="caption" color="secondary">
-              {openCount} open
-            </AppText>
-          </View>
+    <View style={styles.groupCard}>
+      <Row align="center" justify="space-between" style={styles.groupHeader}>
+        <Row align="center" gap="sm">
+          <AppText variant="heading">Lent and borrowed</AppText>
+          <AppText variant="caption" color="secondary">{openCount} open</AppText>
         </Row>
 
         <Pressable
@@ -508,32 +483,21 @@ function LendingSection({
           style={({ pressed }) => [
             styles.recordButton,
             {
-              backgroundColor:
-                theme.colors.surface.raised,
+              backgroundColor: theme.colors.surface.raised,
               borderColor: theme.colors.border.default,
             },
             pressed && styles.pressed,
           ]}
         >
-          <Plus
-            size={sizes.icon.md}
-            color={theme.colors.text.primary}
-            strokeWidth={2}
-          />
-
-          <AppText variant="label">
-            Record
-          </AppText>
+          <Plus size={sizes.icon.md} color={theme.colors.text.primary} strokeWidth={2} />
+          <AppText variant="label">Record</AppText>
         </Pressable>
       </Row>
 
-      <View>
-        {items.map((item, index) => (
-          <View
-            key={item.id}
-            style={index > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.border.subtle } : undefined}
-          >
+      <ListGroup>
+        {items.map(item => (
           <ListRow
+            key={item.id}
             icon={
               <CircleDollarSign
                 size={sizes.icon.md}
@@ -565,10 +529,9 @@ function LendingSection({
               </Row>
             }
           />
-          </View>
         ))}
-      </View>
-    </Card>
+      </ListGroup>
+    </View>
   );
 }
 
