@@ -4,6 +4,8 @@ import { useNavigation, type CompositeNavigationProp } from '@react-navigation/n
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useAppSelector } from '../../app/store/hooks';
+import { AttentionPanel, MetricTile, type AttentionItem } from './HomeSections';
 import {
   AlertCircle,
   Folder,
@@ -12,6 +14,7 @@ import {
   ListChecks,
   Plus,
   Search,
+  TrendingUp,
   WalletCards,
   ChevronRight,
 } from 'lucide-react-native';
@@ -20,7 +23,6 @@ import { useBootstrapQuery, usePackagesQuery } from '../../services/api';
 import { healthApi, type HealthHomeReminder } from '../../api/health.api';
 import { wealthApi, type WealthRecord } from '../../api/wealth.api';
 import type { DocumentRecord } from '../../api/types';
-import { readinessTone } from '../readiness/readinessTone';
 import { calculatePackReadiness } from '../readiness/calculatePackReadiness';
 import type { MainTabParamList, RootStackParamList } from '../../app/navigation/types';
 import { GlobalSearchModal } from './GlobalSearchModal';
@@ -35,7 +37,6 @@ import { ListGroup, ListRow } from '../../components/primitives/ListRow';
 import { SectionHeader } from '../../components/primitives/SectionHeader';
 import { Tile, type StatusTone } from '../../components/primitives/Tile';
 import { AppText } from '../../components/primitives/AppText';
-import { BrandLogo } from '../../components/BrandLogo';
 import { radius } from '../../design/tokens/radius';
 import { sizes } from '../../design/tokens/sizes';
 import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
@@ -51,6 +52,13 @@ function daysUntil(value?: string | null, now = Date.now()) {
   return Number.isNaN(time) ? undefined : Math.ceil((time - now) / DAY);
 }
 
+function dueLabel(value: string | null | undefined, now: number) {
+  const days = daysUntil(value, now);
+  if (days === undefined) return 'Due soon';
+  if (days < 0) return `Overdue by ${-days} ${days === -1 ? 'day' : 'days'}`;
+  return days === 0 ? 'Due today' : `Due in ${days} ${days === 1 ? 'day' : 'days'}`;
+}
+
 function documentTitle(document: DocumentRecord) {
   return document.displayName ?? document.title ?? document.originalName ?? document.documentType;
 }
@@ -63,6 +71,8 @@ export function HomeScreen() {
       NativeStackNavigationProp<RootStackParamList>
     >
   >();
+  const user = useAppSelector(state => state.auth.user);
+  const [expanded, setExpanded] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const openSearchResult = (result: GlobalSearchResult) => {
     const segment = result.navigation.path.split(/[/?#]/).find(Boolean);
@@ -205,6 +215,41 @@ export function HomeScreen() {
   const readyPercent = situationStats.total
     ? Math.round((situationStats.ready / situationStats.total) * 100)
     : 0;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = user?.name?.trim().split(' ')[0] || 'there';
+  const attentionItems: Array<AttentionItem & { sort: number }> = [
+    ...expiringDocuments.map(document => ({
+      id: `document-${document.id}`,
+      Icon: FileText,
+      title: documentTitle(document),
+      label: dueLabel(document.expiryDate, now),
+      overdue: (daysUntil(document.expiryDate, now) ?? 0) < 0,
+      sort: daysUntil(document.expiryDate, now) ?? 0,
+      onPress: () => navigation.navigate('Documents'),
+    })),
+    ...healthReminders.map(reminder => ({
+      id: `reminder-${reminder.id}`,
+      Icon: HeartPulse,
+      title: `${reminder.memberName} · ${reminder.title}`,
+      label: dueLabel(reminder.dueDate, now),
+      overdue: (daysUntil(reminder.dueDate, now) ?? 0) < 0,
+      sort: daysUntil(reminder.dueDate, now) ?? 0,
+      onPress: () => navigation.navigate('Health'),
+    })),
+    ...renewalsDue.map(record => {
+      const date = String(record.details.renewalDate ?? record.details.maturityDate ?? '');
+      return {
+        id: `wealth-${record.id}`,
+        Icon: TrendingUp,
+        title: record.title,
+        label: dueLabel(date, now),
+        overdue: (daysUntil(date, now) ?? 0) < 0,
+        sort: daysUntil(date, now) ?? 0,
+        onPress: () => navigation.navigate('Wealth'),
+      };
+    }),
+  ].sort((a, b) => a.sort - b.sort);
 
   return (
     <Screen
@@ -219,10 +264,10 @@ export function HomeScreen() {
       />
       <Stack gap="lg" style={styles.container}>
         <Row align="center" justify="space-between" style={styles.appBar}>
-          <Row align="center" gap="sm">
-            <BrandLogo size={sizes.icon.lg} />
-            <AppText variant="heading">ReadiNes</AppText>
-          </Row>
+          <Stack gap="xs" style={styles.greeting}>
+            <AppText variant="title" numberOfLines={1}>{greeting}, {firstName}</AppText>
+            <AppText variant="bodySm" color="secondary">Here's your ReadiNes overview</AppText>
+          </Stack>
           <Row gap="sm">
             <Pressable
               onPress={() => setSearchOpen(true)}
@@ -236,45 +281,47 @@ export function HomeScreen() {
           </Row>
         </Row>
 
+        <AttentionPanel
+          items={attentionItems}
+          emptyMessage="No tasks need your attention."
+          expanded={expanded}
+          onToggle={() => setExpanded(value => !value)}
+        />
+
         <View style={styles.grid}>
-          <Tile
-            icon={Folder}
-            title="Documents"
-            status={
-              expiringDocuments.length
-                ? `${expiringDocuments.length} expiring soon`
-                : documents.length
-                  ? `${documents.length} stored`
-                  : 'None added yet'
-            }
-            statusTone={expiredDocuments.length ? 'danger' : expiringDocuments.length ? 'warning' : 'neutral'}
+          <MetricTile
+            label="Documents"
+            value={documents.length}
+            detail={`${expiringDocuments.length} expiring soon`}
+            detailColor={expiredDocuments.length ? theme.colors.status.danger.text : undefined}
+            badge={expiringDocuments.length || undefined}
+            Icon={Folder}
             onPress={() => navigation.navigate('Documents')}
           />
-          <Tile
-            icon={ListChecks}
-            title="Packages"
-            status={`${situationStats.ready} of ${situationStats.total} ready`}
-            statusTone={situationStats.total ? readinessTone(readyPercent) : 'neutral'}
+          <MetricTile
+            label="Packages"
+            value={`${situationStats.ready}/${situationStats.total}`}
+            detail={`${readyPercent}% ready`}
+            badge={readyPercent === 100 ? '✓' : `${readyPercent}%`}
+            progress={readyPercent}
+            Icon={ListChecks}
             onPress={() => navigation.navigate('Packages')}
           />
-          <Tile
-            icon={HeartPulse}
-            title="Health"
-            status={
-              overdueReminders.length
-                ? `${overdueReminders.length} overdue`
-                : healthReminders.length
-                  ? `${healthReminders.length} tasks pending`
-                  : 'All caught up'
-            }
-            statusTone={overdueReminders.length ? 'danger' : healthReminders.length ? 'warning' : 'neutral'}
+          <MetricTile
+            label="Health"
+            value={healthReminders.length}
+            detail={healthReminders.length === 1 ? 'task pending' : 'tasks pending'}
+            detailColor={overdueReminders.length ? theme.colors.status.danger.text : undefined}
+            badge={healthReminders.length || undefined}
+            Icon={HeartPulse}
             onPress={() => navigation.navigate('Health')}
           />
-          <Tile
-            icon={WalletCards}
-            title="Wealth"
-            status={renewalsDue.length ? `${renewalsDue.length} renewals due` : 'No renewals due'}
-            statusTone={renewalsDue.length ? 'info' : 'neutral'}
+          <MetricTile
+            label="Wealth"
+            value={renewalsDue.length}
+            detail={renewalsDue.length === 1 ? 'renewal due' : 'renewals due'}
+            badge={renewalsDue.length || undefined}
+            Icon={WalletCards}
             onPress={() => navigation.navigate('Wealth')}
           />
         </View>
@@ -356,6 +403,7 @@ export function HomeScreen() {
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingTop: 0, paddingBottom: 24 },
   appBar: { minHeight: sizes.header },
+  greeting: { flex: 1, paddingRight: 8 },
   headerButton: { width: 44, height: 44, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   retryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
 

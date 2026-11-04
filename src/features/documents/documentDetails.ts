@@ -85,3 +85,18 @@ export function healthRecordType(document: DocumentRecord): 'lab_report' | 'pres
   if (/lab|blood|urine|urinalysis|pathology|test|analysis/i.test(text)) return 'lab_report';
   return 'medical_report';
 }
+
+// Short status for a list row: time to expiry when the document expires, else the added date.
+export function documentContextLabel(document: DocumentRecord) {
+  const expiry = documentExpiry(document);
+  if (expiry) {
+    const days = daysUntil(expiry);
+    if (Number.isFinite(days)) {
+      return days > 0 ? `Expires in ${days}d` : days === 0 ? 'Expires today' : `Expired ${-days}d ago`;
+    }
+  }
+  const added = new Date(document.createdAt);
+  return Number.isFinite(added.getTime())
+    ? added.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })
+    : 'Date not set';
+}

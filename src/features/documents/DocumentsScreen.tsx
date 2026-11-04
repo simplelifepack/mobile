@@ -59,7 +59,7 @@ import {
 import { useDocumentsQuery } from '../../services/api';
 import { documentsApi } from '../../api/documents.api';
 import { healthApi, isMemberResolution } from '../../api/health.api';
-import { healthRecordType, isHealthDocument } from './documentDetails';
+import { documentContextLabel, healthRecordType, isHealthDocument } from './documentDetails';
 import {
   analyzeSelectedDocument,
   captureDocumentPhoto,
@@ -84,7 +84,6 @@ import { LoadingState } from '../../components/feedback/LoadingState';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
-import { formatDate } from '../../utils/format';
 
 const PreviewModalSurface = styled.View(({ theme }) => ({
   flex: 1,
@@ -173,10 +172,6 @@ function getDocumentIcon(type: string) {
     default:
       return FileText;
   }
-}
-
-function formatDocumentDate(createdAt?: string, expiryDate?: string | null) {
-  return formatDate(expiryDate || createdAt);
 }
 
 export function DocumentsScreen() {
@@ -707,30 +702,28 @@ export function DocumentsScreen() {
 
         {/* Document list */}
         {documents.length > 0 ? (
-          <Stack gap="sm">
+          <ListGroup>
             {documents.map(document => {
               const isSelected = selectedIds.includes(document.id);
               const Icon = getDocumentIcon(document.documentType);
-              const dateText = formatDocumentDate(document.createdAt, document.expiryDate);
+              const fromDigiLocker = document.sourceProvider === 'DIGILOCKER';
 
               return (
-                <ListGroup key={document.id}>
                 <ListRow
+                  key={document.id}
                   icon={<Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
                   title={getDocumentTitle(document)}
-                  compact
-                  subtitle={`${document.documentType}${dateText ? ` · ${dateText}` : ''}`}
+                  subtitle={`${fromDigiLocker ? 'DigiLocker · ' : ''}${documentPersonName(document)} · ${documentContextLabel(document)}`}
                   selected={selectionMode ? isSelected : undefined}
-                  trailing={selectionMode ? <SelectionMark checked={isSelected} /> : undefined}
+                  trailing={selectionMode ? <SelectionMark checked={isSelected} /> : <ChevronRight size={sizes.icon.md} color={theme.colors.icon.secondary} />}
                   onPress={() => {
                     if (selectionMode) toggleSelection(document.id);
                     else setDetailId(document.id);
                   }}
                 />
-                </ListGroup>
               );
             })}
-          </Stack>
+          </ListGroup>
         ) : (
           <Card style={styles.emptyCard}>
             <EmptyState
