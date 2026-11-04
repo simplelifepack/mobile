@@ -257,6 +257,7 @@ function CategoryChip({
   return (
     <Pressable
       onPress={onPress}
+      hitSlop={6}
       accessibilityRole="button"
       style={({ pressed }) => [
         styles.categoryChip,
@@ -1353,7 +1354,7 @@ export function ReadinessScreen() {
       }
     >
       <Stack
-        gap="lg"
+        gap="sm"
         style={[
           styles.container,
           {
@@ -1729,7 +1730,7 @@ const styles = StyleSheet.create({
   // --------------------------------------------------------------------------
 
   searchContainer: {
-    height: 48,
+    height: 44,
     borderWidth: 1,
     paddingHorizontal: 12,
     flexDirection: 'row',
@@ -1739,7 +1740,7 @@ const styles = StyleSheet.create({
 
   searchInput: {
     flex: 1,
-    height: 46,
+    height: 40,
     fontSize: fontSize.body,
     lineHeight: lineHeight.body,
     fontWeight: fontWeights.regular,
@@ -1752,13 +1753,12 @@ const styles = StyleSheet.create({
 
   categoryScroll: {
     paddingRight: 24,
-    paddingVertical: 2,
   },
 
   categoryChip: {
-    height: 44,
-    paddingHorizontal: 16,
-    borderRadius: radius.overlay,
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: radius.pill,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
