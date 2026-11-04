@@ -33,6 +33,9 @@ export async function importHealthRecord(
   );
   const saved = await documentsApi.save({
     tempFileIds: analysis.files.map(file => file.tempFileId),
+    originalName: analysis.files[0]?.originalName ?? selected.fileName,
+    mimeType: analysis.files[0]?.mimeType ?? selected.mimeType,
+    size: analysis.files.reduce((sum, file) => sum + file.size, 0),
     title: selected.fileName,
     category: 'Medical',
     documentType: options.type
