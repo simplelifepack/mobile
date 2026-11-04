@@ -62,6 +62,21 @@ export const documentsApi = {
       `/documents/${encodeURIComponent(id)}/pages/${encodeURIComponent(pageId)}/preview`,
       `${Dirs.CacheDir}/readiness-preview-${Date.now()}${extensionForMimeType(mimeType)}`,
     ),
+  assignmentOptions: () =>
+    request<Array<{ id: string; name: string }>>('/documents/assignment-options', {
+      requiresAuth: true,
+    }),
+  bulkAssign: (ids: string[], assigneeId: string) =>
+    request<{ documents: DocumentRecord[] }>('/documents/bulk-assign', {
+      method: 'POST',
+      body: { ids, assigneeId },
+      requiresAuth: true,
+    }),
+  updateDetails: (id: string, details: { notes?: string; expiry?: string | null }) =>
+    request<{ document: DocumentRecord }>(
+      `/documents/${encodeURIComponent(id)}/details`,
+      { method: 'PATCH', body: details, requiresAuth: true },
+    ),
   delete: (id: string) =>
     request<void>(`/documents/${encodeURIComponent(id)}`, {
       method: 'DELETE',

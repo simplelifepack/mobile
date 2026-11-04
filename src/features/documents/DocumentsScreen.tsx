@@ -45,6 +45,7 @@ import type {
 } from '../../api/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DocumentDetailSheet } from './DocumentDetailSheet';
 import { useDocumentsQuery } from '../../services/api';
 import { documentsApi } from '../../api/documents.api';
 import {
@@ -197,7 +198,7 @@ export function DocumentsScreen() {
   const [selectedIds, setSelectedIds] = useState<
     string[]
   >([]);
-  const [expandedId, setExpandedId] =
+  const [detailId, setDetailId] =
     useState<string>();
   const [previewDocument, setPreviewDocument] =
     useState<DocumentRecord>();
@@ -309,7 +310,7 @@ export function DocumentsScreen() {
     try {
       const result = await documentsApi.save(payload);
       setShowAddDocumentsSheet(false);
-      setExpandedId(undefined);
+      setDetailId(undefined);
       setQuery('');
       setCategory('All');
       await refetch();
@@ -414,8 +415,10 @@ export function DocumentsScreen() {
   const toggleSelectionMode = () => {
     setSelectionMode(current => !current);
     setSelectedIds([]);
-    setExpandedId(undefined);
+    setDetailId(undefined);
   };
+
+  const detailDocument = documents.find(document => document.id === detailId);
 
   const deleteSelectedDocuments = async () => {
     if (!selectedIds.length) return;
@@ -703,7 +706,6 @@ export function DocumentsScreen() {
           <ListGroup>
             {documents.map(document => {
               const isSelected = selectedIds.includes(document.id);
-              const isExpanded = expandedId === document.id;
               const Icon = getDocumentIcon(document.documentType);
               const dateText = formatDocumentDate(document.createdAt, document.expiryDate);
 
@@ -717,21 +719,9 @@ export function DocumentsScreen() {
                   trailing={selectionMode ? <SelectionMark checked={isSelected} /> : undefined}
                   onPress={() => {
                     if (selectionMode) toggleSelection(document.id);
-                    else setExpandedId(isExpanded ? undefined : document.id);
+                    else setDetailId(document.id);
                   }}
-                >
-                  {isExpanded && !selectionMode ? (
-                    <>
-                      <AppText variant="caption" color="secondary">File: {document.originalName}</AppText>
-                      <AppText variant="caption" color="secondary">Category: {categoryFor(document.documentType)}</AppText>
-                      <AppText variant="caption" color="secondary">Status: {document.classificationStatus}</AppText>
-                      {document.expiryDate ? (
-                        <AppText variant="caption" color="secondary">Expires: {formatDate(document.expiryDate)}</AppText>
-                      ) : null}
-                      <Button title="Preview document" variant="secondary" onPress={() => openPreview(document)} />
-                    </>
-                  ) : null}
-                </ListRow>
+                />
               );
             })}
           </ListGroup>
@@ -764,6 +754,21 @@ export function DocumentsScreen() {
           },
         ]}
       />
+
+      {detailDocument ? (
+        <DocumentDetailSheet
+          document={detailDocument}
+          title={getDocumentTitle(detailDocument)}
+          category={categoryFor(detailDocument.documentType)}
+          icon={getDocumentIcon(detailDocument.documentType)}
+          onClose={() => setDetailId(undefined)}
+          onPreview={() => {
+            setDetailId(undefined);
+            openPreview(detailDocument);
+          }}
+          onChanged={refetch}
+        />
+      ) : null}
 
       <Modal visible={isImporting} transparent animationType="fade">
         <View style={[styles.importProgressRoot, { backgroundColor: theme.colors.overlay.scrim }]}>

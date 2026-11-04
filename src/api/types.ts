@@ -19,6 +19,8 @@ export type DocumentRecord = {
   rawText?: string | null;
   originalName: string;
   mimeType?: string;
+  size?: number;
+  fields?: Record<string, unknown>;
   documentType: string;
   category?: string;
   source?: 'MANUAL_UPLOAD' | 'GMAIL' | 'GOOGLE_DRIVE';
