@@ -217,9 +217,9 @@ export function DocumentDetailSheet({
               </ListGroup>
             </View>
 
-            {people.length > 1 ? (
-              <View style={styles.section}>
-                <SectionHeader title="Belongs to" />
+            <View style={styles.section}>
+              <SectionHeader title="Belongs to" />
+              {people.length ? (
                 <ListGroup>
                   {people.map(person => {
                     const selected = person.id === personId;
@@ -234,8 +234,10 @@ export function DocumentDetailSheet({
                     );
                   })}
                 </ListGroup>
-              </View>
-            ) : null}
+              ) : (
+                <AppText color="secondary">Loading people…</AppText>
+              )}
+            </View>
 
             <View style={styles.section}>
               <SectionHeader
