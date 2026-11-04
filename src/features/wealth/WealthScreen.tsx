@@ -941,7 +941,7 @@ export function WealthScreen({
         ) : null}
 
         {loading ? (
-          <LoadingState label="Loading wealth records…" />
+          <LoadingState overlay size={48} label="Loading wealth records" />
         ) : null}
 
         </Stack>

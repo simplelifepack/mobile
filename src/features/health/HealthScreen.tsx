@@ -471,7 +471,7 @@ floatingAction={
         ) : null}
         <ProcessingOverlay visible={importing} label="Processing health record…" />
         {loadingMembers || loadingOverview ? (
-          <LoadingState label="Loading health records…" />
+          <LoadingState overlay size={48} label="Loading health records" />
         ) : null}
 
         {/* FAMILY MEMBERS */}

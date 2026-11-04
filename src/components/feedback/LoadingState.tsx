@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, View } from 'react-native';
+import { Animated, Dimensions, Easing, View } from 'react-native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { BrandMark } from '../BrandMark';
 import { AppText } from '../primitives/AppText';
@@ -9,10 +9,13 @@ export function LoadingState({
   label = 'Loading…',
   size = 36,
   fill = false,
+  overlay = false,
 }: {
   label?: string;
   size?: number;
   fill?: boolean;
+  // Logo only, centred over the screen with no box or text.
+  overlay?: boolean;
 }) {
   const { theme } = useAppTheme();
   const pulse = useRef(new Animated.Value(0)).current;
@@ -38,6 +41,29 @@ export function LoadingState({
     inputRange: [0, 0.5, 1],
     outputRange: [0.45, 1, 0.45],
   });
+
+  if (overlay) {
+    return (
+      <View
+        accessibilityRole="progressbar"
+        accessibilityLabel={label}
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: Dimensions.get('window').height * 0.7,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Animated.View style={{ opacity, transform: [{ scale }] }}>
+          <BrandMark color={theme.colors.text.interactive} size={size} />
+        </Animated.View>
+      </View>
+    );
+  }
 
   return (
     <View
