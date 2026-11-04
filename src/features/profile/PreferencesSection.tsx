@@ -13,6 +13,8 @@ import { sizes } from '../../design/tokens/sizes';
 
 const currencies = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD'];
 
+const appearanceLabels = { system: 'System', light: 'Light', dark: 'Dark' } as const;
+
 export function PreferencesSection() {
   const { theme, mode, setMode } = useAppTheme();
   const [preferences, setPreferences] = useState<UserPreferences>();
@@ -106,7 +108,7 @@ export function PreferencesSection() {
               },
             ]}
           >
-            {(['dark', 'light'] as const).map(appearance => {
+            {(['system', 'light', 'dark'] as const).map(appearance => {
               const selected = mode === appearance;
               return (
                 <Pressable
@@ -126,7 +128,7 @@ export function PreferencesSection() {
                       selected && { color: theme.colors.text.onBrand },
                     ]}
                   >
-                    {appearance === 'dark' ? 'Dark' : 'Light'}
+                    {appearanceLabels[appearance]}
                   </AppText>
                 </Pressable>
               );
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
   },
   appearanceControl: {
     height: 36,
-    width: 132,
+    width: 192,
     borderRadius: radius.surface,
     borderWidth: 1,
     flexDirection: 'row',
