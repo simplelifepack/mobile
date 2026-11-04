@@ -427,6 +427,7 @@ function CategoryTabs({
         return (
           <Pressable
             key={category}
+            hitSlop={6}
             onPress={() => onSelect(category)}
             style={({ pressed }) => [
               styles.categoryPill,
@@ -1867,15 +1868,15 @@ const styles = StyleSheet.create({
   /* Categories */
 
   categoryContent: {
-    gap: 8,
+    gap: 6,
     paddingVertical: 0,
     paddingRight: 32,
   },
 
   categoryPill: {
-    minHeight: sizes.minimumTouchTarget,
+    minHeight: 32,
     paddingHorizontal: 12,
-    borderRadius: radius.overlay,
+    borderRadius: radius.pill,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
