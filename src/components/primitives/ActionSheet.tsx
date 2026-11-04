@@ -61,7 +61,7 @@ export function ActionSheet({
             style={[styles.handle, { backgroundColor: theme.colors.border.default }]}
           />
           <View style={styles.header}>
-            <AppText variant="heading">{title}</AppText>
+            <AppText variant="listTitle">{title}</AppText>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Done"
@@ -73,7 +73,7 @@ export function ActionSheet({
               </AppText>
             </Pressable>
           </View>
-          {options.map(({ label, icon: Icon, selected, onPress, accessibilityLabel }) => (
+          {options.map(({ label, icon: Icon, selected, onPress, accessibilityLabel }, index) => (
             <Pressable
               key={label}
               accessibilityRole="button"
@@ -82,6 +82,7 @@ export function ActionSheet({
               onPress={onPress}
               style={({ pressed }) => [
                 styles.option,
+                index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.border.subtle },
                 pressed && styles.pressed,
               ]}
             >
@@ -126,23 +127,22 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: radius.pill,
     alignSelf: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   header: {
-    minHeight: 40,
+    minHeight: 32,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   option: {
-    minHeight: 52,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 8,
-    borderRadius: radius.control,
   },
-  optionText: { flex: 1, fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: fontWeights.medium },
+  optionText: { flex: 1, fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: fontWeights.medium },
   pressed: { opacity: 0.7 },
 });
