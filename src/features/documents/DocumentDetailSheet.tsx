@@ -14,7 +14,6 @@ import {
 import {
   CalendarClock,
   FolderOpen,
-  Trash2,
   X,
   type LucideIcon,
 } from 'lucide-react-native';
@@ -25,8 +24,9 @@ import { packagesApi } from '../../api/packages.api';
 import type { DocumentRecord, PackageSummary } from '../../api/types';
 import { AppText } from '../../components/primitives/AppText';
 import { Button } from '../../components/primitives/Button';
+import { SectionHeader } from '../../components/primitives/SectionHeader';
 import { DatePickerInput } from '../../components/primitives/DatePickerInput';
-import { ListGroup, ListRow } from '../../components/primitives/ListRow';
+import { ListGroup, ListRow, SelectionMark } from '../../components/primitives/ListRow';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { radius } from '../../design/tokens/radius';
 import { sizes } from '../../design/tokens/sizes';
@@ -155,6 +155,8 @@ export function DocumentDetailSheet({
     ['Size', documentSizeLabel(document)],
   ];
 
+  const saving = busy === 'notes' || busy === 'expiry' || busy === 'assign';
+
   return (
     <Modal visible transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
       <KeyboardAvoidingView
@@ -167,42 +169,41 @@ export function DocumentDetailSheet({
           style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.overlay.scrim }]}
           onPress={onClose}
         />
-        <View
-          style={[
-            styles.sheet,
-            { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default },
-          ]}
-        >
+        <View style={[styles.sheet, { backgroundColor: theme.colors.surface.canvas }]}>
           <View style={[styles.handle, { backgroundColor: theme.colors.border.default }]} />
-          <View style={styles.header}>
-            <View style={[styles.iconTile, { backgroundColor: theme.colors.surface.brandTint }]}>
-              <Icon size={theme.sizes.icon.md} color={theme.colors.action.primary.default} />
-            </View>
-            <View style={styles.flex}>
-              <AppText variant="heading" numberOfLines={2}>{title}</AppText>
-              <AppText variant="caption" color="secondary" numberOfLines={1}>
-                {document.originalName}
-              </AppText>
-            </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={onClose}>
-              <X size={theme.sizes.icon.md} color={theme.colors.text.secondary} />
-            </Pressable>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            hitSlop={12}
+            onPress={onClose}
+            style={[styles.close, { backgroundColor: theme.colors.surface.secondary }]}
+          >
+            <X size={theme.sizes.icon.sm} color={theme.colors.icon.secondary} />
+          </Pressable>
 
           <ScrollView
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            {banner && bannerStatus ? (
-              <View style={[styles.banner, { borderColor: bannerStatus.border, backgroundColor: bannerStatus.surface }]}>
-                <CalendarClock size={theme.sizes.icon.sm} color={bannerStatus.icon} />
-                <AppText variant="labelMd" style={{ color: bannerStatus.text }}>{banner.text}</AppText>
+            <View style={styles.hero}>
+              <View style={[styles.iconTile, { backgroundColor: theme.colors.surface.brandTint }]}>
+                <Icon size={theme.sizes.icon.lg} color={theme.colors.icon.interactive} />
               </View>
-            ) : null}
+              <AppText variant="heading" style={styles.center} numberOfLines={2}>{title}</AppText>
+              <AppText variant="bodySm" color="secondary" style={styles.center} numberOfLines={1}>
+                {document.originalName}
+              </AppText>
+              {banner && bannerStatus ? (
+                <View style={[styles.banner, { borderColor: bannerStatus.border, backgroundColor: bannerStatus.surface }]}>
+                  <CalendarClock size={theme.sizes.icon.sm} color={bannerStatus.icon} />
+                  <AppText variant="labelMd" style={{ color: bannerStatus.text }}>{banner.text}</AppText>
+                </View>
+              ) : null}
+            </View>
 
             <View style={styles.section}>
-              <AppText variant="eyebrow">Details</AppText>
+              <SectionHeader title="Details" />
               <ListGroup>
                 {details
                   .filter((row): row is [string, string] => Boolean(row[1]))
@@ -212,52 +213,41 @@ export function DocumentDetailSheet({
               </ListGroup>
             </View>
 
-            <View style={styles.section}>
-              <AppText variant="eyebrow">Belongs to</AppText>
-              <View style={styles.chips}>
-                {people.map(person => {
-                  const selected = person.id === personId;
-                  return (
-                    <Pressable
-                      key={person.id}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      disabled={busy !== null}
-                      onPress={() => !selected && run('assign', () => documentsApi.bulkAssign([document.id], person.id))}
-                      style={[
-                        styles.chip,
-                        {
-                          borderColor: selected ? theme.colors.action.primary.default : theme.colors.border.default,
-                          backgroundColor: selected ? theme.colors.surface.brandTint : theme.colors.surface.default,
-                        },
-                      ]}
-                    >
-                      <AppText variant="labelMd" color={selected ? 'heading' : 'secondary'}>{person.name}</AppText>
-                    </Pressable>
-                  );
-                })}
+            {people.length > 1 ? (
+              <View style={styles.section}>
+                <SectionHeader title="Belongs to" />
+                <ListGroup>
+                  {people.map(person => {
+                    const selected = person.id === personId;
+                    return (
+                      <ListRow
+                        key={person.id}
+                        title={person.name}
+                        disabled={busy !== null}
+                        trailing={<SelectionMark checked={selected} />}
+                        onPress={() => !selected && run('assign', () => documentsApi.bulkAssign([document.id], person.id))}
+                      />
+                    );
+                  })}
+                </ListGroup>
               </View>
-            </View>
+            ) : null}
 
             <View style={styles.section}>
-              <AppText variant="eyebrow">Expiry</AppText>
+              <SectionHeader
+                title="Expiry"
+                actionLabel={expiry ? 'Clear' : undefined}
+                onAction={() => run('expiry', () => documentsApi.updateDetails(document.id, { expiry: null }))}
+              />
               <DatePickerInput
                 value={expiry}
                 placeholder="Add an expiry date"
                 onChangeText={value => run('expiry', () => documentsApi.updateDetails(document.id, { expiry: value }))}
               />
-              {expiry ? (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => run('expiry', () => documentsApi.updateDetails(document.id, { expiry: null }))}
-                >
-                  <AppText variant="bodySm" color="secondary">Clear expiry date</AppText>
-                </Pressable>
-              ) : null}
             </View>
 
             <View style={styles.section}>
-              <AppText variant="eyebrow">Used in packages</AppText>
+              <SectionHeader title="Used in packages" />
               {packages === undefined ? (
                 <ActivityIndicator color={theme.colors.action.primary.default} />
               ) : used.length ? (
@@ -265,9 +255,9 @@ export function DocumentDetailSheet({
                   {used.map(({ pack, required }) => (
                     <ListRow
                       key={pack.id}
+                      icon={<FolderOpen size={theme.sizes.icon.md} color={theme.colors.icon.interactive} />}
                       title={pack.title}
                       subtitle={required ? 'Required' : 'Optional'}
-                      leading={<FolderOpen size={theme.sizes.icon.sm} color={theme.colors.text.secondary} />}
                     />
                   ))}
                 </ListGroup>
@@ -277,7 +267,7 @@ export function DocumentDetailSheet({
             </View>
 
             <View style={styles.section}>
-              <AppText variant="eyebrow">Notes</AppText>
+              <SectionHeader title="Notes" />
               <TextInput
                 multiline
                 value={notes}
@@ -298,7 +288,7 @@ export function DocumentDetailSheet({
                 ]}
               />
               <AppText variant="caption" color="muted">
-                {busy === 'notes' || busy === 'expiry' || busy === 'assign' ? 'Saving…' : 'Saved automatically'}
+                {saving ? 'Saving…' : 'Saved automatically'}
               </AppText>
             </View>
             {error ? <AppText color="danger">{error}</AppText> : null}
@@ -307,21 +297,20 @@ export function DocumentDetailSheet({
           <View
             style={[
               styles.footer,
-              { borderColor: theme.colors.border.default, paddingBottom: Math.max(16, insets.bottom + 8) },
+              {
+                backgroundColor: theme.colors.surface.default,
+                borderColor: theme.colors.border.subtle,
+                paddingBottom: Math.max(16, insets.bottom + 8),
+              },
             ]}
           >
-            <View style={styles.flex}>
-              <Button title="Preview" onPress={onPreview} />
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Delete document"
+            <Button title="Preview document" onPress={onPreview} />
+            <Button
+              title="Delete document"
+              variant="ghost"
               disabled={busy === 'delete'}
               onPress={confirmDelete}
-              style={[styles.delete, { borderColor: theme.colors.border.destructive.default }]}
-            >
-              <Trash2 size={theme.sizes.icon.md} color={theme.colors.status.danger.icon} />
-            </Pressable>
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -332,10 +321,10 @@ export function DocumentDetailSheet({
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    height: '88%',
+    height: '90%',
     borderTopLeftRadius: radius.overlay,
     borderTopRightRadius: radius.overlay,
-    borderWidth: 1,
+    overflow: 'hidden',
     paddingTop: 8,
   },
   handle: {
@@ -343,31 +332,32 @@ const styles = StyleSheet.create({
     height: sizes.sheetHandle.height,
     borderRadius: radius.pill,
     alignSelf: 'center',
-    marginBottom: 12,
   },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 12 },
-  iconTile: { width: 44, height: 44, borderRadius: radius.surface, alignItems: 'center', justifyContent: 'center' },
-  flex: { flex: 1 },
-  content: { paddingHorizontal: 16, paddingBottom: 24, gap: 20 },
+  close: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 1,
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, gap: 24 },
+  hero: { alignItems: 'center', gap: 8 },
+  iconTile: { width: 64, height: 64, borderRadius: radius.surface, alignItems: 'center', justifyContent: 'center' },
+  center: { textAlign: 'center' },
   section: { gap: 8 },
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     borderWidth: 1,
-    borderRadius: radius.surface,
-    padding: 12,
+    borderRadius: radius.pill,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 40, paddingHorizontal: 16, justifyContent: 'center', borderWidth: 1, borderRadius: radius.pill },
   notes: { minHeight: 96, borderWidth: 1, borderRadius: radius.surface, padding: 12 },
-  footer: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1 },
-  delete: {
-    width: 48,
-    height: 48,
-    borderWidth: 1,
-    borderRadius: radius.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  footer: { gap: 8, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1 },
 });
