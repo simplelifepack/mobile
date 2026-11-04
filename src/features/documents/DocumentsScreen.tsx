@@ -571,17 +571,16 @@ export function DocumentsScreen() {
           style={({ pressed }) => [
             styles.digiLockerButton,
             {
-              backgroundColor: theme.colors.surface.brandTint,
-              borderColor: theme.colors.border.default,
+              backgroundColor: theme.colors.action.primary.default,
+              borderColor: theme.colors.action.primary.default,
             },
             pressed && styles.pressed,
           ]}
         >
-          <FileCheck2 size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />
-          <AppText variant="labelMd" style={styles.digiLockerText}>
+          <FileCheck2 size={sizes.icon.md} color={theme.colors.text.onBrand} strokeWidth={2} />
+          <AppText variant="labelMd" color="onPrimary">
             Import from DigiLocker
           </AppText>
-          <ChevronRight size={sizes.icon.md} color={theme.colors.icon.secondary} />
         </Pressable>
 
         {/* Count / Select / Filter */}
@@ -985,11 +984,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-  },
-
-  digiLockerText: {
-    flex: 1,
+    justifyContent: 'center',
+    gap: 8,
   },
 
   searchInputWrapper: {
