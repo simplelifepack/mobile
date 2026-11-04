@@ -71,7 +71,7 @@ export function AddToHealthSheet({
           style={[
             styles.addHealthSheet,
             {
-              paddingBottom: insets.bottom + 16,
+              paddingBottom: insets.bottom + 8,
               backgroundColor:
                 theme.colors.surface.canvas,
               borderColor:
@@ -95,14 +95,14 @@ export function AddToHealthSheet({
 
           <Stack gap="xs">
             <AppText
-              variant="heading"
+              variant="listTitle"
               style={styles.addHealthTitle}
             >
               Add to Health
             </AppText>
 
             <AppText
-              variant="body"
+              variant="bodySm"
               color="secondary"
               style={styles.addHealthSubtitle}
             >
@@ -204,7 +204,7 @@ export function AddHealthRow({
   description: string;
   onPress: () => void;
 }) {
-  return <ListRow icon={icon} title={title} subtitle={description} onPress={onPress} />;
+  return <ListRow compact icon={icon} title={title} subtitle={description} onPress={onPress} />;
 }
 
 export function MetricPickerModal({

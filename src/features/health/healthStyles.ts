@@ -813,21 +813,21 @@ addHealthGrabber: {
   height: sizes.sheetHandle.height,
   borderRadius: radius.pill,
   alignSelf: 'center',
-  marginBottom: 16,
+  marginBottom: 8,
 },
 
 addHealthTitle: {
-  fontSize: fontSize.headingMd,
-  lineHeight: lineHeight.headingMd,
-  fontWeight: fontWeights.bold,
+  fontSize: fontSize.body,
+  lineHeight: lineHeight.body,
+  fontWeight: fontWeights.semibold,
 },
 
 addHealthSubtitle: {
-  fontSize: fontSize.body,
-  lineHeight: lineHeight.body,
+  fontSize: fontSize.bodySm,
+  lineHeight: lineHeight.bodySm,
 },
 
 addHealthList: {
-  marginTop: 16,
+  marginTop: 8,
 },
 });
