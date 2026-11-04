@@ -1,3 +1,4 @@
+import { useIsFocused } from '@react-navigation/native';
 import React from 'react';
 import {
   RefreshControl,
@@ -50,6 +51,8 @@ export function Screen({
   onRefresh?: () => Promise<unknown> | void;
 }>) {
   const { theme } = useAppTheme();
+  // A blur overlay on a screen hidden under a pushed screen (e.g. Profile) bleeds through it.
+  const isFocused = useIsFocused();
   const [refreshing, setRefreshing] = React.useState(false);
   const handleRefresh = React.useCallback(async () => {
     if (!onRefresh) return;
@@ -100,7 +103,7 @@ export function Screen({
         </Content>
       )}
       {floatingAction}
-      {overlay}
+      {isFocused ? overlay : null}
     </Safe>
   );
 }
