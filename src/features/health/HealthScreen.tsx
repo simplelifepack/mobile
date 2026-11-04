@@ -34,7 +34,7 @@ type HealthRecordDetail,
 type HealthTimelineEvent
 } from '../../api/health.api';
 import type { MainTabParamList,RootStackParamList } from '../../app/navigation/types';
-import { useBootstrapQuery } from '../../services/api';
+import { useBootstrapQuery, useDocumentsQuery } from '../../services/api';
 import {
 captureDocumentPhoto,
 discardSelectedDocument,
@@ -91,6 +91,7 @@ export function HealthScreen() {
   const [members, setMembers] = useState<HealthMember[]>([]);
   const [selectedMember, setSelectedMember] = useState('');
   const [overview, setOverview] = useState<HealthOverview>();
+  const { data: documents } = useDocumentsQuery();
   const [timeline, setTimeline] = useState<HealthTimelineEvent[]>([]);
   const [reminders, setReminders] = useState<HealthHomeReminder[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
@@ -979,6 +980,8 @@ floatingAction={
       />
       <EmergencyInfoSheet
           member={member}
+          records={overview?.recentRecords ?? []}
+          documents={documents ?? []}
           visible={emergencyVisible}
           onClose={() => setEmergencyVisible(false)}
         />
