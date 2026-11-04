@@ -1,7 +1,10 @@
-import React, { useMemo } from 'react';
-import { Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { FileSystem } from 'react-native-file-access';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Button } from '../../../components/primitives/Button';
+import { Row } from '../../../components/primitives/Row';
 import { AppText } from '../../../components/primitives/AppText';
 import { useAppTheme } from '../../../design/theme/ThemeProvider';
 import { radius } from '../../../design/tokens/radius';
@@ -9,6 +12,7 @@ import { sizes } from '../../../design/tokens/sizes';
 import type { HealthMember, HealthRecord } from '../../../api/health.api';
 import type { DocumentRecord } from '../../../api/types';
 import { buildEmergencyCardRows } from './emergencyCard';
+import { writeEmergencyCardPdf } from './emergencyCardPdf';
 
 export function EmergencyInfoSheet({
   member,
@@ -30,6 +34,27 @@ export function EmergencyInfoSheet({
     [member, records, documents],
   );
   const phone = member?.emergencyContactPhone;
+  const [busy, setBusy] = useState<'save' | 'export'>();
+
+  const runPdf = async (mode: 'save' | 'export') => {
+    if (!member || busy) return;
+    setBusy(mode);
+    try {
+      const file = await writeEmergencyCardPdf(rows, member.name);
+      if (mode === 'save' && Platform.OS === 'android') {
+        await FileSystem.cpExternal(file.path, file.fileName, 'downloads');
+        Alert.alert('Saved', `Saved to Downloads/${file.fileName}.`);
+      } else {
+        await Share.share({ title: file.fileName, url: `file://${file.path}` });
+      }
+      await FileSystem.unlink(file.path).catch(() => undefined);
+    } catch (error) {
+      Alert.alert('PDF failed', error instanceof Error ? error.message : 'The emergency card could not be created.');
+    } finally {
+      setBusy(undefined);
+    }
+  };
+
   const generated = new Date().toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
@@ -107,6 +132,14 @@ export function EmergencyInfoSheet({
               </View>
             </View>
           </ScrollView>
+          <Row gap="sm" style={styles.actions}>
+            <View style={styles.action}>
+              <Button title={busy === 'save' ? 'Saving…' : 'Save as PDF'} variant="secondary" disabled={!!busy} onPress={() => runPdf('save')} />
+            </View>
+            <View style={styles.action}>
+              <Button title={busy === 'export' ? 'Exporting…' : 'Export'} disabled={!!busy} onPress={() => runPdf('export')} />
+            </View>
+          </Row>
         </View>
       </View>
     </Modal>
@@ -132,5 +165,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 12, paddingHorizontal: 12, paddingVertical: 8 },
   label: { width: 112 },
   value: { flex: 1 },
+  actions: { marginTop: 8 },
+  action: { flex: 1 },
   footer: { borderTopWidth: 1, paddingHorizontal: 12, paddingVertical: 8, gap: 2 },
 });
