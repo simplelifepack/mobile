@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Dimensions, Easing, View } from 'react-native';
+import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
+import { BlurView } from '@react-native-community/blur';
+import { darkTheme } from '../../design/theme/dark';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { BrandMark } from '../BrandMark';
 import { AppText } from '../primitives/AppText';
@@ -43,24 +45,25 @@ export function LoadingState({
   });
 
   if (overlay) {
+    const dark = theme === darkTheme;
     return (
       <View
         accessibilityRole="progressbar"
         accessibilityLabel={label}
         pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: Dimensions.get('window').height * 0.7,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
+        style={StyleSheet.absoluteFill}
       >
-        <Animated.View style={{ opacity, transform: [{ scale }] }}>
-          <BrandMark color={theme.colors.text.interactive} size={size} />
-        </Animated.View>
+        <BlurView
+          style={StyleSheet.absoluteFill}
+          blurType={Platform.OS === 'ios' ? (dark ? 'ultraThinMaterialDark' : 'ultraThinMaterialLight') : dark ? 'dark' : 'light'}
+          blurAmount={10}
+          reducedTransparencyFallbackColor={theme.colors.surface.canvas}
+        />
+        <View style={styles.overlayLogo}>
+          <Animated.View style={{ opacity, transform: [{ scale }] }}>
+            <BrandMark color={theme.colors.text.interactive} size={size} />
+          </Animated.View>
+        </View>
       </View>
     );
   }
@@ -85,3 +88,7 @@ export function LoadingState({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  overlayLogo: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
+});

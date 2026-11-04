@@ -34,6 +34,7 @@ const Scroll = styled.ScrollView.attrs<{
 export function Screen({
   children,
   floatingAction,
+  overlay,
   scroll = false,
   padded = true,
   contentContainerStyle,
@@ -42,6 +43,8 @@ export function Screen({
   scroll?: boolean;
   padded?: boolean;
   floatingAction?: React.ReactNode;
+  // Rendered over the whole screen, outside the scroll view (e.g. a loading overlay).
+  overlay?: React.ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
   onRefresh?: () => Promise<unknown> | void;
 }>) {
@@ -91,6 +94,7 @@ export function Screen({
         </Content>
       )}
       {floatingAction}
+      {overlay}
     </Safe>
   );
 }

@@ -845,6 +845,7 @@ export function WealthScreen({
       scroll
       padded={false}
       onRefresh={refreshRecords}
+      overlay={loading ? <LoadingState overlay size={48} label="Loading wealth records" /> : null}
       contentContainerStyle={styles.screenContent}
       floatingAction={
         guestPreview ? null : (
@@ -938,10 +939,6 @@ export function WealthScreen({
               <AppText variant="label" color="primary">Retry</AppText>
             </Pressable>
           </Row>
-        ) : null}
-
-        {loading ? (
-          <LoadingState overlay size={48} label="Loading wealth records" />
         ) : null}
 
         </Stack>

@@ -404,6 +404,7 @@ export function HealthScreen() {
       scroll
       padded={false}
       onRefresh={refreshAll}
+      overlay={loadingMembers || loadingOverview ? <LoadingState overlay size={48} label="Loading health records" /> : null}
 floatingAction={
   <>
     <FloatingActionButton
@@ -470,9 +471,6 @@ floatingAction={
           </AppText>
         ) : null}
         <ProcessingOverlay visible={importing} label="Processing health record…" />
-        {loadingMembers || loadingOverview ? (
-          <LoadingState overlay size={48} label="Loading health records" />
-        ) : null}
 
         {/* FAMILY MEMBERS */}
 
