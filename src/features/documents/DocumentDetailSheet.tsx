@@ -19,6 +19,7 @@ import {
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { healthApi, isMemberResolution, type HealthMember } from '../../api/health.api';
 import { documentsApi } from '../../api/documents.api';
 import { packagesApi } from '../../api/packages.api';
 import type { DocumentRecord, PackageSummary } from '../../api/types';
@@ -45,7 +46,7 @@ import {
 } from './documentDetails';
 
 type Person = { id: string; name: string };
-type Busy = 'assign' | 'expiry' | 'notes' | 'delete' | null;
+type Busy = 'assign' | 'expiry' | 'notes' | 'delete' | 'health' | null;
 
 const NOTES_LIMIT = 5000;
 const EXPIRING_SOON_DAYS = 60;
@@ -85,6 +86,7 @@ export function DocumentDetailSheet({
   const [packages, setPackages] = useState<PackageSummary[]>();
   const [notes, setNotes] = useState('');
   const [peopleOpen, setPeopleOpen] = useState(false);
+  const [healthMembers, setHealthMembers] = useState<HealthMember[]>();
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string>();
   const documentId = document?.id;
@@ -157,6 +159,31 @@ export function DocumentDetailSheet({
     ['Added', formatDate(document.createdAt)],
     ['Size', documentSizeLabel(document)],
   ];
+
+  const isMedical = category === 'Health' || document.category === 'Medical';
+  const healthType = /lab/i.test(document.documentType)
+    ? 'lab_report'
+    : /prescription/i.test(document.documentType)
+      ? 'prescription'
+      : 'medical_report';
+
+  const addToHealth = async (memberId?: string) => {
+    setBusy('health');
+    setError(undefined);
+    try {
+      const result = await healthApi.createRecord({ memberId, documentId: document.id, type: healthType });
+      if (isMemberResolution(result)) {
+        setHealthMembers(await healthApi.members());
+        return;
+      }
+      setHealthMembers(undefined);
+      Alert.alert('Added to Health', 'This document now appears in your Health records.');
+    } catch (healthError) {
+      setError(healthError instanceof Error ? healthError.message : 'Unable to add to Health.');
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const saving = busy === 'notes' || busy === 'expiry' || busy === 'assign';
 
@@ -314,6 +341,14 @@ export function DocumentDetailSheet({
             ]}
           >
             <Button title="Preview document" onPress={onPreview} />
+            {isMedical ? (
+              <Button
+                title={busy === 'health' ? 'Adding to Health…' : 'Add to Health'}
+                variant="secondary"
+                disabled={busy === 'health'}
+                onPress={() => addToHealth()}
+              />
+            ) : null}
             <Button
               title="Delete document"
               variant="danger"
@@ -322,6 +357,15 @@ export function DocumentDetailSheet({
             />
           </View>
         </View>
+        <ActionSheet
+          visible={Boolean(healthMembers)}
+          title="Add to which profile?"
+          onClose={() => setHealthMembers(undefined)}
+          options={(healthMembers ?? []).map(member => ({
+            label: member.name,
+            onPress: () => addToHealth(member.id),
+          }))}
+        />
       </KeyboardAvoidingView>
     </Modal>
   );
