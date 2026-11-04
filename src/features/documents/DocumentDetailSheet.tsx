@@ -187,13 +187,17 @@ export function DocumentDetailSheet({
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.hero}>
-              <View style={[styles.iconTile, { backgroundColor: theme.colors.surface.brandTint }]}>
-                <Icon size={theme.sizes.icon.lg} color={theme.colors.icon.interactive} />
+              <View style={styles.heroRow}>
+                <View style={[styles.iconTile, { backgroundColor: theme.colors.surface.brandTint }]}>
+                  <Icon size={theme.sizes.icon.lg} color={theme.colors.icon.interactive} />
+                </View>
+                <View style={styles.heroCopy}>
+                  <AppText variant="heading" numberOfLines={2}>{title}</AppText>
+                  <AppText variant="bodySm" color="secondary" numberOfLines={1}>
+                    {document.originalName}
+                  </AppText>
+                </View>
               </View>
-              <AppText variant="heading" style={styles.center} numberOfLines={2}>{title}</AppText>
-              <AppText variant="bodySm" color="secondary" style={styles.center} numberOfLines={1}>
-                {document.originalName}
-              </AppText>
               {banner && bannerStatus ? (
                 <View style={[styles.banner, { borderColor: bannerStatus.border, backgroundColor: bannerStatus.surface }]}>
                   <CalendarClock size={theme.sizes.icon.sm} color={bannerStatus.icon} />
@@ -307,7 +311,7 @@ export function DocumentDetailSheet({
             <Button title="Preview document" onPress={onPreview} />
             <Button
               title="Delete document"
-              variant="ghost"
+              variant="danger"
               disabled={busy === 'delete'}
               onPress={confirmDelete}
             />
@@ -345,9 +349,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, gap: 24 },
-  hero: { alignItems: 'center', gap: 8 },
-  iconTile: { width: 64, height: 64, borderRadius: radius.surface, alignItems: 'center', justifyContent: 'center' },
-  center: { textAlign: 'center' },
+  hero: { alignItems: 'flex-start', gap: 12 },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingRight: 40 },
+  heroCopy: { flex: 1, gap: 2 },
+  iconTile: { width: 56, height: 56, borderRadius: radius.surface, alignItems: 'center', justifyContent: 'center' },
   section: { gap: 8 },
   banner: {
     flexDirection: 'row',
