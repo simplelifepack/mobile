@@ -64,3 +64,24 @@ export function packagesUsingDocument(
       : [];
   });
 }
+
+const HEALTH_TYPE_PATTERN =
+  /health|medical|medicine|prescription|hospital|vaccin|lab|blood|urine|urinalysis|pathology|diagnos|radiolog|x-?ray|scan|mri|ultrasound|ecg|discharge|test report|analysis|clinic/i;
+
+// Health extraction only accepts PDFs and images.
+const isHealthFile = (document: DocumentRecord) => {
+  const mime = (document.mimeType ?? '').toLowerCase();
+  return !mime || mime === 'application/pdf' || mime.startsWith('image/');
+};
+
+export function isHealthDocument(document: DocumentRecord) {
+  const text = `${document.category ?? ''} ${document.documentType} ${document.normalizedType ?? ''} ${document.displayName ?? ''}`;
+  return HEALTH_TYPE_PATTERN.test(text) && isHealthFile(document);
+}
+
+export function healthRecordType(document: DocumentRecord): 'lab_report' | 'prescription' | 'medical_report' {
+  const text = `${document.documentType} ${document.normalizedType ?? ''} ${document.displayName ?? ''}`;
+  if (/prescription/i.test(text)) return 'prescription';
+  if (/lab|blood|urine|urinalysis|pathology|test|analysis/i.test(text)) return 'lab_report';
+  return 'medical_report';
+}

@@ -41,6 +41,8 @@ import {
   documentNotes,
   documentSizeLabel,
   documentSourceLabel,
+  healthRecordType,
+  isHealthDocument,
   packagesUsingDocument,
   type PackageUse,
 } from './documentDetails';
@@ -160,12 +162,8 @@ export function DocumentDetailSheet({
     ['Size', documentSizeLabel(document)],
   ];
 
-  const isMedical = category === 'Health' || document.category === 'Medical';
-  const healthType = /lab/i.test(document.documentType)
-    ? 'lab_report'
-    : /prescription/i.test(document.documentType)
-      ? 'prescription'
-      : 'medical_report';
+  const isMedical = isHealthDocument(document);
+  const healthType = healthRecordType(document);
 
   const addToHealth = async (memberId?: string) => {
     setBusy('health');
