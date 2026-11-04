@@ -478,7 +478,7 @@ export function DocumentsScreen() {
       }
     >
       <Stack
-        gap="lg"
+        gap="sm"
         style={[
           styles.container,
           {
@@ -487,7 +487,7 @@ export function DocumentsScreen() {
           },
         ]}
       >
-        <Stack gap="md">
+        <Stack gap="sm">
         {/* Header */}
         <Row
           align="center"
@@ -572,6 +572,7 @@ export function DocumentsScreen() {
             align="center"
           >
             <Pressable
+              hitSlop={10}
               onPress={toggleSelectionMode}
               style={({ pressed }) => [
                 styles.toolbarButton,
@@ -600,6 +601,7 @@ export function DocumentsScreen() {
             </Pressable>
 
             <Pressable
+              hitSlop={10}
               onPress={() =>
                 setShowFilters(true)
               }
@@ -642,6 +644,7 @@ export function DocumentsScreen() {
                     },
                   ],
                 )}
+                hitSlop={10}
                 style={styles.toolbarButton}
               >
                 <Trash2 size={sizes.icon.md} color={theme.colors.status.danger.text} />
@@ -934,7 +937,7 @@ const styles = StyleSheet.create({
   /* Search */
 
   searchContainer: {
-    height: 50,
+    height: 44,
     borderRadius: radius.tile,
     borderWidth: 1,
     paddingHorizontal: 12,
@@ -957,7 +960,7 @@ const styles = StyleSheet.create({
   /* Toolbar */
 
   toolbar: {
-    minHeight: 36,
+    minHeight: 28,
   },
 
   documentCount: {
@@ -966,7 +969,7 @@ const styles = StyleSheet.create({
   },
 
   toolbarButton: {
-    minHeight: sizes.minimumTouchTarget,
+    minHeight: 28,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
