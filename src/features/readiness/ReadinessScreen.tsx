@@ -314,6 +314,7 @@ function PackageCard({
           </Row>
         }
         title={item.title}
+        compact
         subtitle={isReady ? 'Everything in place' : `${satisfiedRequired} of ${totalRequired} ready`}
         trailing={isReady ? <StatusBadge label="Ready" status="success" /> : undefined}
         onPress={onPress}

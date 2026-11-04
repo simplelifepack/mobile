@@ -13,6 +13,8 @@ type ListRowProps = {
   // Replaces the icon well, e.g. a readiness ring.
   leading?: React.ReactNode;
   title: string;
+  // Compact rows (long lists of names) use the smaller label role.
+  compact?: boolean;
   subtitle?: string;
   // Third line reserved for an exception, e.g. "No nominee named".
   extra?: string;
@@ -26,7 +28,7 @@ type ListRowProps = {
 };
 
 // Design System 3.2 list row. Dividers between rows come from ListGroup.
-export function ListRow({ icon, leading, title, subtitle, extra, danger, disabled, trailing, selected, children, onPress }: ListRowProps) {
+export function ListRow({ icon, leading, title, compact, subtitle, extra, danger, disabled, trailing, selected, children, onPress }: ListRowProps) {
   const { theme } = useAppTheme();
 
   return (
@@ -43,7 +45,7 @@ export function ListRow({ icon, leading, title, subtitle, extra, danger, disable
         ) : null)}
         <View style={styles.copy}>
           <AppText
-            variant="listTitle"
+            variant={compact ? 'labelMd' : 'listTitle'}
             style={danger ? { color: theme.colors.status.danger.text } : undefined}
             numberOfLines={2}
           >
