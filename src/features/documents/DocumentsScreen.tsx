@@ -702,7 +702,7 @@ export function DocumentsScreen() {
 
         {/* Document list */}
         {documents.length > 0 ? (
-          <ListGroup>
+          <ListGroup strongDividers>
             {documents.map(document => {
               const isSelected = selectedIds.includes(document.id);
               const Icon = getDocumentIcon(document.documentType);

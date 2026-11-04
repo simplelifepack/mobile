@@ -87,7 +87,7 @@ export function SelectionMark({ checked }: { checked: boolean }) {
 }
 
 // Design System 3.3 list group: one surface, dividers only, no row borders.
-export function ListGroup({ children }: React.PropsWithChildren) {
+export function ListGroup({ children, strongDividers }: React.PropsWithChildren<{ strongDividers?: boolean }>) {
   const { theme } = useAppTheme();
   const rows = React.Children.toArray(children).filter(Boolean);
 
@@ -95,7 +95,7 @@ export function ListGroup({ children }: React.PropsWithChildren) {
     <View style={[styles.group, shadows.card, { backgroundColor: theme.colors.surface.default }]}>
       {rows.map((row, index) => (
         <React.Fragment key={index}>
-          {index > 0 ? <View style={[styles.divider, { backgroundColor: theme.colors.border.subtle }]} /> : null}
+          {index > 0 ? <View style={[styles.divider, { backgroundColor: strongDividers ? theme.colors.border.default : theme.colors.border.subtle }]} /> : null}
           {row}
         </React.Fragment>
       ))}
@@ -130,5 +130,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  divider: { height: StyleSheet.hairlineWidth },
+  divider: { height: 1 },
 });
