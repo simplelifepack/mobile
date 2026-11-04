@@ -24,25 +24,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>$(GOOGLE_IOS_REVERSED_CLIENT_ID)</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>readiness</string>
-			</array>
-		</dict>
-	</array>
+	<key>CFBundleURLTypes</key><array><dict><key>CFBundleURLSchemes</key><array><string>readiness</string></array></dict></array>
+<key>NSCameraUsageDescription</key><string>Scan documents into your private Readines library.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -52,12 +35,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>NSCameraUsageDescription</key>
-	<string>Capture a document to add it to your encrypted Readiness vault.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Select a document image to add it to your encrypted Readiness vault.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string/>
+	<string></string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

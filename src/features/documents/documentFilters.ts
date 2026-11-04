@@ -1,99 +1,168 @@
-import type { DocumentRecord } from '../../api/types';
-import { documentExpiry } from './documentDetails';
+import type { DocumentRecord, ReviewField } from '../../api/web.types';
+function fieldsObject(document: DocumentRecord) {
+  return document.fields && typeof document.fields === 'object'
+    ? (document.fields as Record<string, unknown>)
+    : {};
+}
+function reviewFields(document: DocumentRecord): ReviewField[] {
+  const value = fieldsObject(document).reviewFields;
+  return Array.isArray(value) ? (value as ReviewField[]) : [];
+}
+function safeCategory(category: string) {
+  return category.toLowerCase();
+}
+function expiryValue(document: DocumentRecord) {
+  return document.expiryDate || null;
+}
 
 export type QuickFilter = 'all' | 'soon' | 'expired' | 'week' | 'proofs';
-export type DocumentSort = 'newest' | 'oldest' | 'name' | 'expiry';
+export type DocumentSort = 'newest' | 'oldest' | 'name-asc' | 'name-desc';
 
-export type DocumentFilters = {
-  quick: QuickFilter;
-  category: string;
-  person: string;
-  sort: DocumentSort;
-};
-
-export const ALL = 'all';
-
-export const defaultFilters: DocumentFilters = {
-  quick: 'all',
-  category: ALL,
-  person: ALL,
-  sort: 'newest',
-};
-
-export const quickFilterLabels: Array<[QuickFilter, string]> = [
-  ['all', 'All'],
-  ['soon', 'Expiring soon'],
-  ['expired', 'Expired'],
-  ['week', 'Added this week'],
-  ['proofs', 'Proofs'],
-];
-
-export const sortLabels: Array<[DocumentSort, string]> = [
-  ['newest', 'Newest first'],
-  ['oldest', 'Oldest first'],
-  ['name', 'By name'],
-  ['expiry', 'By expiry'],
-];
-
-const DAY_MS = 86_400_000;
-const EXPIRING_SOON_DAYS = 30;
-
-export const documentCategory = (document: DocumentRecord) =>
-  document.category?.trim() || 'Other';
-
-export function documentPersonName(document: DocumentRecord) {
-  const assigned = document.fields?.assignedPerson as { name?: string } | undefined;
-  return assigned?.name?.trim() || 'You';
+export function documentPerson(
+  document: DocumentRecord,
+  currentUserName?: string,
+) {
+  const fields = fieldsObject(document);
+  const assigned = fields.assignedPerson;
+  if (
+    assigned &&
+    typeof assigned === 'object' &&
+    'name' in assigned &&
+    typeof assigned.name === 'string' &&
+    assigned.name.trim()
+  )
+    return assigned.name.trim();
+  const direct = [
+    'nameOnDocument',
+    'holderName',
+    'ownerName',
+    'insuredName',
+    'customerName',
+    'employeeName',
+    'studentName',
+    'patientName',
+    'name',
+  ]
+    .map(key => fields[key])
+    .find(
+      (value): value is string =>
+        typeof value === 'string' && Boolean(value.trim()),
+    );
+  const reviewed = reviewFields(document).find(field =>
+    /^(full\s+)?name(\s+on\s+document)?$|^(card)?holder(\s+name)?$|^(owner|insured|patient|employee|student)(\s+name)?$/i.test(
+      field.label.trim(),
+    ),
+  )?.value;
+  return direct?.trim() || reviewed?.trim() || currentUserName?.trim() || 'You';
 }
 
-const documentName = (document: DocumentRecord) =>
-  document.displayName ?? document.title ?? document.originalName;
+export function documentSource(document: DocumentRecord) {
+  if (document.sourceProvider === 'DIGILOCKER') return 'digilocker';
+  if (document.source === 'GMAIL') return 'gmail';
+  if (document.source === 'GOOGLE_DRIVE') return 'drive';
+  if (String(document.source) === 'SCAN' || document.sourceProvider === 'SCAN')
+    return 'scanned';
+  return 'uploaded';
+}
+
+export const sourceNames: Record<string, string> = {
+  uploaded: 'Uploaded',
+  scanned: 'Scanned',
+  gmail: 'Gmail',
+  drive: 'Google Drive',
+  digilocker: 'DigiLocker',
+};
 
 function expiryTime(document: DocumentRecord) {
-  const value = documentExpiry(document);
-  return value ? new Date(`${value}T00:00:00`).getTime() : undefined;
+  const value = expiryValue(document);
+  if (!value) return null;
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : null;
 }
 
-export function matchesQuickFilter(document: DocumentRecord, quick: QuickFilter, now = Date.now()) {
-  if (quick === 'all') return true;
-  if (quick === 'proofs') {
+export function matchesQuickFilter(
+  document: DocumentRecord,
+  filter: QuickFilter,
+  now = Date.now(),
+) {
+  if (filter === 'all') return true;
+  if (filter === 'proofs') {
     return /transaction[ _-]*evidence|payment[ _-]*proof|proof[ _-]*of[ _-]*payment/i.test(
       document.documentType ?? '',
     );
   }
-  if (quick === 'week') {
+  if (filter === 'week') {
     const added = new Date(document.createdAt).getTime();
-    return Number.isFinite(added) && added >= now - 7 * DAY_MS && added <= now;
+    return (
+      Number.isFinite(added) && added >= now - 7 * 86400000 && added <= now
+    );
   }
   const expiry = expiryTime(document);
-  if (expiry === undefined) return false;
-  if (quick === 'expired') return expiry < now;
-  return expiry >= now && expiry <= now + EXPIRING_SOON_DAYS * DAY_MS;
+  if (expiry == null) return false;
+  if (filter === 'expired') return expiry < now;
+  return expiry >= now && expiry <= now + 30 * 86400000;
 }
 
-export function activeFilterCount(filters: DocumentFilters) {
-  return (
-    Number(filters.quick !== 'all') +
-    Number(filters.category !== ALL) +
-    Number(filters.person !== ALL) +
-    Number(filters.sort !== defaultFilters.sort)
-  );
-}
-
-export function applyDocumentFilters(documents: DocumentRecord[], filters: DocumentFilters) {
+export function filterDocuments(
+  documents: DocumentRecord[],
+  options: {
+    query: string;
+    category: string;
+    person: string;
+    source: string;
+    sort: DocumentSort;
+    quick: QuickFilter;
+    currentUserName?: string;
+  },
+) {
+  const query = options.query.trim().toLocaleLowerCase();
   return documents
-    .filter(
-      document =>
-        (filters.category === ALL || documentCategory(document) === filters.category) &&
-        (filters.person === ALL || documentPersonName(document) === filters.person) &&
-        matchesQuickFilter(document, filters.quick),
-    )
+    .filter(document => {
+      const person = documentPerson(document, options.currentUserName);
+      if (
+        options.category !== 'all' &&
+        safeCategory(document.category) !== options.category
+      )
+        return false;
+      if (options.person !== 'all' && person !== options.person) return false;
+      if (
+        options.source !== 'all' &&
+        documentSource(document) !== options.source
+      )
+        return false;
+      if (!matchesQuickFilter(document, options.quick)) return false;
+      return (
+        !query ||
+        [
+          document.title,
+          document.displayName,
+          document.originalName,
+          document.documentType,
+          document.category,
+          document.uniqueIdentifier,
+          document.source,
+          person,
+        ].some(value =>
+          String(value ?? '')
+            .toLocaleLowerCase()
+            .includes(query),
+        )
+      );
+    })
     .sort((a, b) => {
-      if (filters.sort === 'name') return documentName(a).localeCompare(documentName(b));
-      if (filters.sort === 'expiry') {
-        return (expiryTime(a) ?? Infinity) - (expiryTime(b) ?? Infinity);
+      if (options.sort === 'name-asc' || options.sort === 'name-desc') {
+        const comparison = (
+          a.displayName ||
+          a.title ||
+          a.originalName
+        ).localeCompare(b.displayName || b.title || b.originalName);
+        return options.sort === 'name-asc' ? comparison : -comparison;
       }
-      const byDate = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      return filters.sort === 'newest' ? byDate : -byDate;
+      const comparison =
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return (
+        (options.sort === 'newest' ? comparison : -comparison) ||
+        a.id.localeCompare(b.id)
+      );
     });
 }

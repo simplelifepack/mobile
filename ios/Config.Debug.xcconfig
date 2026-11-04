@@ -1,2 +1,2 @@
-#include? "tmp.xcconfig"
 #include "Pods/Target Support Files/Pods-ReadinessMobile/Pods-ReadinessMobile.debug.xcconfig"
+#include? "Google.Debug.generated.xcconfig"

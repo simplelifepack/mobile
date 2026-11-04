@@ -1,261 +1,164 @@
 import { request } from './client';
 
-export type HealthMember = {
-  id: string;
-  name: string;
-  relation: string;
-  bloodGroup?: string | null;
-  dateOfBirth?: string | null;
-  conditions?: string | null;
-  allergies?: string | null;
-  emergencyContactName?: string | null;
-  emergencyContactPhone?: string | null;
-  primaryDoctor?: string | null;
-  insuranceProvider?: string | null;
-  insurancePolicyNumber?: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+import type {
+  HealthAvailableMetric,
+  HealthHomeAttention,
+  HealthHomeReminder,
+  HealthMeasurement,
+  HealthMedication,
+  HealthMember,
+  HealthOverview,
+  HealthProcessResponse,
+  HealthRecord,
+  HealthRecordDetail,
+  HealthTimelineEvent,
+  TrackedHealthMetric,
+} from './web.types';
 
-export type HealthMeasurement = {
-  id: string;
-  sourceDocumentId: string | null;
-  recordId: string | null;
-  metricKey: string;
-  displayName: string;
-  originalName: string;
-  value: number;
-  secondaryValue?: number | null;
-  unit: string;
-  context?: string | null;
-  bodySite?: string | null;
-  referenceMin?: number | null;
-  referenceMax?: number | null;
-  referenceText?: string | null;
-  measuredAt: string | null;
-  sourceType: string;
-  isTracked?: boolean;
-  aliases?: string[];
-};
+function qs(params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') query.set(key, String(value));
+  });
+  return query.toString();
+}
 
-export type HealthRecord = {
-  id: string;
-  memberId: string;
-  documentId: string;
-  type: 'lab_report' | 'medical_report' | 'prescription';
-  documentDate: string | null;
-  provider?: string | null;
-  doctor?: string | null;
-  processingStatus: string;
-  processingError?: string | null;
-  measurementCount: number;
-  trackedMeasurementCount: number;
-  medicationCount: number;
-  followUpCount: number;
-  createdAt: string;
-  processedAt?: string | null;
-};
+async function mutateHealth<T>(load: () => Promise<T>) {
+  const result = await load();
 
-export type HealthHomeReminder = {
-  id: string;
-  title: string;
-  dueDate: string | null;
-  memberId?: string;
-  memberName: string;
-  origin: string;
-};
-
-export type HealthMedication = {
-  id: string;
-  memberId: string;
-  name: string;
-  dose?: string | null;
-  frequency?: string | null;
-  duration?: string | null;
-  quantity?: string | null;
-  status: 'continuing' | 'stopped' | string;
-  repeats: boolean;
-  runsOutAt?: string | null;
-  stoppedAt?: string | null;
-  createdAt: string;
-  updatedAt?: string;
-};
-
-export type TrackedHealthMetric = {
-  id: string;
-  memberId: string;
-  metricKey: string;
-  displayName: string;
-  context?: string | null;
-  bodySite?: string | null;
-  enabled: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type HealthAvailableMetric = {
-  metricKey: string;
-  displayName: string;
-  context?: string | null;
-  bodySite?: string | null;
-  historicalReadingCount: number;
-  isTracked: boolean;
-  latestValue: number;
-  secondaryValue?: number | null;
-  unit: string;
-};
-
-export type HealthTimelineEvent = {
-  id: string;
-  eventType: 'measurement' | 'medication';
-  recordId?: string | null;
-  occurredAt: string | null;
-  title: string;
-  value?: number;
-  secondaryValue?: number | null;
-  unit?: string;
-  detail?: string | null;
-  source: string;
-  sourceType: string;
-  medication?: HealthMedication;
-};
-
-export type HealthOverview = {
-  member: HealthMember;
-  upcoming: Array<{
-    id: string;
-    title: string;
-    dueDate: string | null;
-    origin: string;
-    status: string;
-    sourceDocumentId?: string | null;
-  }>;
-  trackedMetrics: Array<
-    TrackedHealthMetric & {
-      measurements: HealthMeasurement[];
-      latest: HealthMeasurement | null;
-    }
-  >;
-  recentRecords: HealthRecord[];
-};
-
-export type HealthRecordDetail = HealthRecord & {
-  measurements: HealthMeasurement[];
-  medications: HealthMedication[];
-  followUps: Array<{
-    id: string;
-    title: string;
-    dueDate?: string | null;
-    explicitDate?: string | null;
-    sourceText?: string | null;
-  }>;
-  reminders: Array<{
-    id: string;
-    title: string;
-    dueDate: string | null;
-    origin: string;
-    status: string;
-  }>;
-};
-
-export type HealthMemberResolution = {
-  type: 'lab_report' | 'medical_report' | 'prescription';
-  documentId: string;
-  processingStatus: 'awaiting_profile_match';
-  patient: { name?: string | null } | null;
-  memberMatch: {
-    status: 'matched' | 'unmatched' | 'ambiguous' | string;
-    candidates: Array<{ id: string; name: string }>;
-  };
-};
-
-export function isMemberResolution(
-  response: HealthRecordDetail | HealthMemberResolution,
-): response is HealthMemberResolution {
-  return response.processingStatus === 'awaiting_profile_match';
+  return result;
 }
 
 export const healthApi = {
+  homeAttention: (signal?: AbortSignal) =>
+    request<HealthHomeAttention>('/api/health/home-attention', {
+      retryTransient: true,
+      requiresAuth: true,
+      dedupeMs: 5_000,
+      signal,
+    }),
   reminders: () =>
     request<HealthHomeReminder[]>('/api/health/reminders', {
       requiresAuth: true,
+      dedupeMs: 5_000,
     }),
   createReminder: (payload: {
     memberId: string;
     title: string;
+    type: 'appointment' | 'medicine' | 'refill' | 'other';
     dueDate: string;
-    type?: string;
-    frequency?: string;
+    frequency: 'once' | 'daily' | 'weekly' | 'monthly';
   }) =>
-    request<HealthHomeReminder>('/api/health/reminders', {
-      method: 'POST',
-      body: payload,
+    mutateHealth(() =>
+      request('/api/health/reminders', {
+        method: 'POST',
+        body: payload,
+        requiresAuth: true,
+      }),
+    ),
+  members: (signal?: AbortSignal) =>
+    request<HealthMember[]>('/api/health/members', {
       requiresAuth: true,
+      dedupeMs: 5_000,
+      signal,
     }),
-  members: () =>
-    request<HealthMember[]>('/api/health/members', { requiresAuth: true }),
   createMember: (payload: {
     name: string;
     relation: string;
     bloodGroup?: string | null;
     dateOfBirth?: string | null;
+    conditions?: string | null;
+    allergies?: string | null;
+    emergencyContactName?: string | null;
+    emergencyContactPhone?: string | null;
+    primaryDoctor?: string | null;
+    insuranceProvider?: string | null;
+    insurancePolicyNumber?: string | null;
   }) =>
-    request<HealthMember>('/api/health/members', {
-      method: 'POST',
-      body: payload,
-      requiresAuth: true,
-    }),
-  updateMember: (memberId: string, payload: Partial<HealthMember>) =>
-    request<HealthMember>(
-      `/api/health/members/${encodeURIComponent(memberId)}`,
-      { method: 'PATCH', body: payload, requiresAuth: true },
+    mutateHealth(() =>
+      request<HealthMember>('/api/health/members', {
+        method: 'POST',
+        body: payload,
+        requiresAuth: true,
+      }),
+    ),
+  updateMember: (
+    memberId: string,
+    payload: Partial<{
+      name: string;
+      relation: string;
+      bloodGroup?: string | null;
+      dateOfBirth?: string | null;
+      conditions?: string | null;
+      allergies?: string | null;
+      emergencyContactName?: string | null;
+      emergencyContactPhone?: string | null;
+      primaryDoctor?: string | null;
+      insuranceProvider?: string | null;
+      insurancePolicyNumber?: string | null;
+    }>,
+  ) =>
+    mutateHealth(() =>
+      request<HealthMember>(
+        `/api/health/members/${encodeURIComponent(memberId)}`,
+        { method: 'PATCH', body: payload, requiresAuth: true },
+      ),
     ),
   deleteMember: (memberId: string) =>
-    request<void>(`/api/health/members/${encodeURIComponent(memberId)}`, {
-      method: 'DELETE',
-      requiresAuth: true,
-    }),
-  overview: (memberId: string) =>
+    mutateHealth(() =>
+      request<void>(`/api/health/members/${encodeURIComponent(memberId)}`, {
+        method: 'DELETE',
+        requiresAuth: true,
+      }),
+    ),
+  overview: (memberId: string, signal?: AbortSignal) =>
     request<HealthOverview>(
       `/api/health/members/${encodeURIComponent(memberId)}/overview`,
-      { requiresAuth: true },
+      { requiresAuth: true, dedupeMs: 5_000, signal },
     ),
-  records: (memberId: string) =>
+  records: (memberId: string, signal?: AbortSignal) =>
     request<HealthRecord[]>(
       `/api/health/members/${encodeURIComponent(memberId)}/records`,
-      { requiresAuth: true },
+      { requiresAuth: true, dedupeMs: 5_000, signal },
     ),
   createRecord: (payload: {
     memberId?: string;
     documentId: string;
     type?: 'lab_report' | 'medical_report' | 'prescription';
   }) =>
-    request<HealthRecordDetail | HealthMemberResolution>(
-      '/api/health/records',
-      { method: 'POST', body: payload, requiresAuth: true },
+    mutateHealth(() =>
+      request<HealthProcessResponse>('/api/health/records', {
+        method: 'POST',
+        body: payload,
+        requiresAuth: true,
+      }),
     ),
   updateRecord: (
     recordId: string,
     payload: { type?: 'lab_report' | 'medical_report' | 'prescription' },
   ) =>
-    request<HealthRecordDetail>(
-      `/api/health/records/${encodeURIComponent(recordId)}`,
-      { method: 'PATCH', body: payload, requiresAuth: true },
+    mutateHealth(() =>
+      request<HealthRecordDetail>(
+        `/api/health/records/${encodeURIComponent(recordId)}`,
+        { method: 'PATCH', body: payload, requiresAuth: true },
+      ),
     ),
   record: (recordId: string) =>
     request<HealthRecordDetail>(
       `/api/health/records/${encodeURIComponent(recordId)}`,
-      { requiresAuth: true },
+      { requiresAuth: true, dedupeMs: 5_000 },
     ),
   deleteRecord: (recordId: string) =>
-    request<void>(`/api/health/records/${encodeURIComponent(recordId)}`, {
-      method: 'DELETE',
-      requiresAuth: true,
-    }),
-  measurements: (memberId: string, metric?: string) =>
+    mutateHealth(() =>
+      request<void>(`/api/health/records/${encodeURIComponent(recordId)}`, {
+        method: 'DELETE',
+        requiresAuth: true,
+      }),
+    ),
+  measurements: (memberId: string, metric?: string, signal?: AbortSignal) =>
     request<HealthMeasurement[]>(
       `/api/health/members/${encodeURIComponent(memberId)}/measurements${metric ? `?metric=${encodeURIComponent(metric)}` : ''}`,
-      { requiresAuth: true },
+      { requiresAuth: true, dedupeMs: 5_000, signal },
     ),
   createMeasurement: (
     memberId: string,
@@ -274,14 +177,16 @@ export const healthApi = {
       measuredAt: string;
     },
   ) =>
-    request<HealthMeasurement>(
-      `/api/health/members/${encodeURIComponent(memberId)}/measurements`,
-      { method: 'POST', body: payload, requiresAuth: true },
+    mutateHealth(() =>
+      request<HealthMeasurement>(
+        `/api/health/members/${encodeURIComponent(memberId)}/measurements`,
+        { method: 'POST', body: payload, requiresAuth: true },
+      ),
     ),
   trackedMetrics: (memberId: string) =>
     request<TrackedHealthMetric[]>(
       `/api/health/members/${encodeURIComponent(memberId)}/tracked-metrics`,
-      { requiresAuth: true },
+      { requiresAuth: true, dedupeMs: 5_000 },
     ),
   trackMetric: (
     memberId: string,
@@ -292,52 +197,83 @@ export const healthApi = {
       bodySite?: string | null;
     },
   ) =>
-    request<TrackedHealthMetric>(
-      `/api/health/members/${encodeURIComponent(memberId)}/tracked-metrics`,
-      { method: 'POST', body: payload, requiresAuth: true },
+    mutateHealth(() =>
+      request<TrackedHealthMetric>(
+        `/api/health/members/${encodeURIComponent(memberId)}/tracked-metrics`,
+        {
+          method: 'POST',
+          body: {
+            metricKey: payload.metricKey,
+            displayName: payload.displayName,
+            context: payload.context ?? null,
+            bodySite: payload.bodySite ?? null,
+          },
+          requiresAuth: true,
+        },
+      ),
     ),
   untrackMetric: (memberId: string, trackedId: string) =>
-    request<void>(
-      `/api/health/members/${encodeURIComponent(memberId)}/tracked-metrics/${encodeURIComponent(trackedId)}`,
-      { method: 'DELETE', requiresAuth: true },
+    mutateHealth(() =>
+      request<void>(
+        `/api/health/members/${encodeURIComponent(memberId)}/tracked-metrics/${encodeURIComponent(trackedId)}`,
+        { method: 'DELETE', requiresAuth: true },
+      ),
     ),
   availableMetrics: (memberId: string, search = '') =>
     request<HealthAvailableMetric[]>(
-      `/api/health/members/${encodeURIComponent(memberId)}/available-metrics?search=${encodeURIComponent(search)}`,
-      { requiresAuth: true },
+      `/api/health/members/${encodeURIComponent(memberId)}/available-metrics?${qs({ search })}`,
+      { requiresAuth: true, dedupeMs: 5_000 },
     ),
-  timeline: (memberId: string) =>
+  timeline: (memberId: string, signal?: AbortSignal) =>
     request<HealthTimelineEvent[]>(
       `/api/health/members/${encodeURIComponent(memberId)}/timeline`,
-      { requiresAuth: true },
+      { requiresAuth: true, dedupeMs: 5_000, signal },
     ),
   createMedication: (
     memberId: string,
     payload: {
       name: string;
       dose: string;
-      frequency?: string | null;
-      repeats: boolean;
-      runsOutAt?: string | null;
+      whenToTake: Array<'morning' | 'afternoon' | 'night'>;
+      mealTiming: 'before_food' | 'after_food' | 'with_food' | 'any_time';
+      repeatRunsOut?: string | null;
     },
   ) =>
-    request<HealthMedication>(
-      `/api/health/members/${encodeURIComponent(memberId)}/medications`,
-      { method: 'POST', body: payload, requiresAuth: true },
+    mutateHealth(() =>
+      request<HealthMedication>(
+        `/api/health/members/${encodeURIComponent(memberId)}/medications`,
+        { method: 'POST', body: payload, requiresAuth: true },
+      ),
     ),
   updateMedication: (
     medicationId: string,
-    payload: Partial<
-      Pick<HealthMedication, 'name' | 'dose' | 'frequency' | 'duration' | 'quantity' | 'repeats' | 'runsOutAt' | 'status' | 'stoppedAt'>
-    >,
+    payload: Partial<{
+      name: string;
+      dose: string | null;
+      whenToTake: Array<'morning' | 'afternoon' | 'night'>;
+      mealTiming:
+        'before_food' | 'after_food' | 'with_food' | 'any_time' | null;
+      repeatRunsOut: string | null;
+      frequency: string | null;
+      duration: string | null;
+      quantity: string | null;
+      repeats: boolean;
+      runsOutAt: string | null;
+      status: 'continuing' | 'stopped';
+      stoppedAt: string | null;
+    }>,
   ) =>
-    request<HealthMedication>(
-      `/api/health/medications/${encodeURIComponent(medicationId)}`,
-      { method: 'PATCH', body: payload, requiresAuth: true },
+    mutateHealth(() =>
+      request<HealthMedication>(
+        `/api/health/medications/${encodeURIComponent(medicationId)}`,
+        { method: 'PATCH', body: payload, requiresAuth: true },
+      ),
     ),
   deleteMedication: (medicationId: string) =>
-    request<void>(`/api/health/medications/${encodeURIComponent(medicationId)}`, {
-      method: 'DELETE',
-      requiresAuth: true,
-    }),
+    mutateHealth(() =>
+      request<void>(
+        `/api/health/medications/${encodeURIComponent(medicationId)}`,
+        { method: 'DELETE', requiresAuth: true },
+      ),
+    ),
 };

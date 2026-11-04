@@ -1,45 +1,26 @@
 import React from 'react';
-import styled from 'styled-components/native';
-import { Row } from '../primitives/Row';
-import { AppText } from '../primitives/AppText';
-const Digit = styled.TextInput(({ theme }) => ({
-  width: 44,
-  height: 52,
-  textAlign: 'center',
-  color: theme.colors.text.primary,
-  backgroundColor: theme.colors.surface.default,
-  borderWidth: 1,
-  borderColor: theme.colors.border.default,
-  borderRadius: theme.radius.control,
-  ...theme.typography.heading,
-}));
+import { TextInput } from '../primitives/TextInput';
+
 export function PinInput({
   value,
   onChange,
+  autoFocus = true,
 }: {
   value: string;
   onChange: (value: string) => void;
+  autoFocus?: boolean;
 }) {
   return (
-    <Row gap="sm" align="center" justify="center">
-      {Array.from({ length: 6 }, (_, index) => (
-        <Digit
-          key={index}
-          accessibilityLabel={`PIN digit ${index + 1}`}
-          keyboardType="number-pad"
-          secureTextEntry
-          maxLength={1}
-          value={value[index] ?? ''}
-          onChangeText={digit => {
-            const next = value.split('');
-            next[index] = digit.replace(/\D/g, '');
-            onChange(next.join('').slice(0, 6));
-          }}
-        />
-      ))}
-      <AppText style={{ position: 'absolute', opacity: 0 }}>
-        Six digit PIN
-      </AppText>
-    </Row>
+    <TextInput
+      label="6-digit R-pin"
+      value={value}
+      onChangeText={text => onChange(text.replace(/\D/g, '').slice(0, 6))}
+      keyboardType="number-pad"
+      secureTextEntry
+      maxLength={6}
+      autoComplete="off"
+      textContentType="none"
+      autoFocus={autoFocus}
+    />
   );
 }

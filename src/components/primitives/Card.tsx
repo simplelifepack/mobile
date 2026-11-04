@@ -1,10 +1,8 @@
 import styled from 'styled-components/native';
-import { shadows } from '../../design/tokens/shadows';
 export const Card = styled.View(({ theme }) => ({
-  backgroundColor: theme.colors.surface.default,
-  borderRadius: theme.radius.surface,
+  backgroundColor: theme.colors.surface,
+  borderRadius: theme.radius.panel,
   borderWidth: 1,
-  borderColor: theme.colors.border.subtle,
+  borderColor: theme.colors.border,
   padding: theme.spacing.md,
-  ...shadows.card,
 }));

@@ -1,23 +1,21 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { sessionGateEmail } from '../../security/sessionGate';
 import {
-  GoogleSignin,
-  isErrorWithCode,
-  isSuccessResponse,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from '@reduxjs/toolkit';
+import { googleIdToken } from './services/googleSignIn';
 import { authApi } from '../../api/auth.api';
-import { ApiError, refreshUser, setAccessToken } from '../../api/client';
+import { ApiError, setAccessToken } from '../../api/client';
 import { sessionStorage } from '../../api/sessionStorage';
 import type { AuthResponse, AuthUser } from '../../api/types';
-import { environment } from '../../config/environment';
-import {
-  validateLoginInput,
-  validatePasswordResetInput,
-  validatePinLoginInput,
-  validateSignupInput,
-} from './auth.validators';
 
-export type AuthStatus = 'restoring' | 'restoreFailed' | 'unauthenticated' | 'authenticated';
+export type AuthStatus =
+  | 'restoring'
+  | 'restoreFailed'
+  | 'expired'
+  | 'unauthenticated'
+  | 'authenticated';
 type AuthState = {
   status: AuthStatus;
   user: AuthUser | null;
@@ -31,134 +29,93 @@ const initialState: AuthState = {
   error: null,
 };
 
-let configuredGoogleClientId: string | null = null;
-
-function configureGoogleSignIn() {
-  const { googleWebClientId, googleIosClientId } = environment;
-  if (!googleWebClientId)
-    throw new Error('Google Sign-In is not configured for this build.');
-  if (configuredGoogleClientId === googleWebClientId) return;
-
-  GoogleSignin.configure({
-    webClientId: googleWebClientId,
-    ...(googleIosClientId ? { iosClientId: googleIosClientId } : {}),
-  });
-  configuredGoogleClientId = googleWebClientId;
-}
-
-function googleSignInError(error: unknown) {
-  if (error instanceof ApiError) {
-    if (error.status === 400)
-      return 'Google did not return a valid sign-in token. Please try again.';
-    if (error.status === 401)
-      return 'Google rejected the sign-in token. Verify GOOGLE_CLIENT_ID matches the app Web ID and configure GOOGLE_IOS_CLIENT_ID for iOS.';
-    if (error.status === 429)
-      return 'Too many Google sign-in attempts. Please wait and try again.';
-    if (error.status === 503)
-      return 'Google sign-in is not configured on the backend.';
-    if (error.status >= 500) {
-      return `Google sign-in service failed (HTTP ${error.status}).${error.errorId ? ` Reference: ${error.errorId}` : ' Please try again later.'}`;
-    }
-    return error.message;
-  }
-  if (isErrorWithCode(error)) {
-    if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE)
-      return 'Google Play Services are required to continue.';
-    if (error.code === statusCodes.IN_PROGRESS)
-      return 'A Google Sign-In request is already in progress.';
-  }
-  if (error instanceof TypeError)
-    return 'Unable to reach the server. Check that the backend is running.';
-  return 'Unable to sign in with Google. Please try again.';
-}
-
 async function persist(result: AuthResponse) {
+  if (
+    sessionGateEmail() &&
+    result.user.email.toLowerCase() !== sessionGateEmail()?.toLowerCase()
+  )
+    throw new Error(
+      'Sign in to the same account to resume your protected work.',
+    );
   const token = result.accessToken ?? result.token;
   setAccessToken(token);
   await sessionStorage.writeAccessToken(token);
   return result.user;
 }
 
-export const restoreSession = createAsyncThunk(
-  'auth/restore',
-  async (_, { rejectWithValue }) => {
-    try {
-      return await refreshUser();
-    } catch (error) {
-      // Only an explicit rejection of the refresh session means login is needed.
-      if (error instanceof ApiError && error.status === 401)
-        return rejectWithValue('anonymous');
-      throw error;
+export const restoreSession = createAsyncThunk<
+  AuthUser,
+  void,
+  { rejectValue: { retryable: boolean; message: string } }
+>('auth/restore', async (_, { rejectWithValue }) => {
+  try {
+    const token = await sessionStorage.readAccessToken();
+    setAccessToken(token ?? '__restore__');
+    return (await authApi.me()).user;
+  } catch (error) {
+    const rejected =
+      error instanceof ApiError && [401, 403].includes(error.status);
+    if (rejected) {
+      setAccessToken(null);
+      await sessionStorage.clear().catch(() => undefined);
     }
-  },
-);
+    return rejectWithValue({
+      retryable: !rejected,
+      message: rejected
+        ? 'Your session expired. Please sign in again.'
+        : 'Unable to restore your session. Check your connection and retry.',
+    });
+  }
+});
 export const login = createAsyncThunk(
   'auth/login',
-  async (input: { email: string; password: string }) => {
-    const safeInput = validateLoginInput(input);
-    return persist(await authApi.login(safeInput));
-  },
+  async (input: { email: string; password: string }) =>
+    persist(await authApi.login(input)),
 );
-export const signup = createAsyncThunk(
-  'auth/signup',
-  async (input: { name: string; email: string; password: string; otp: string }) => {
-    const safeInput = validateSignupInput(input);
-    const otp = input.otp.trim();
-    if (!/^\d{6}$/.test(otp)) throw new Error('Enter the 6-digit code from your email.');
-    return persist(await authApi.signup({ ...safeInput, otp }));
-  },
-);
-export const requestSignupOtp = createAsyncThunk(
-  'auth/requestSignupOtp',
-  async (input: { name: string; email: string; password: string }) => {
-    return authApi.requestSignupOtp(validateSignupInput(input));
-  },
-);
-
 export const loginWithPin = createAsyncThunk(
   'auth/loginWithPin',
   async (input: { email: string; pin: string }) =>
-    persist(await authApi.loginWithPin(validatePinLoginInput(input))),
+    persist(await authApi.loginWithPin(input)),
 );
-
-export const requestPasswordReset = createAsyncThunk(
-  'auth/requestPasswordReset',
-  async (email: string, { rejectWithValue }) => {
-    try {
-      const safeEmail = validatePasswordResetInput(email);
-      return await authApi.forgotPasswordOtp(safeEmail);
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error ? error.message : 'Unable to request a reset.',
-      );
-    }
+export const requestSignupOtp = createAsyncThunk(
+  'auth/requestSignupOtp',
+  async (input: { name: string; email: string; password: string }) =>
+    authApi.requestSignupOtp(input),
+);
+export const signup = createAsyncThunk(
+  'auth/signup',
+  async (input: {
+    name: string;
+    email: string;
+    password: string;
+    otp: string;
+  }) => persist(await authApi.signup(input)),
+);
+export const setupPin = createAsyncThunk(
+  'auth/setupPin',
+  async (pin: string) => {
+    const result = await authApi.setupPin(pin);
+    return result.user;
   },
 );
-
-export const googleLogin = createAsyncThunk(
-  'auth/google',
-  async (_, { rejectWithValue }) => {
-    try {
-      configureGoogleSignIn();
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const response = await GoogleSignin.signIn();
-      if (!isSuccessResponse(response)) return rejectWithValue(null);
-      if (!response.data.idToken)
-        return rejectWithValue('Google did not return an ID token.');
-      return persist(await authApi.google(response.data.idToken));
-    } catch (error) {
-      return rejectWithValue(googleSignInError(error));
-    }
-  },
+export const changePin = createAsyncThunk(
+  'auth/changePin',
+  async (input: { currentPin: string; newPin: string }) =>
+    authApi.changePin(input),
 );
+export const requestPinReset = createAsyncThunk(
+  'auth/requestPinReset',
+  async () => authApi.requestPinReset(),
+);
+export const resetPin = createAsyncThunk(
+  'auth/resetPin',
+  async (input: { otp: string; newPin: string }) => authApi.resetPin(input),
+);
+export const googleLogin = createAsyncThunk('auth/google', async () => {
+  return persist(await authApi.google(await googleIdToken()));
+});
 export const logout = createAsyncThunk('auth/logout', async () => {
   await authApi.logout().catch(() => undefined);
-  setAccessToken(null);
-  await sessionStorage.clear().catch(() => undefined);
-});
-
-export const logoutAll = createAsyncThunk('auth/logoutAll', async () => {
-  await authApi.logoutAll();
   setAccessToken(null);
   await sessionStorage.clear().catch(() => undefined);
 });
@@ -167,16 +124,14 @@ const slice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    sessionExpired: (state, action: PayloadAction<string | undefined>) => {
+      state.status = state.user ? 'expired' : 'unauthenticated';
+      state.submitting = false;
+      state.error =
+        action.payload ?? 'Your session expired. Please sign in again.';
+    },
     clearAuthError: state => {
       state.error = null;
-    },
-    sessionExpired: state => {
-      state.status = 'unauthenticated';
-      state.user = null;
-      state.error = 'Your session expired. Please sign in again.';
-    },
-    updateCurrentUser: (state, action: { payload: AuthUser }) => {
-      state.user = action.payload;
     },
   },
   extraReducers: builder => {
@@ -191,33 +146,32 @@ const slice = createSlice({
     };
     const rejected = (
       state: AuthState,
-      action: { error: { message?: string }; payload?: unknown },
+      action: { error: { message?: string } },
     ) => {
       state.submitting = false;
-      state.status = 'unauthenticated';
-      state.user = null;
-      state.error =
-        action.payload === null
-          ? null
-          : typeof action.payload === 'string'
-            ? action.payload
-            : action.error.message ?? 'Authentication failed.';
+      if (state.status !== 'expired') {
+        state.status = 'unauthenticated';
+        state.user = null;
+      }
+      state.error = action.error.message ?? 'Authentication failed.';
     };
     builder
+      .addCase(restoreSession.pending, state => {
+        state.status = 'restoring';
+        state.error = null;
+      })
       .addCase(restoreSession.fulfilled, (state, action) => {
         state.status = 'authenticated';
         state.user = action.payload;
-      })
-      .addCase(restoreSession.pending, state => {
-        if (state.status === 'restoreFailed') state.status = 'restoring';
+        state.error = null;
       })
       .addCase(restoreSession.rejected, (state, action) => {
-        if (action.payload === 'anonymous') {
-          state.user = null;
-          state.status = 'unauthenticated';
-        } else if (state.status === 'restoring') {
-          state.status = 'restoreFailed';
-        }
+        state.status = action.payload?.retryable
+          ? 'restoreFailed'
+          : 'unauthenticated';
+        state.user = null;
+        state.error =
+          action.payload?.message ?? 'Unable to restore your session.';
       })
       .addCase(login.pending, pending)
       .addCase(login.fulfilled, fulfilled)
@@ -225,31 +179,48 @@ const slice = createSlice({
       .addCase(loginWithPin.pending, pending)
       .addCase(loginWithPin.fulfilled, fulfilled)
       .addCase(loginWithPin.rejected, rejected)
-      .addCase(signup.pending, pending)
-      .addCase(signup.fulfilled, fulfilled)
-      .addCase(signup.rejected, rejected)
       .addCase(requestSignupOtp.pending, pending)
       .addCase(requestSignupOtp.fulfilled, state => {
         state.submitting = false;
+        state.error = null;
       })
       .addCase(requestSignupOtp.rejected, (state, action) => {
         state.submitting = false;
         state.error = action.error.message ?? 'Unable to send signup code.';
       })
-      .addCase(requestPasswordReset.pending, state => {
-        state.submitting = true;
-        state.error = null;
-      })
-      .addCase(requestPasswordReset.fulfilled, state => {
+      .addCase(signup.pending, pending)
+      .addCase(signup.fulfilled, fulfilled)
+      .addCase(signup.rejected, rejected)
+      .addCase(setupPin.pending, pending)
+      .addCase(setupPin.fulfilled, fulfilled)
+      .addCase(setupPin.rejected, (state, action) => {
         state.submitting = false;
-        state.error = null;
+        state.error = action.error.message ?? 'Unable to create PIN.';
       })
-      .addCase(requestPasswordReset.rejected, (state, action) => {
+      .addCase(changePin.pending, pending)
+      .addCase(changePin.fulfilled, state => {
+        state.submitting = false;
+      })
+      .addCase(changePin.rejected, (state, action) => {
+        state.submitting = false;
+        state.error = action.error.message ?? 'Unable to update PIN.';
+      })
+      .addCase(requestPinReset.pending, pending)
+      .addCase(requestPinReset.fulfilled, state => {
+        state.submitting = false;
+      })
+      .addCase(requestPinReset.rejected, (state, action) => {
         state.submitting = false;
         state.error =
-          typeof action.payload === 'string'
-            ? action.payload
-            : 'Unable to request a reset.';
+          action.error.message ?? 'Unable to send verification code.';
+      })
+      .addCase(resetPin.pending, pending)
+      .addCase(resetPin.fulfilled, state => {
+        state.submitting = false;
+      })
+      .addCase(resetPin.rejected, (state, action) => {
+        state.submitting = false;
+        state.error = action.error.message ?? 'Unable to reset PIN.';
       })
       .addCase(googleLogin.pending, pending)
       .addCase(googleLogin.fulfilled, fulfilled)
@@ -260,19 +231,8 @@ const slice = createSlice({
         state.user = null;
         state.submitting = false;
         state.error = null;
-      })
-      .addCase(logoutAll.pending, pending)
-      .addCase(logoutAll.fulfilled, state => {
-        state.status = 'unauthenticated';
-        state.user = null;
-        state.submitting = false;
-        state.error = null;
-      })
-      .addCase(logoutAll.rejected, (state, action) => {
-        state.submitting = false;
-        state.error = action.error.message ?? 'Unable to sign out everywhere.';
       });
   },
 });
-export const { clearAuthError, sessionExpired, updateCurrentUser } = slice.actions;
+export const { clearAuthError, sessionExpired } = slice.actions;
 export const authReducer = slice.reducer;

@@ -1,27 +1,32 @@
 import React, { useEffect } from 'react';
+import { View } from 'react-native';
+import styled from 'styled-components/native';
+import { SessionGuard } from '../../security/SessionGuard';
+import { NetworkBanner } from '../../network/NetworkBanner';
+import { startConnectivity } from '../../network/connectivity';
+const Root = styled(View)({ flex: 1 });
 import { Provider } from 'react-redux';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { store } from '../store/store';
 import { AppThemeProvider } from '../../design/theme/ThemeProvider';
-import { initializeDatabase } from '../../database';
-import { setSessionExpiredHandler } from '../../api/client';
-import { restoreSession, sessionExpired } from '../../features/auth/authSlice';
-import { restoreOnboarding } from '../../features/onboarding/onboardingSlice';
+
+import { restoreSession } from '../../features/auth/authSlice';
 export function AppProviders({ children }: React.PropsWithChildren) {
+  useEffect(() => startConnectivity(), []);
   useEffect(() => {
-    setSessionExpiredHandler(() => store.dispatch(sessionExpired()));
-    store.dispatch(restoreOnboarding());
-    // Session restore must not depend on local storage becoming ready.
-    initializeDatabase().catch(error =>
-      console.warn('Local database initialization failed', error),
-    );
+    // The API-backed screens do not need SQLite before session restoration.
+    // Local repositories initialize their database lazily on first use.
     store.dispatch(restoreSession());
-    return () => setSessionExpiredHandler(null);
   }, []);
   return (
     <Provider store={store}>
       <SafeAreaProvider>
-        <AppThemeProvider>{children}</AppThemeProvider>
+        <AppThemeProvider>
+          <Root>
+            <NetworkBanner />
+            <SessionGuard>{children}</SessionGuard>
+          </Root>
+        </AppThemeProvider>
       </SafeAreaProvider>
     </Provider>
   );

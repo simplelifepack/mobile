@@ -1,14 +1,10 @@
+import { publicDocumentLabels } from './public-document-labels';
 import { request } from './client';
 import type {
   PackageListResponse,
   PackageSearchResponse,
   PackageSummary,
-  RequirementAssignmentSource,
-  CustomPackPayload,
-  CustomPackDraftResponse,
-  CustomPackageGenerationJobResponse,
 } from './types';
-import { publicDocumentLabels } from './publicDocumentLabels';
 
 export type PackageQuery = {
   category?: string;
@@ -22,7 +18,11 @@ function queryString(query: PackageQuery) {
     ...query,
     limit: query.limit ?? 20,
     page: query.page ?? 1,
-    sort: 'category',
+    sort: query.search
+      ? 'relevance'
+      : query.category === 'My packs'
+        ? 'newest'
+        : 'category',
   })
     .filter(([, value]) => value !== undefined && value !== '')
     .map(
@@ -33,80 +33,25 @@ function queryString(query: PackageQuery) {
 }
 
 export const packagesApi = {
-  list: (query: PackageQuery = {}) =>
+  list: (query: PackageQuery = {}, force = false, signal?: AbortSignal) =>
     request<PackageListResponse>(`/api/packages?${queryString(query)}`, {
       requiresAuth: true,
+      cacheMs: force ? 0 : 60000,
+      signal,
     }),
-  get: (slug: string) =>
+  get: (slug: string, force = false, signal?: AbortSignal) =>
     request<PackageSummary>(`/api/packages/${encodeURIComponent(slug)}`, {
       requiresAuth: true,
-    }),
-  createCustom: (payload: CustomPackPayload) =>
-    request<{ package: PackageSummary }>('/api/packages/custom', {
-      method: 'POST',
-      body: payload,
-      requiresAuth: true,
-    }),
-  draftCustom: (packageType: string, documentLabels: string[]) =>
-    request<CustomPackDraftResponse>('/api/packages/custom/draft', {
-      method: 'POST',
-      body: { packageType, documentLabels: publicDocumentLabels(documentLabels) },
-      requiresAuth: true,
-    }),
-  createCustomGenerationJob: (packageType: string, documentLabels: string[]) =>
-    request<CustomPackageGenerationJobResponse>('/api/packages/custom/generation-jobs', {
-      method: 'POST',
-      body: { packageType, documentLabels: publicDocumentLabels(documentLabels) },
-      requiresAuth: true,
-    }),
-  getCustomGenerationJob: (jobId: string) =>
-    request<CustomPackageGenerationJobResponse>(
-      `/api/packages/custom/generation-jobs/${encodeURIComponent(jobId)}`,
-      { requiresAuth: true },
-    ),
-  updateCustom: (slug: string, payload: CustomPackPayload) =>
-    request<{ package: PackageSummary }>(
-      `/api/packages/${encodeURIComponent(slug)}/custom`,
-      { method: 'PATCH', body: payload, requiresAuth: true },
-    ),
-  deleteCustom: (slug: string) =>
-    request<void>(`/api/packages/${encodeURIComponent(slug)}/custom`, {
-      method: 'DELETE',
-      requiresAuth: true,
+      cacheMs: force ? 0 : 60000,
+      signal,
     }),
   searchOrGenerate: (packageType: string, documentLabels: string[]) =>
     request<PackageSearchResponse>('/api/packages/search-or-generate', {
       method: 'POST',
-      body: { packageType, documentLabels: publicDocumentLabels(documentLabels) },
-      requiresAuth: true,
-    }),
-  refresh: (slug: string) =>
-    request<{
-      package: PackageSummary;
-      changed: boolean;
-      message: string;
-      refreshed?: boolean;
-    }>(`/api/packages/${encodeURIComponent(slug)}/refresh`, {
-      method: 'POST',
-      requiresAuth: true,
-    }),
-  assignRequirementDocument: (
-    slug: string,
-    requirementId: string,
-    documentId: string,
-    assignmentSource: Exclude<RequirementAssignmentSource, 'AUTO'>,
-  ) =>
-    request<{ package: PackageSummary }>(
-      `/api/packages/${encodeURIComponent(slug)}/requirements/${encodeURIComponent(requirementId)}/assignment`,
-      {
-        method: 'POST',
-        body: { documentId, assignmentSource },
-        requiresAuth: true,
+      body: {
+        packageType,
+        documentLabels: publicDocumentLabels(documentLabels),
       },
-    ),
-  clearRequirementDocument: (slug: string, requirementId: string) =>
-    request<{ package: PackageSummary }>(
-      `/api/packages/${encodeURIComponent(slug)}/requirements/${encodeURIComponent(requirementId)}/assignment`,
-      { method: 'DELETE', requiresAuth: true },
-    ),
+      requiresAuth: true,
+    }),
 };

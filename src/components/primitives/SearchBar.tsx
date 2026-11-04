@@ -6,16 +6,17 @@ import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { Row } from './Row';
 const Field = styled.TextInput(({ theme }) => ({
   flex: 1,
-  color: theme.colors.text.primary,
+  color: theme.colors.textPrimary,
   ...theme.typography.body,
+  lineHeight: `${theme.typography.body.lineHeight}px`,
 }));
 const Container = styled.View(({ theme }) => ({
   height: theme.sizes.input,
   paddingHorizontal: theme.spacing.md,
-  borderRadius: theme.radius.control,
-  backgroundColor: theme.colors.surface.default,
+  borderRadius: theme.radius.lg,
+  backgroundColor: theme.colors.surface,
   borderWidth: 1,
-  borderColor: theme.colors.border.default,
+  borderColor: theme.colors.controlBorder,
   justifyContent: 'center',
 }));
 export function SearchBar(props: TextInputProps) {
@@ -23,10 +24,10 @@ export function SearchBar(props: TextInputProps) {
   return (
     <Container>
       <Row align="center" gap="sm">
-        <Search size={theme.sizes.icon.sm} color={theme.colors.text.tertiary} />
+        <Search size={theme.sizes.icon.sm} color={theme.colors.textMuted} />
         <Field
           placeholder="Search"
-          placeholderTextColor={theme.colors.text.tertiary}
+          placeholderTextColor={theme.colors.textMuted}
           {...props}
         />
       </Row>

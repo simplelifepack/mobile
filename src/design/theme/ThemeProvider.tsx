@@ -2,10 +2,11 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
-import { useColorScheme } from 'react-native';
+import { Appearance, useColorScheme } from 'react-native';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components/native';
 import { darkTheme } from './dark';
 import { lightTheme } from './light';
@@ -20,11 +21,14 @@ const ThemeModeContext = createContext<ThemeContextValue | null>(null);
 export function AppThemeProvider({ children }: React.PropsWithChildren) {
   const systemScheme = useColorScheme();
   const [mode, setMode] = useState<ThemeMode>('system');
+  useEffect(() => {
+    Appearance.setColorScheme(mode === 'system' ? 'auto' : mode);
+  }, [mode]);
   const resolvedMode = mode === 'system' ? (systemScheme ?? 'light') : mode;
   const theme = resolvedMode === 'dark' ? darkTheme : lightTheme;
   const toggleTheme = useCallback(
-    () => setMode(current => (current === 'dark' ? 'light' : 'dark')),
-    [],
+    () => setMode(resolvedMode === 'dark' ? 'light' : 'dark'),
+    [resolvedMode],
   );
   const value = useMemo(
     () => ({ mode, theme, setMode, toggleTheme }),

@@ -1,8 +1,8 @@
 import UIKit
+import GoogleSignIn
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
-import GoogleSignIn
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -11,13 +11,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
 
+  func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    GIDSignIn.sharedInstance.handle(url) || RCTLinkingManager.application(app, open: url, options: options)
+  }
+
+  func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+    RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
+  }
+
   func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     let delegate = ReactNativeDelegate()
     let factory = RCTReactNativeFactory(delegate: delegate)
-    delegate.dependencyProvider = RCTAppDependencyProvider()
+    delegate.dependencyProvider = ReadinessDependencyProvider()
 
     reactNativeDelegate = delegate
     reactNativeFactory = factory
@@ -32,13 +40,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     return true
   }
+}
 
-  func application(
-    _ app: UIApplication,
-    open url: URL,
-    options: [UIApplication.OpenURLOptionsKey : Any] = [:]
-  ) -> Bool {
-    GIDSignIn.sharedInstance.handle(url)
+private class ReadinessDependencyProvider: RCTAppDependencyProvider {
+  override func unstableModulesRequiringMainQueueSetup() -> [String] {
+    let modules = super.unstableModulesRequiringMainQueueSetup()
+    // RN 0.87 lists this test module even when its prebuilt framework omits it.
+    guard NSClassFromString("RCTSampleTurboModule") == nil else { return modules }
+    return modules.filter { $0 != "SampleTurboModule" }
   }
 }
 

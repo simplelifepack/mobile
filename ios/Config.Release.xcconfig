@@ -1,2 +1,2 @@
-#include? "tmp.xcconfig"
 #include "Pods/Target Support Files/Pods-ReadinessMobile/Pods-ReadinessMobile.release.xcconfig"
+#include? "Google.Release.generated.xcconfig"

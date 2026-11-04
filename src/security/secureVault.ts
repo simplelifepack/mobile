@@ -31,7 +31,7 @@ export const secureVault = {
       service: SERVICES.encryptionKey,
       accessControl:
         Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET_OR_DEVICE_PASSCODE,
-      authenticationPrompt: { title: 'Unlock Readiness' },
+      authenticationPrompt: { title: 'Unlock Readines' },
     });
   },
 };

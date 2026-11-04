@@ -1,20 +1,18 @@
-// Design System 1.0 elevation: raised = y1/blur2, overlay = y8/blur24. Shadow base is the ink colour.
-const ink = '#17141F';
-
-export const shadows = {
+import { lightColorTokens, darkColorTokens } from './colorTokens';
+// Styled native components parse CSS declarations. Keep object-valued native
+// shadowOffset out of these inputs; boxShadow expands it correctly. Elevation
+// is a unitless string so the CSS parser does not append "px".
+const makeShadows = (colors: Record<string, string>) => ({
   none: {},
   card: {
-    shadowColor: ink,
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    boxShadow: `0px 4px 12px ${colors['shadow-soft']}`,
+    elevation: '2',
   },
   floating: {
-    shadowColor: ink,
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    boxShadow: `0px 8px 18px ${colors['shadow-strong']}`,
+    elevation: '5',
   },
-} as const;
+} satisfies Record<'none' | 'card' | 'floating', { boxShadow?: string; elevation?: string }>);
+
+export const shadows = makeShadows(lightColorTokens);
+export const darkShadows = makeShadows(darkColorTokens);

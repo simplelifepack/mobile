@@ -1,6 +1,7 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+project.ext.envConfigFiles = [debug: '.env', release: '.env.production']
 apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
 
 /**
@@ -42,7 +43,7 @@ react {
     //
     //   A list of extra flags to pass to the 'bundle' commands.
     //   See https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle
-    // extraPackagerArgs = []
+    extraPackagerArgs = ['--max-workers', '2']
 
     /* Hermes Commands */
     //   The hermes compiler command to run. By default it is 'hermesc'
@@ -109,6 +110,8 @@ android {
 }
 
 dependencies {
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
@@ -116,5 +119,14 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+// A release must never silently fall back to the Mac-only development server.
+tasks.matching { it.name == 'generateReleaseBuildConfig' }.configureEach {
+    doFirst {
+        if (!project.env.get('READINESS_API_URL', '').startsWith('https://')) {
+            throw new GradleException('Set READINESS_API_URL to the HTTPS production API in .env.production before building a release.')
+        }
     }
 }

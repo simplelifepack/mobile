@@ -1,34 +1,40 @@
 # Backend integration map
 
-The mobile app uses the same backend origin and authenticated JSON client as the
-web app. `src/api/client.ts` attaches the access token, keeps refresh tokens in
-the backend's HttpOnly cookie, retries authenticated requests after refresh, and
-surfaces backend error codes and request IDs.
+The mobile app uses the same backend contract as the web app. `READINESS_API_URL`
+is the only API origin; access tokens are sent as Bearer tokens and refresh tokens
+remain in the backend's HttpOnly cookie.
 
-## Connected in mobile
+| Mobile operation     | Backend request                         | Body or query                                               | Mobile owner              |
+| -------------------- | --------------------------------------- | ----------------------------------------------------------- | ------------------------- |
+| Sign up              | `POST /auth/signup`                     | `{ name, email, password }`                                 | `src/api/auth.api.ts`     |
+| Log in               | `POST /auth/login`                      | `{ email, password }`                                       | `src/api/auth.api.ts`     |
+| Google sign-in       | `POST /auth/google`                     | `{ credential: <Google ID token> }`                         | `src/api/auth.api.ts`     |
+| Refresh session      | `POST /auth/refresh`                    | Refresh cookie                                              | `src/api/client.ts`       |
+| Current user         | `GET /auth/me`                          | Bearer token                                                | `src/api/auth.api.ts`     |
+| Forgot password      | `POST /auth/forgot-password`            | `{ email }`                                                 | `src/api/auth.api.ts`     |
+| Log out              | `POST /auth/logout`                     | Refresh cookie plus Bearer token                            | `src/api/auth.api.ts`     |
+| Bootstrap            | `GET /api/bootstrap`                    | Bearer token                                                | `src/api/user.api.ts`     |
+| Package list/search  | `GET /api/packages`                     | `category`, `search`, `page`, `limit`, and optional filters | `src/api/packages.api.ts` |
+| Package details      | `GET /api/packages/:slug`               | Slug path parameter                                         | `src/api/packages.api.ts` |
+| AI-assisted fallback | `POST /api/packages/search-or-generate` | `{ packageType, documentLabels }`                           | `src/api/packages.api.ts` |
 
-| Feature | Mobile API coverage | UI owner |
-| --- | --- | --- |
-| Authentication | Login, R-pin login, Google login, signup code request/verification, OTP password reset, mandatory R-pin setup, session restore, logout | `src/features/auth` |
-| Account | R-pin change/reset, sign out of all devices, usage summary, export job request/status/download, scheduled deletion | `src/features/profile/ProfileScreen.tsx` |
-| Preferences | Read/update appearance, home currency, and supported preferences | `src/features/profile/ProfileScreen.tsx` |
-| Documents | Authenticated metadata, encrypted PDF/image import with file/gallery/camera pickers, analysis and review/save, PDF/image/text preview, per-page preview, Drive original-file links, single delete, bulk delete | `src/features/documents/DocumentsScreen.tsx` |
-| Packages | List/search, details, AI-generated packs, owner-scoped manual custom packs, requirement assignment/clear | `src/features/readiness/ReadinessScreen.tsx` |
-| Health | Members, reminders, encrypted record upload (file/gallery/camera) with AI or manual type and profile matching, records, measurements, tracked metrics, timeline, medications | `src/features/health/HealthScreen.tsx` |
-| Trust and family | Members, invitations, permissions, revoke/leave, PIN and resend actions | `src/features/trust` |
-| Wealth | Records, dynamic forms, and handoff summary/send | `src/features/wealth/WealthScreen.tsx` |
-| Global search | `/api/search` grouped results from the Home search button | `src/features/home/GlobalSearchModal.tsx` |
-| Gmail, Drive and DigiLocker | Connect, status, scan, review/import, disconnect; DigiLocker session, selection, consented import and progress polling in `src/features/integrations/digilocker` | `src/features/profile/IntegrationsScreen.tsx` |
+`src/api/client.ts` centralizes URL construction, JSON parsing, backend error
+messages, authorization, one-time refresh/retry, in-flight GET deduplication, and
+safe development logging. `src/services/api.ts` owns RTK Query caching and package
+pagination. Readiness is calculated locally from bootstrap document metadata and
+package requirements in `src/features/readiness/calculatePackReadiness.ts`.
 
-## Remaining platform work
 
-- Encrypted document import now selects a PDF or image, encrypts it on-device
-  with AES-256-GCM and an RSA-OAEP-SHA256-wrapped key, then analyzes and saves
-  only the encrypted upload. AI analysis requires per-import consent. Camera
-  capture currently imports a single image, not a multi-page scanner. Decrypting
-  downloads and page-management APIs are not wired. Previewed file bytes are
-  stored temporarily in the app cache and removed when the preview closes or
-  changes.
-- Web Push subscription endpoints are not wired to mobile. Native push tokens
-  are not interchangeable with Web Push subscriptions and need a native push
-  provider/integration.
+## Feature parity expansion (26 October 2026)
+
+`src/api/mobile.api.ts`, `health.api.ts`, `documents.api.ts` and `preferences.api.ts`
+port the current web contracts. Bootstrap loads `/api/bootstrap` and `/documents`
+separately because the bootstrap endpoint returns only a count. Native download
+operations stream authenticated responses to private cache; uploads send the same
+hybrid encryption envelope as web. See [the parity report](WEB_MOBILE_PARITY.md)
+and [local verification](qa/verification.md) for coverage and remaining work.
+
+Local QA API (run from the backend repository):
+`node --import tsx scripts/qa/serve-mobile-parity.ts`.
+The launcher validates the existing localhost development database, disables
+outbound email, and listens only on `127.0.0.1`. It does not migrate or reseed data.

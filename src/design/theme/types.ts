@@ -1,12 +1,35 @@
-import type { ThemeColors } from '../tokens/colors';
+import type { DashboardColors } from '../tokens/dashboard';
 import { radius } from '../tokens/radius';
 import { shadows } from '../tokens/shadows';
 import { sizes } from '../tokens/sizes';
 import { spacing } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 export type ThemeMode = 'system' | 'light' | 'dark';
+export type ThemeColors = {
+  background: string;
+  surface: string;
+  surfaceElevated: string;
+  textPrimary: string;
+  textInteractive: string;
+  textDisabled: string;
+  textSecondary: string;
+  textMuted: string;
+  border: string;
+  controlBorder: string;
+  primarySoft: string;
+  readiness: string;
+  brandAccent: string;
+  primary: string;
+  primaryPressed: string;
+  onPrimary: string;
+  success: string;
+  warning: string;
+  danger: string;
+  overlay: string;
+};
 export type AppTheme = {
   isDark: boolean;
+  dashboard: DashboardColors;
   colors: ThemeColors;
   spacing: typeof spacing;
   radius: typeof radius;
@@ -14,4 +37,3 @@ export type AppTheme = {
   sizes: typeof sizes;
   shadows: typeof shadows;
 };
-export type { ThemeColors };

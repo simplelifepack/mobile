@@ -1,155 +1,109 @@
 import React from 'react';
-import { Platform, StyleSheet } from 'react-native';
-import {
-  BottomTabBarHeightCallbackContext,
-  type BottomTabBarProps,
-} from '@react-navigation/bottom-tabs';
-import {
-  HeartPulse,
-  LayoutGrid,
-  Plane,
-  Wallet,
-  FolderOpen,
-} from 'lucide-react-native';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { Home, Files, Archive, Heart, PiggyBank } from 'lucide-react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from '@react-native-community/blur';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-import { darkTheme } from '../../design/theme/dark';
-import { shadows } from '../../design/tokens/shadows';
-import { sizes } from '../../design/tokens/sizes';
-import { fontWeights } from '../../design/tokens/typography';
 import { AppText } from '../primitives/AppText';
-
-const PILL_HEIGHT = 64;
-
-const Wrapper = styled.View<{ $bottomInset: number }>(
-  ({ theme, $bottomInset }) => ({
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: PILL_HEIGHT + theme.spacing.md + $bottomInset,
-    paddingBottom: $bottomInset,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  }),
-);
-
-const Pill = styled.View(({ theme }) => ({
+import type { MainTabParamList } from '../../app/navigation/types';
+const Bar = styled.View<{ $bottom: number }>(({ theme, $bottom }) => ({
+  position: 'absolute',
+  left: theme.spacing.md,
+  right: theme.spacing.md,
+  bottom: Math.max($bottom, theme.spacing.sm),
+  minHeight: theme.sizes.tabBar,
+  paddingHorizontal: theme.spacing.sm,
   flexDirection: 'row',
-  alignItems: 'center',
-  width: '94%',
-  maxWidth: 400,
-  height: PILL_HEIGHT,
-  paddingHorizontal: theme.spacing.xs,
-  overflow: 'hidden',
-  borderRadius: theme.radius.pill,
   borderWidth: 1,
-  borderColor: theme.colors.overlay.glassBorder,
-  borderTopColor: theme.colors.overlay.glassEdge,
-  backgroundColor: theme.colors.overlay.glass,
-  ...shadows.floating,
-}));
-
-const Item = styled.Pressable({
-  flex: 1,
-  minHeight: sizes.minimumTouchTarget,
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 2,
-});
-
-const IconPill = styled.View(({ theme }) => ({
-  width: 56,
-  height: 30,
+  borderColor: theme.colors.controlBorder,
   borderRadius: theme.radius.pill,
+  backgroundColor: theme.colors.surfaceElevated,
+  ...theme.shadows.floating,
+}));
+const Item = styled.Pressable(({ theme }) => ({
+  flex: 1,
+  minHeight: theme.sizes.minimumTouchTarget,
   alignItems: 'center',
   justifyContent: 'center',
+  gap: theme.spacing.xs,
+  marginVertical: theme.spacing.xs,
 }));
-
-const icons = {
-  Home: LayoutGrid,
-  Documents: FolderOpen,
-  Packages: Plane,
-  Health: HeartPulse,
-  Wealth: Wallet,
-};
-
-export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const insets = useSafeAreaInsets();
+const IconPill = styled.View<{ $focused: boolean }>(({ theme, $focused }) => ({
+  width: 44,
+  height: 30,
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: theme.radius.tabIndicator,
+  overflow: 'hidden',
+  backgroundColor: $focused ? theme.colors.primary : 'transparent',
+}));
+const Label = styled(AppText).attrs({
+  variant: 'navigation',
+  numberOfLines: 1,
+})<{ $focused: boolean }>(({ theme, $focused }) => ({
+  color: $focused ? theme.colors.primary : theme.colors.textMuted,
+}));
+const destinations = [
+  { name: 'Home', label: 'Home', Icon: Home },
+  { name: 'Documents', label: 'Documents', Icon: Files },
+  { name: 'Readiness', label: 'Packages', Icon: Archive },
+  { name: 'Health', label: 'Health', Icon: Heart },
+  { name: 'Wealth', label: 'Wealth', Icon: PiggyBank },
+] as const;
+export function PrimaryNavigation({
+  active,
+  onSelect,
+}: {
+  active?: string;
+  onSelect: (name: keyof MainTabParamList) => void;
+}) {
+  const { bottom } = useSafeAreaInsets();
   const { theme } = useAppTheme();
-  const reportHeight = React.useContext(BottomTabBarHeightCallbackContext);
   return (
-    <Wrapper
-      $bottomInset={insets.bottom}
-      onLayout={e => reportHeight?.(e.nativeEvent.layout.height)}
-    >
-      <Pill>
-        <BlurView
-          style={StyleSheet.absoluteFill}
-          blurType={
-            theme === darkTheme
-              ? Platform.OS === 'ios'
-                ? 'ultraThinMaterialDark'
-                : 'dark'
-              : Platform.OS === 'ios'
-                ? 'ultraThinMaterialLight'
-                : 'light'
-          }
-          blurAmount={10}
-          reducedTransparencyFallbackColor={theme.colors.surface.default}
-        />
-        {state.routes.map((route, index) => {
-          const focused = state.index === index;
-          const Icon = icons[route.name as keyof typeof icons] ?? LayoutGrid;
-          const label = String(
-            descriptors[route.key].options.title ?? route.name,
-          );
-          const tint = focused
-            ? theme.colors.icon.interactive
-            : theme.colors.icon.secondary;
-          return (
-            <Item
-              key={route.key}
-              accessibilityRole="button"
-              accessibilityLabel={label}
-              accessibilityState={focused ? { selected: true } : {}}
-              onPress={() => {
-                const event = navigation.emit({
-                  type: 'tabPress',
-                  target: route.key,
-                  canPreventDefault: true,
-                });
-                if (!focused && !event.defaultPrevented)
-                  navigation.navigate(route.name, route.params);
-              }}
-            >
-              <IconPill
-                style={
-                  focused && { backgroundColor: theme.colors.surface.brandTint }
+    <Bar $bottom={bottom}>
+      {destinations.map(({ name, label, Icon }) => {
+        const focused = active === name;
+        return (
+          <Item
+            key={name}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ selected: focused }}
+            onPress={() => onSelect(name)}
+          >
+            <IconPill $focused={focused}>
+              <Icon
+                size={19}
+                color={
+                  focused ? theme.colors.onPrimary : theme.colors.textMuted
                 }
-              >
-                <Icon size={theme.sizes.icon.lg} color={tint} />
-              </IconPill>
-              <AppText
-                variant="caption"
-                numberOfLines={1}
-                style={{
-                  color: focused
-                    ? theme.colors.text.interactive
-                    : theme.colors.text.secondary,
-                  fontWeight: focused
-                    ? fontWeights.semibold
-                    : fontWeights.medium,
-                }}
-              >
-                {label}
-              </AppText>
-            </Item>
-          );
-        })}
-      </Pill>
-    </Wrapper>
+              />
+            </IconPill>
+            <Label $focused={focused}>{label}</Label>
+          </Item>
+        );
+      })}
+    </Bar>
+  );
+}
+export function TabBar({ state, navigation }: BottomTabBarProps) {
+  return (
+    <PrimaryNavigation
+      active={state.routes[state.index].name}
+      onSelect={name => {
+        const route = state.routes.find(item => item.name === name);
+        if (!route) return;
+        const event = navigation.emit({
+          type: 'tabPress',
+          target: route.key,
+          canPreventDefault: true,
+        });
+        if (
+          state.routes[state.index].key !== route.key &&
+          !event.defaultPrevented
+        )
+          navigation.navigate(route.name, route.params);
+      }}
+    />
   );
 }

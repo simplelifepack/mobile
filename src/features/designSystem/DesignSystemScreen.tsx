@@ -1,6 +1,6 @@
+import { PageContent } from '../../components/primitives/Layout';
 import React, { useState } from 'react';
 import { Screen } from '../../components/primitives/Screen';
-import { Stack } from '../../components/primitives/Stack';
 import { AppText } from '../../components/primitives/AppText';
 import { Button } from '../../components/primitives/Button';
 import { Card } from '../../components/primitives/Card';
@@ -15,7 +15,7 @@ export function DesignSystemScreen() {
   const { mode, setMode } = useAppTheme();
   return (
     <Screen scroll>
-      <Stack gap="lg" style={{ paddingVertical: 24 }}>
+      <PageContent>
         {(
           ['display', 'title', 'heading', 'body', 'label', 'caption'] as const
         ).map(variant => (
@@ -42,7 +42,7 @@ export function DesignSystemScreen() {
         <AppModal visible={modal} onClose={() => setModal(false)}>
           <AppText variant="heading">Reusable modal</AppText>
         </AppModal>
-      </Stack>
+      </PageContent>
     </Screen>
   );
 }

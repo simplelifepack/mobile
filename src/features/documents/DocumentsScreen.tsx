@@ -1,1136 +1,848 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ProfileAvatarButton } from '../../components/navigation/ProfileAvatarButton';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../../app/navigation/types';
-import { ApiError } from '../../api/client';
-import styled from 'styled-components/native';
-import {
-  Alert,
-  Image,
-  Linking,
-  Modal,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
-import {
-  Check,
-  Camera,
-  ChevronLeft,
-  ChevronRight,
-  FileCheck2,
-  FileText,
-  Fingerprint,
-  HeartPulse,
-  House,
-  Image as ImageIcon,
-  Landmark,
-  Plane,
-  Search,
-  SlidersHorizontal,
-  Trash2,
-  Upload,
-  X,
-} from 'lucide-react-native';
-
-import Pdf from 'react-native-pdf';
-import { FileSystem } from 'react-native-file-access';
-import type {
-  DocumentAnalysisResponse,
-  DocumentRecord,
-  DocumentSavePayload,
-} from '../../api/types';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { DocumentDetailSheet } from './DocumentDetailSheet';
-import { DocumentFilterSheet } from './DocumentFilterSheet';
-import {
-  activeFilterCount,
-  applyDocumentFilters,
-  defaultFilters,
-  documentCategory,
-  documentPersonName,
-  matchesQuickFilter,
-  quickFilterLabels,
-  type DocumentFilters,
-} from './documentFilters';
-import { useDocumentsQuery } from '../../services/api';
-import { documentsApi } from '../../api/documents.api';
-import { healthApi, isMemberResolution } from '../../api/health.api';
-import { healthRecordType, isHealthDocument } from './documentDetails';
-import {
-  analyzeSelectedDocument,
-  captureDocumentPhoto,
-  startConsentedImport,
-  selectDocumentFile,
-  selectImageFromGallery,
-  type SelectedDocument,
-} from './documentImport';
-import { ActionSheet } from '../../components/primitives/ActionSheet';
-import { AppText } from '../../components/primitives/AppText';
-import { Button } from '../../components/primitives/Button';
-import { FloatingActionButton } from '../../components/primitives/FloatingActionButton';
-import { Card } from '../../components/primitives/Card';
+import { usePendingFiles } from '../shared/usePendingFiles';
 import { Row } from '../../components/primitives/Row';
-import { sizes } from '../../design/tokens/sizes';
-import { ListGroup, ListRow, SelectionMark } from '../../components/primitives/ListRow';
-import { Screen } from '../../components/primitives/Screen';
-import { Stack } from '../../components/primitives/Stack';
 import { EmptyState } from '../../components/feedback/EmptyState';
-import { ErrorState } from '../../components/feedback/ErrorState';
-import { LoadingState } from '../../components/feedback/LoadingState';
+import { DocumentDetailSheet } from './DocumentDetailSheet';
+import { Calendar, ChevronDown } from 'lucide-react-native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-import { fontSize, lineHeight } from '../../design/tokens/typography';
-import { radius } from '../../design/tokens/radius';
-import { formatDate } from '../../utils/format';
-
-const PreviewModalSurface = styled.View(({ theme }) => ({
-  flex: 1,
-  paddingTop: 12,
-  paddingHorizontal: 12,
-  paddingBottom: 12,
-  backgroundColor: theme.colors.surface.canvas,
-}));
-const PreviewSafeArea = styled(SafeAreaView)(() => ({
-  flex: 1,
-}));
-
-function categoryFor(type: string) {
-  const value = type.toLowerCase();
-
-  if (
-    /(passport|visa|license|identity|aadhaar|aadhar|pan|birth|citizenship)/.test(
-      value,
-    )
-  ) {
-    return 'Identity';
-  }
-
-  if (
-    /(health|medical|insurance|prescription|hospital|vaccination)/.test(
-      value,
-    )
-  ) {
-    return 'Health';
-  }
-
-  if (
-    /(bank|tax|income|loan|investment|nps|mutual|salary|payslip|itr)/.test(
-      value,
-    )
-  ) {
-    return 'Finance';
-  }
-
-  if (
-    /(property|home|lease|utility|rent|mortgage)/.test(value)
-  ) {
-    return 'Home';
-  }
-
-  if (
-    /(travel|flight|hotel|passport|visa)/.test(value)
-  ) {
-    return 'Travel';
-  }
-
-  return 'Other';
-}
-
-function getDocumentTitle(document: {
-  displayName?: string | null;
-  title?: string | null;
-  originalName: string;
+import * as DocumentDetailStyles from './documentDetail.styles';
+import { DocumentContext } from './DocumentContext';
+import { FileText, Image as ImageIcon, Camera } from 'lucide-react-native';
+import { DocumentList, DocumentRow, DocumentToolbar } from './DocumentList';
+import {
+  filterDocuments,
+  matchesQuickFilter,
+  documentPerson,
+  documentSource,
+  sourceNames,
+  type QuickFilter,
+  type DocumentSort,
+} from './documentFilters';
+import { useAppSelector } from '../../app/store/hooks';
+import { DetailSheet } from '../shared/DetailSheet';
+import { DocumentImports } from './DocumentImports';
+import React from 'react';
+import { useRefreshOnFocus } from '../shared/useRefreshOnFocus';
+import { Toggle as Switch } from '../../components/primitives/Toggle';
+import { useAppDispatch } from '../../app/store/hooks';
+import { api } from '../../services/api';
+import { documentsApi } from '../../api/documents.api';
+import type {
+  AnalyzeDocumentResponse,
+  DocumentRecord,
+} from '../../api/web.types';
+import {
+  pickDocuments,
+  pickGallery,
+  openDownload,
+  previewDownload,
+  cleanupPickedDocuments,
+} from '../../native/documentFiles';
+import { DocumentScanner } from '../../native/documentScanner';
+import { handleScannerPermissionError } from '../../native/documentScanner/permission';
+import {
+  FeaturePage,
+  Stack,
+  AppText,
+  Button,
+  Choice,
+  Details,
+  ResourceStatus,
+  useResource,
+  useAction,
+  confirmAction,
+} from '../shared/FeatureUI';
+import { ActiveForm, type FormConfig } from '../shared/RecordForm';
+const categories = [
+  'Identity',
+  'Employment',
+  'Finance',
+  'Insurance',
+  'Property',
+  'Medical',
+  'Education',
+  'Travel',
+  'Vehicle',
+  'Legal',
+  'Photo',
+  'Other',
+];
+export function DocumentsScreen({
+  route,
+}: {
+  route?: {
+    params?: {
+      documentId?: string;
+      digilockerSession?: string;
+      digilockerError?: string;
+      scan?: boolean;
+      uploadRequest?: number;
+    };
+  };
 }) {
-  return (
-    document.displayName ??
-    document.title ??
-    document.originalName
-  );
-}
-
-function getDocumentIcon(type: string) {
-  const category = categoryFor(type);
-
-  switch (category) {
-    case 'Identity':
-      return Fingerprint;
-
-    case 'Health':
-      return HeartPulse;
-
-    case 'Finance':
-      return Landmark;
-
-    case 'Home':
-      return House;
-
-    case 'Travel':
-      return Plane;
-
-    default:
-      return FileText;
-  }
-}
-
-function formatDocumentDate(createdAt?: string, expiryDate?: string | null) {
-  return formatDate(expiryDate || createdAt);
-}
-
-export function DocumentsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { theme } = useAppTheme();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const searchInputRef = useRef<React.ElementRef<typeof TextInput>>(null);
-  const previewRequestId = useRef(0);
-
-  const {
-    data,
-    error,
-    isLoading,
-    refetch,
-  } = useDocumentsQuery();
-
-  const [query, setQuery] = useState('');
-  const [filters, setFilters] = useState<DocumentFilters>(defaultFilters);
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectionMode, setSelectionMode] =
-    useState(false);
-  const [selectedIds, setSelectedIds] = useState<
-    string[]
-  >([]);
-  const [detailId, setDetailId] =
-    useState<string>();
-  const [previewDocument, setPreviewDocument] =
-    useState<DocumentRecord>();
-  const [previewPath, setPreviewPath] = useState<string>();
-  const [previewMimeType, setPreviewMimeType] = useState('');
-  const [previewPageIndex, setPreviewPageIndex] = useState(0);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [showAddDocumentsSheet, setShowAddDocumentsSheet] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [previewError, setPreviewError] = useState<string>();
-  const previewPages = previewDocument?.pages ?? [];
-
-  useEffect(() => {
-    if (!previewPath) return;
-    const path = previewPath;
-    return () => {
-      FileSystem.unlink(path).catch(() => undefined);
-    };
-  }, [previewPath]);
-
-  const toggleSearch = () => {
-    if (searchOpen) setQuery('');
-    setSearchOpen(open => !open);
+  const [moreDetails, setMoreDetails] = React.useState(false);
+  const library = useResource(documentsApi.list);
+  useRefreshOnFocus(library.revalidate);
+  const dispatch = useAppDispatch();
+  const refresh = () => {
+    library.refresh();
+    dispatch(api.util.invalidateTags(['Bootstrap', 'Packages']));
   };
-
-  const openPreview = async (
-    document: DocumentRecord,
-    pageIndex = 0,
-  ) => {
-    if (document.source === 'GOOGLE_DRIVE' && document.openUrl) {
-      try {
-        await Linking.openURL(document.openUrl);
-      } catch (openError) {
-        Alert.alert(
-          'Unable to open Google Drive file',
-          openError instanceof Error ? openError.message : 'Please try again.',
-        );
-      }
-      return;
-    }
-
-    const page = document.pages?.[pageIndex];
-    const mimeType = page?.mimeType ?? document.mimeType ?? '';
-    const requestId = ++previewRequestId.current;
-    setPreviewDocument(document);
-    setPreviewPageIndex(pageIndex);
-    setPreviewMimeType(mimeType);
-    setPreviewError(undefined);
-    setPreviewLoading(true);
-    setPreviewPath(undefined);
-
-    try {
-      const file = page
-        ? await documentsApi.previewPage(document.id, page.id, mimeType)
-        : await documentsApi.preview(document.id, mimeType);
-      if (previewRequestId.current !== requestId) {
-        FileSystem.unlink(file.path).catch(() => undefined);
-        return;
-      }
-      setPreviewPath(file.path);
-    } catch (previewLoadError) {
-      if (previewRequestId.current === requestId) {
-        setPreviewError(
-          previewLoadError instanceof Error
-            ? previewLoadError.message
-            : 'Preview unavailable.',
-        );
-      }
-    } finally {
-      if (previewRequestId.current === requestId) setPreviewLoading(false);
-    }
-  };
-
-  const closePreview = () => {
-    previewRequestId.current += 1;
-    setPreviewDocument(undefined);
-    setPreviewPath(undefined);
-    setPreviewError(undefined);
-  };
-
-  const saveAnalyzedDocument = async (
-    analysis: DocumentAnalysisResponse,
-    aiAnalysisConsent: boolean,
-  ) => {
-    const document = analysis.document;
-    const tempFileIds = analysis.files.map(file => file.tempFileId);
-    if (!tempFileIds.length) {
-      Alert.alert('Unable to save document', 'The upload did not return a temporary file.');
-      return;
-    }
-
-    const payload: DocumentSavePayload = {
-      tempFileIds,
-      originalName: analysis.files[0]?.originalName,
-      mimeType: analysis.files[0]?.mimeType,
-      size: analysis.files.reduce((sum, file) => sum + file.size, 0),
-      title: document.title?.trim() || analysis.files[0]?.originalName || 'Document',
-      category: document.category?.trim() || 'Other',
-      documentType: document.documentType?.trim() || 'Unknown',
-      confidence: Number(document.confidence) || 0,
-      fields: document.fields ?? {},
-      reviewFields: document.reviewFields ?? [],
-      rawExtractedText: document.rawExtractedText ?? document.extractedText ?? '',
-      warnings: analysis.warnings ?? [],
-      evidence: document.evidence ?? [],
-      analysisSource: aiAnalysisConsent ? 'ai' : 'rules',
-      duplicateAction: 'fail',
-      owner: 'self',
-      userConfirmedUnknown: (document.documentType ?? 'unknown').toLowerCase() === 'unknown',
-      verified: false,
-    };
-
-    setIsImporting(true);
-    try {
-      const result = await documentsApi.save(payload);
-      setShowAddDocumentsSheet(false);
-      setDetailId(undefined);
-      setQuery('');
-      setFilters(defaultFilters);
-      const addedToHealth = await syncToHealth(result.document);
-      await refetch();
-      Alert.alert(
-        'Document added',
-        `${result.document.displayName ?? result.document.title ?? document.title} is now in your vault${
-          addedToHealth ? ' and your Health records' : ''
-        }.`,
+  const action = useAction(refresh);
+  const pending = usePendingFiles();
+  const [visibleCount, setVisibleCount] = React.useState(20);
+  const currentUserName = useAppSelector(state => state.auth.user?.name);
+  const [quick, setQuick] = React.useState<QuickFilter>('all');
+  const [source, setSource] = React.useState('all');
+  const [sort, setSort] = React.useState<DocumentSort>('newest');
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [category, setCategory] = React.useState('All');
+  const [owner, setOwner] = React.useState('All');
+  const [selecting, setSelecting] = React.useState(false);
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  const [detail, setDetail] = React.useState<DocumentRecord>();
+  React.useEffect(() => setMoreDetails(false), [detail?.id]);
+  const [form, setForm] = React.useState<FormConfig | null>(null);
+  const [importRequest, setImportRequest] = React.useState(0);
+  const [aiConsent, setAiConsent] = React.useState(false);
+  const [review, setReview] = React.useState<AnalyzeDocumentResponse>();
+  React.useEffect(() => {
+    if (route?.params?.documentId)
+      void action.run(
+        async () =>
+          setDetail(await documentsApi.getById(route.params!.documentId!)),
+        '',
       );
-    } catch (saveError) {
-      if (__DEV__) console.warn('[save payload]', JSON.stringify(payload).slice(0, 1500));
-      Alert.alert(
-        'Unable to save document',
-        saveError instanceof Error
-          ? `${saveError.message}${
-              saveError instanceof ApiError
-                ? ` [${saveError.status}${saveError.code ? ` ${saveError.code}` : ''}${saveError.errorId ? ` ${saveError.errorId}` : ''}]`
-                : ''
-            }`
-          : 'Please try again.',
-      );
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  // Best effort: the document is already saved, so a Health failure must not fail the upload.
-  const syncToHealth = async (saved: DocumentRecord) => {
-    if (!isHealthDocument(saved)) return false;
-    try {
-      const record = await healthApi.createRecord({ documentId: saved.id, type: healthRecordType(saved) });
-      return !isMemberResolution(record);
-    } catch {
-      return false;
-    }
-  };
-
-  const processSelectedDocument = async (
-    selected: SelectedDocument,
-    aiAnalysisConsent: boolean,
-  ) => {
-    setIsImporting(true);
-    try {
-      const analysis = await analyzeSelectedDocument(selected, aiAnalysisConsent);
-      const document = analysis.document;
-      const details = [
-        `Title: ${document.title}`,
-        `Category: ${document.category}`,
-        `Type: ${document.documentType}`,
-        `Confidence: ${Math.round(document.confidence)}%`,
-      ].join('\n');
-
-      Alert.alert('Review document', details, [
-        { text: 'Cancel', style: 'cancel' },
+  }, [route?.params?.documentId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const reviewForm = (analysis: AnalyzeDocumentResponse) => {
+    const extracted = analysis.document;
+    setReview(analysis);
+    setForm({
+      title: 'Review document before saving',
+      fields: [
         {
-          text: 'Save document',
-          onPress: () => saveAnalyzedDocument(analysis, aiAnalysisConsent),
+          key: 'title',
+          label: 'Document title',
+          required: true,
+          initial: extracted.title,
         },
-      ]);
-    } catch (importError) {
-      console.warn('[documents] import failed', importError);
-      Alert.alert(
-        'Unable to add document',
-        importError instanceof Error ? importError.message : 'Please try again.',
-      );
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  const startDocumentImport = (
-    select: () => Promise<SelectedDocument | undefined>,
-  ) => {
-    setShowAddDocumentsSheet(false);
-    return startConsentedImport({ select, onConsent: processSelectedDocument });
-  };
-
-  const documents = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const searched = (data ?? []).filter(document => {
-      if (!normalizedQuery) return true;
-      return [
-        getDocumentTitle(document),
-        document.originalName,
-        document.documentType,
-        documentCategory(document),
-        documentPersonName(document),
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedQuery);
+        {
+          key: 'category',
+          label: 'Category',
+          options: categories,
+          initial: extracted.category,
+        },
+        {
+          key: 'documentType',
+          label: 'Document type',
+          required: true,
+          initial: extracted.documentType,
+        },
+        {
+          key: 'owner',
+          label: 'Owner',
+          options: [
+            'self',
+            'spouse',
+            'father',
+            'mother',
+            'child',
+            'other',
+            'unknown',
+          ],
+          initial: extracted.ownership === 'mine' ? 'self' : 'unknown',
+        },
+        {
+          key: 'expiry',
+          label: 'Expiry date',
+          type: 'date',
+          initial: extracted.expiryDate ?? '',
+        },
+        {
+          key: 'duplicateAction',
+          label: 'If duplicate found',
+          options: ['fail', 'replace', 'keep_both'],
+          initial: 'fail',
+        },
+        ...Object.entries(extracted.fields ?? {}).map(([key, value]) => ({
+          key: `field:${key}`,
+          label: key,
+          initial: value,
+        })),
+      ],
+      submit: async values => {
+        const first = analysis.files[0];
+        if (!first) throw new Error('No reviewed files available.');
+        const fields = Object.fromEntries(
+          Object.entries(values)
+            .filter(([key]) => key.startsWith('field:'))
+            .map(([key, value]) => [key.slice(6), value]),
+        );
+        await documentsApi.save({
+          tempFileIds: analysis.files.map(file => file.tempFileId),
+          originalName: first.originalName,
+          mimeType: first.mimeType,
+          size: analysis.files.reduce((sum, file) => sum + file.size, 0),
+          title: values.title,
+          category: values.category,
+          documentType: values.documentType,
+          confidence: 100,
+          fields,
+          reviewFields: [],
+          rawExtractedText: extracted.extractedText ?? '',
+          evidence: [],
+          analysisSource: 'manual',
+          owner: values.owner as 'self',
+          expiry: values.expiry || null,
+          userConfirmedUnknown: true,
+          duplicateAction: values.duplicateAction as 'fail',
+          verified: true,
+        });
+        setReview(undefined);
+        refresh();
+      },
     });
-    return applyDocumentFilters(searched, filters);
-  }, [data, filters, query]);
-
-  const filterOptions = useMemo(() => {
-    const all = data ?? [];
-    return {
-      categories: [...new Set(all.map(documentCategory))].sort(),
-      people: [...new Set(all.map(documentPersonName))].sort(),
-      quickCounts: Object.fromEntries(
-        quickFilterLabels.map(([key]) => [key, all.filter(document => matchesQuickFilter(document, key)).length]),
-      ),
-    };
-  }, [data]);
-
-  const toggleSelection = (id: string) => {
-    setSelectedIds(current =>
-      current.includes(id)
-        ? current.filter(item => item !== id)
-        : [...current, id],
-    );
   };
-
-  const toggleSelectionMode = () => {
-    setSelectionMode(current => !current);
-    setSelectedIds([]);
-    setDetailId(undefined);
-  };
-
-  const detailDocument = documents.find(document => document.id === detailId);
-
-  const deleteSelectedDocuments = async () => {
-    if (!selectedIds.length) return;
-    try {
-      if (selectedIds.length === 1) {
-        await documentsApi.delete(selectedIds[0]);
-      } else {
-        await documentsApi.bulkDelete(selectedIds);
+  const upload = async (scan = false, gallery = false) => {
+    let files;
+    if (scan) {
+      let result;
+      try {
+        result = await DocumentScanner.scan({
+          pageLimit: 50,
+          allowGalleryImport: true,
+        });
+      } catch (error) {
+        if (handleScannerPermissionError(error)) return;
+        throw error;
       }
-      setSelectedIds([]);
-      setSelectionMode(false);
-      await refetch();
-    } catch (deleteError) {
-      Alert.alert(
-        'Unable to delete documents',
-        deleteError instanceof Error ? deleteError.message : 'Please try again.',
+      const { FileSystem } = await import('react-native-file-access');
+      files = await Promise.all(
+        result.pages.map(async page => ({
+          uri: page.localPath.startsWith('file://')
+            ? page.localPath
+            : `file://${page.localPath}`,
+          name: `scan-${page.pageNumber}.jpg`,
+          type: page.mimeType,
+          size: Number(
+            (await FileSystem.stat(page.localPath.replace('file://', ''))).size,
+          ),
+        })),
       );
+    } else files = gallery ? await pickGallery() : await pickDocuments();
+    if (files.length) {
+      try {
+        reviewForm(await documentsApi.analyze(files, aiConsent));
+      } finally {
+        await cleanupPickedDocuments(files);
+      }
     }
   };
-
-  if (isLoading) {
-    return (
-      <Screen>
-        <LoadingState fill label="Loading your document vault…" />
-      </Screen>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <Screen>
-        <Stack gap="md">
-          <ErrorState message="Unable to load your documents." />
-
-          <Button
-            title="Retry"
-            onPress={refetch}
-          />
-        </Stack>
-      </Screen>
-    );
-  }
-
+  React.useEffect(() => {
+    if (route?.params?.uploadRequest) void action.run(() => upload(), '');
+    // A new request starts the existing encrypted upload flow once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route?.params?.uploadRequest]);
+  const shown = React.useMemo(
+    () =>
+      filterDocuments(library.data ?? [], {
+        query: '',
+        category: category.toLowerCase(),
+        person: owner === 'All' ? 'all' : owner,
+        source,
+        sort,
+        quick,
+        currentUserName,
+      }),
+    [library.data, category, owner, source, sort, quick, currentUserName],
+  );
+  const quickFilters = [
+    ['all', 'All'],
+    ['soon', 'Expiring soon'],
+    ['expired', 'Expired'],
+    ['week', 'Added this week'],
+    ['proofs', 'Proofs'],
+  ] as const;
   return (
-    <Screen
-      scroll
-      padded={false}
-      onRefresh={refetch}
-      contentContainerStyle={styles.screenContent}
-      floatingAction={
-        showAddDocumentsSheet || isImporting ? null : (
-          <FloatingActionButton
-            accessibilityLabel="Add document"
-            onPress={() => setShowAddDocumentsSheet(true)}
-          />
-        )
-      }
+    <FeaturePage
+      title="Documents"
+      subtitle="Your important files, together"
+      loading={library.loading && !library.data}
+      refreshing={library.loading}
+      actionTitle="Add documents"
+      actions={[
+        {
+          label: 'Upload files',
+          Icon: FileText,
+          disabled: action.busy,
+          onPress: () => {
+            void action.run(() => upload(), '');
+          },
+        },
+        {
+          label: 'From gallery',
+          Icon: ImageIcon,
+          disabled: action.busy,
+          onPress: () => {
+            void action.run(() => upload(false, true), '');
+          },
+        },
+        {
+          label: 'Scan with camera',
+          Icon: Camera,
+          disabled: action.busy,
+          onPress: () => {
+            void action.run(() => upload(true), '');
+          },
+        },
+      ]}
     >
-      <Stack
-        gap="sm"
-        style={[
-          styles.container,
-          {
-            paddingTop: theme.spacing.sm,
-            paddingBottom: theme.spacing.xl,
-          },
-        ]}
-      >
-        <Stack gap="sm">
-        {/* Header */}
-        <Row
-          align="center"
-          justify="space-between"
-        >
-          <AppText
-            variant="title"
-          >
-            Documents
-          </AppText>
-
-          <Row
-            gap="sm"
-            align="center"
-          >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Search documents"
-              onPress={toggleSearch}
-              style={({ pressed }) => [
-                styles.headerButton,
-                {
-                  backgroundColor:
-                    theme.colors.surface.default,
-                  borderColor: theme.colors.border.default,
-                },
-                pressed && styles.pressed,
-              ]}
-            >
-              <Search
-                size={sizes.icon.lg}
-                color={theme.colors.text.secondary}
-                strokeWidth={2}
-              />
-            </Pressable>
-
-            <ProfileAvatarButton />
-          </Row>
-        </Row>
-
-        {/* Search (opened from the header icon) */}
-        {searchOpen ? (
-          <View
-            style={[
-              styles.searchContainer,
-              {
-                backgroundColor: theme.colors.surface.default,
-                borderColor: theme.colors.border.default,
-              },
-            ]}
-          >
-            <Search size={sizes.icon.lg} color={theme.colors.text.secondary} strokeWidth={2} />
-            <SearchInput
-              inputRef={searchInputRef}
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search documents..."
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close search"
-              hitSlop={10}
-              onPress={toggleSearch}
-            >
-              <X size={sizes.icon.md} color={theme.colors.text.secondary} />
-            </Pressable>
-          </View>
-        ) : null}
-
-        {/* DigiLocker import */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Import issued documents from DigiLocker"
-          onPress={() => navigation.navigate('DigiLocker')}
-          style={({ pressed }) => [
-            styles.digiLockerButton,
-            {
-              backgroundColor: theme.colors.action.primary.default,
-              borderColor: theme.colors.action.primary.default,
-            },
-            pressed && styles.pressed,
-          ]}
-        >
-          <FileCheck2 size={sizes.icon.md} color={theme.colors.text.onBrand} strokeWidth={2} />
-          <AppText variant="labelMd" color="onPrimary">
-            Import from DigiLocker
-          </AppText>
-        </Pressable>
-
-        {/* Count / Select / Filter */}
-        <Row
-          align="center"
-          justify="space-between"
-          style={styles.toolbar}
-        >
-          <AppText
-            variant="body"
-            color="secondary"
-            style={styles.documentCount}
-          >
-            {documents.length} documents
-          </AppText>
-
-          <Row
-            gap="md"
-            align="center"
-          >
-            <Pressable
-              hitSlop={10}
-              onPress={toggleSelectionMode}
-              style={({ pressed }) => [
-                styles.toolbarButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              {selectionMode ? (
-                <Check
-                  size={sizes.icon.md}
-                  color={theme.colors.text.interactive}
-                  strokeWidth={2.5}
-                />
-              ) : null}
-
-              <AppText
-                variant="label"
-                style={[
-                  styles.toolbarText,
-                  {
-                    color: theme.colors.text.interactive,
-                  },
-                ]}
-              >
-                {selectionMode ? 'Done' : 'Select'}
-              </AppText>
-            </Pressable>
-
-            <Pressable
-              hitSlop={10}
-              onPress={() =>
-                setShowFilters(true)
-              }
-              style={({ pressed }) => [
-                styles.toolbarButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              <SlidersHorizontal
-                size={sizes.icon.md}
-                color={theme.colors.text.interactive}
-                strokeWidth={2}
-              />
-
-              <AppText
-                variant="label"
-                style={[
-                  styles.toolbarText,
-                  {
-                    color: theme.colors.text.interactive,
-                  },
-                ]}
-              >
-                {activeFilterCount(filters) ? `Filter · ${activeFilterCount(filters)}` : 'Filter'}
-              </AppText>
-            </Pressable>
-            {selectionMode && selectedIds.length ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Delete ${selectedIds.length} selected documents`}
-                onPress={() => Alert.alert(
-                  'Delete selected documents?',
-                  `${selectedIds.length} document${selectedIds.length === 1 ? '' : 's'} will be permanently removed.`,
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Delete',
-                      style: 'destructive',
-                      onPress: () => { deleteSelectedDocuments(); },
-                    },
-                  ],
-                )}
-                hitSlop={10}
-                style={styles.toolbarButton}
-              >
-                <Trash2 size={sizes.icon.md} color={theme.colors.status.danger.text} />
-                <AppText variant="label" color="danger">
-                  Delete ({selectedIds.length})
-                </AppText>
-              </Pressable>
-            ) : null}
-          </Row>
-        </Row>
-
-
-        </Stack>
-
-        {/* Document list */}
-        {documents.length > 0 ? (
-          <Stack gap="sm">
-            {documents.map(document => {
-              const isSelected = selectedIds.includes(document.id);
-              const Icon = getDocumentIcon(document.documentType);
-              const dateText = formatDocumentDate(document.createdAt, document.expiryDate);
-
-              return (
-                <ListGroup key={document.id}>
-                <ListRow
-                  icon={<Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
-                  title={getDocumentTitle(document)}
-                  compact
-                  subtitle={`${document.documentType}${dateText ? ` · ${dateText}` : ''}`}
-                  selected={selectionMode ? isSelected : undefined}
-                  trailing={selectionMode ? <SelectionMark checked={isSelected} /> : undefined}
-                  onPress={() => {
-                    if (selectionMode) toggleSelection(document.id);
-                    else setDetailId(document.id);
-                  }}
-                />
-                </ListGroup>
-              );
-            })}
-          </Stack>
-        ) : (
-          <Card style={styles.emptyCard}>
-            <EmptyState
-              title="No matching documents"
-              message="Try a different search term or filter."
-            />
-          </Card>
-        )}
-      </Stack>
-
-      <ActionSheet
-        visible={showAddDocumentsSheet}
-        title="Add documents"
-        onClose={() => setShowAddDocumentsSheet(false)}
-        options={[
-          { label: 'Upload files', icon: Upload, accessibilityLabel: 'Upload a PDF or image file', onPress: () => startDocumentImport(selectDocumentFile) },
-          { label: 'From gallery', icon: ImageIcon, accessibilityLabel: 'Choose an image from the gallery', onPress: () => startDocumentImport(selectImageFromGallery) },
-          { label: 'Scan with camera', icon: Camera, accessibilityLabel: 'Capture a document with the camera', onPress: () => startDocumentImport(captureDocumentPhoto) },
-          {
-            label: 'Import from DigiLocker',
-            icon: FileCheck2,
-            accessibilityLabel: 'Import issued documents from DigiLocker',
-            onPress: () => {
-              setShowAddDocumentsSheet(false);
-              navigation.navigate('DigiLocker');
-            },
-          },
-        ]}
-      />
-
-      <DocumentFilterSheet
-        visible={showFilters}
-        filters={filters}
-        quickCounts={filterOptions.quickCounts}
-        categories={filterOptions.categories}
-        people={filterOptions.people}
-        onChange={setFilters}
-        onClose={() => setShowFilters(false)}
-      />
-
-      {detailDocument ? (
-        <DocumentDetailSheet
-          document={detailDocument}
-          title={getDocumentTitle(detailDocument)}
-          category={categoryFor(detailDocument.documentType)}
-          icon={getDocumentIcon(detailDocument.documentType)}
-          onClose={() => setDetailId(undefined)}
-          onPreview={() => {
-            setDetailId(undefined);
-            openPreview(detailDocument);
+      <ResourceStatus resource={library} showLoading={false} />
+      {pending.files.length ? (
+        <Button
+          title="Retry selected files"
+          disabled={action.busy}
+          onPress={() => {
+            void action.run(
+              () =>
+                pending.run(pending.files, async items => {
+                  reviewForm(await documentsApi.analyze(items));
+                }),
+              '',
+            );
           }}
-          onChanged={refetch}
         />
       ) : null}
-
-      <Modal visible={isImporting} transparent animationType="fade">
-        <View style={[styles.importProgressRoot, { backgroundColor: theme.colors.overlay.scrim }]}>
-          <View
-            style={[
-              styles.importProgressCard,
-              {
-                backgroundColor: theme.colors.surface.default,
-                borderColor: theme.colors.border.default,
-              },
-            ]}
-          >
-            <LoadingState label="Encrypting and preparing document…" />
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={Boolean(previewDocument)}
-        animationType="slide"
-        onRequestClose={closePreview}
-      >
-        <PreviewSafeArea>
-          <PreviewModalSurface>
-            {previewDocument ? (
-              <>
-                <View style={styles.previewHeader}>
-                  {previewPages.length > 1 ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Previous document page"
-                      disabled={previewPageIndex === 0}
-                      onPress={() => openPreview(previewDocument, previewPageIndex - 1)}
-                      style={styles.previewPageButton}
-                    >
-                      <ChevronLeft
-                        size={sizes.icon.md}
-                        color={
-                          previewPageIndex === 0
-                            ? theme.colors.text.tertiary
-                            : theme.colors.text.primary
-                        }
-                      />
-                    </Pressable>
-                  ) : null}
-                  <AppText
-                    variant="heading"
-                    numberOfLines={1}
-                    style={styles.previewTitle}
-                  >
-                    {getDocumentTitle(previewDocument)}
-                  </AppText>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Close document preview"
-                    onPress={closePreview}
-                    style={styles.previewClose}
-                  >
-                    <X size={sizes.icon.md} color={theme.colors.text.primary} />
-                  </Pressable>
-                </View>
-
-                <View style={styles.previewContent}>
-                  {previewLoading ? (
-                    <LoadingState label="Loading preview…" />
-                  ) : previewError ? (
-                    <ErrorState message={previewError} />
-                  ) : previewPath && previewMimeType === 'application/pdf' ? (
-                    <Pdf
-                      source={{
-                        uri: previewPath.startsWith('file://')
-                          ? previewPath
-                          : `file://${previewPath}`,
-                      }}
-                      style={styles.previewFile}
-                      onError={pdfError => setPreviewError(String(pdfError))}
-                    />
-                  ) : previewPath && previewMimeType.startsWith('image/') ? (
-                    <Image
-                      source={{
-                        uri: previewPath.startsWith('file://')
-                          ? previewPath
-                          : `file://${previewPath}`,
-                      }}
-                      style={styles.previewFile}
-                      resizeMode="contain"
-                      onError={() => setPreviewError('Unable to display this image.')}
-                    />
-                  ) : previewPath ? (
-                    <ErrorState message="Preview is unavailable for this file type." />
-                  ) : null}
-                </View>
-
-                {previewPages.length > 1 ? (
-                  <View style={styles.previewPaging}>
-                    <AppText variant="caption" color="secondary">
-                      Page {previewPageIndex + 1} of {previewPages.length}
-                    </AppText>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Next document page"
-                      disabled={previewPageIndex >= previewPages.length - 1}
-                      onPress={() => openPreview(previewDocument, previewPageIndex + 1)}
-                      style={styles.previewPageButton}
-                    >
-                      <ChevronRight
-                        size={sizes.icon.md}
-                        color={
-                          previewPageIndex >= previewPages.length - 1
-                            ? theme.colors.text.tertiary
-                            : theme.colors.text.primary
-                        }
-                      />
-                    </Pressable>
-                  </View>
-                ) : null}
-              </>
-            ) : null}
-          </PreviewModalSurface>
-        </PreviewSafeArea>
-      </Modal>
-    </Screen>
-  );
-}
-
-/**
- * Small TextInput wrapper.
- *
- * Keeping this here avoids changing your existing SearchBar
- * globally just to match the Documents screen.
- */
-function SearchInput({
-  inputRef,
-  value,
-  onChangeText,
-  placeholder,
-}: {
-  inputRef: React.RefObject<React.ElementRef<typeof TextInput> | null>;
-  value: string;
-  onChangeText: (value: string) => void;
-  placeholder: string;
-}) {
-  const { theme } = useAppTheme();
-
-  return (
-    <View style={styles.searchInputWrapper}>
-      <SearchTextInput
-        ref={inputRef}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        autoFocus
-        placeholderTextColor={
-          theme.colors.text.secondary
-        }
-        selectionColor={theme.colors.text.interactive}
+      <DocumentImports
+        hideTrigger
+        returnSession={route?.params?.digilockerSession}
+        returnError={route?.params?.digilockerError}
+        openRequest={importRequest}
+        onRefresh={refresh}
       />
-    </View>
+      <Button
+        title="Import from DigiLocker"
+        variant="secondary"
+        onPress={() => setImportRequest(value => value + 1)}
+      />
+      <DocumentToolbar
+        count={shown.length}
+        selecting={selecting}
+        selectedCount={selectedIds.length}
+        onSelect={() => {
+          setSelecting(value => !value);
+          setSelectedIds([]);
+        }}
+        onFilter={() => setFiltersOpen(true)}
+      />
+      {filtersOpen ? (
+        <DetailSheet
+          title="Filter and sort"
+          onClose={() => setFiltersOpen(false)}
+        >
+          <Choice
+            label="Quick filter"
+            value={quick}
+            options={quickFilters.map(([value, label]) => ({
+              value,
+              label: `${label} ${(library.data ?? []).filter(document => matchesQuickFilter(document, value)).length}`,
+            }))}
+            onChange={value => {
+              setQuick(value as QuickFilter);
+              setVisibleCount(20);
+            }}
+          />
+          <Choice
+            label="Category"
+            value={category}
+            options={['All', ...categories]}
+            onChange={setCategory}
+          />
+          <Choice
+            label="Person"
+            value={owner}
+            options={[
+              'All',
+              ...new Set(
+                (library.data ?? []).map(document =>
+                  documentPerson(document, currentUserName),
+                ),
+              ),
+            ]}
+            onChange={setOwner}
+          />
+          <Choice
+            label="Source"
+            value={source}
+            options={[
+              { label: 'All', value: 'all' },
+              ...new Set((library.data ?? []).map(documentSource)),
+            ].map(item =>
+              typeof item === 'string'
+                ? { label: sourceNames[item], value: item }
+                : item,
+            )}
+            onChange={setSource}
+          />
+          <Choice
+            label="Sort"
+            value={sort}
+            options={[
+              { label: 'Newest first', value: 'newest' },
+              { label: 'Oldest first', value: 'oldest' },
+              { label: 'Name A–Z', value: 'name-asc' },
+              { label: 'Name Z–A', value: 'name-desc' },
+            ]}
+            onChange={value => setSort(value as DocumentSort)}
+          />
+          <Row align="center" justify="space-between">
+            <AppText variant="caption" color="muted">
+              Allow AI to analyze uploads
+            </AppText>
+            <Switch
+              accessibilityLabel="Allow AI document analysis"
+              value={aiConsent}
+              onValueChange={setAiConsent}
+            />
+          </Row>
+
+          <Button title="Apply filters" onPress={() => setFiltersOpen(false)} />
+          <Button
+            title="Reset filters"
+            variant="ghost"
+            onPress={() => {
+              setCategory('All');
+              setOwner('All');
+              setSource('all');
+              setSort('newest');
+              setQuick('all');
+            }}
+          />
+        </DetailSheet>
+      ) : null}
+      {review ? (
+        <>
+          <AppText>
+            {review.warnings.map(warning => warning.message).join('\n')}
+          </AppText>
+          <Button
+            title="Continue upload review"
+            onPress={() => reviewForm(review)}
+          />
+        </>
+      ) : null}
+      {action.message ? <AppText>{action.message}</AppText> : null}
+      {selectedIds.length ? (
+        <>
+          <AppText>{selectedIds.length} selected</AppText>
+          <Button
+            title="Download selected"
+            disabled={action.busy}
+            onPress={() => {
+              void action.run(
+                async () =>
+                  openDownload(await documentsApi.bulkDownload(selectedIds)),
+                '',
+              );
+            }}
+          />
+          <Button
+            title="Assign selected"
+            disabled={action.busy}
+            variant="secondary"
+            onPress={() => {
+              void action.run(async () => {
+                const options = await documentsApi.assignmentOptions();
+                setForm({
+                  title: 'Assign documents',
+                  fields: [
+                    {
+                      key: 'assignee',
+                      label: 'Assign to',
+                      required: true,
+                      options: options.map(item => ({
+                        label: item.name,
+                        value: item.id,
+                      })),
+                    },
+                  ],
+                  submit: async values => {
+                    await documentsApi.bulkAssign(selectedIds, values.assignee);
+                    setSelectedIds([]);
+                    refresh();
+                  },
+                });
+              }, '');
+            }}
+          />
+          <Button
+            title="Delete selected"
+            disabled={action.busy}
+            variant="danger"
+            onPress={() =>
+              confirmAction('Delete selected documents?', () => {
+                void action.run(async () => {
+                  await documentsApi.bulkDelete(selectedIds);
+                  setSelectedIds([]);
+                  setDetail(undefined);
+                });
+              })
+            }
+          />
+          <Button
+            title="Clear selection"
+            variant="ghost"
+            onPress={() => setSelectedIds([])}
+          />
+        </>
+      ) : null}
+      {!library.loading && !library.error && shown.length === 0 ? (
+        <EmptyState
+          title={
+            library.data?.length
+              ? 'No documents match these filters'
+              : 'Your document archive is empty'
+          }
+          message={
+            library.data?.length
+              ? 'Your files are still in the archive. Reset the filters to see them.'
+              : 'No files have been added to this account yet. Add your first document to begin.'
+          }
+          actionLabel={
+            library.data?.length ? 'Reset filters' : 'Add a document'
+          }
+          onAction={() => {
+            if (library.data?.length) {
+              setQuick('all');
+              setCategory('All');
+              setOwner('All');
+              setSource('all');
+            } else {
+              void action.run(() => upload(), '');
+            }
+          }}
+        />
+      ) : null}
+      {shown.length ? (
+        <DocumentList>
+          {shown.slice(0, visibleCount).map((document, index, visible) => (
+            <DocumentRow
+              key={document.id}
+              document={document}
+              currentUserName={currentUserName}
+              selecting={selecting}
+              selected={selectedIds.includes(document.id)}
+              last={index === visible.length - 1}
+              disabled={action.busy}
+              onPress={() => {
+                if (selecting)
+                  setSelectedIds(ids =>
+                    ids.includes(document.id)
+                      ? ids.filter(id => id !== document.id)
+                      : [...ids, document.id],
+                  );
+                else {
+                  setDetail(document);
+                  void documentsApi
+                    .getById(document.id)
+                    .then(fresh =>
+                      setDetail(current =>
+                        current?.id === document.id ? fresh : current,
+                      ),
+                    )
+                    .catch(() => undefined);
+                }
+              }}
+            />
+          ))}
+        </DocumentList>
+      ) : null}
+      {(shown?.length ?? 0) > visibleCount ? (
+        <Button
+          title="Load more documents"
+          variant="secondary"
+          onPress={() => setVisibleCount(count => count + 20)}
+        />
+      ) : null}
+      {detail ? (
+        <DocumentDetailSheet
+          document={detail}
+          busy={action.busy}
+          feedback={action.message || undefined}
+          onClose={() => {
+            setDetail(undefined);
+            setMoreDetails(false);
+          }}
+          onPreview={() => {
+            void action.run(
+              async () =>
+                previewDownload(await documentsApi.preview(detail.id)),
+              '',
+            );
+          }}
+          onDelete={() =>
+            confirmAction('Delete document?', () => {
+              void action.run(async () => {
+                await documentsApi.delete(detail.id);
+                setDetail(undefined);
+              });
+            })
+          }
+        >
+          <DocumentContext
+            document={detail}
+            onChanged={document => {
+              setDetail(current =>
+                current?.id === document.id ? document : current,
+              );
+              refresh();
+            }}
+            onClose={() => setDetail(undefined)}
+            expiryControl={
+              <DocumentDetailStyles.Section>
+                <AppText variant="label">Expiry</AppText>
+                <DocumentDetailStyles.Control
+                  accessibilityRole="button"
+                  accessibilityLabel="Change document expiry"
+                  accessibilityValue={{
+                    text: detail.expiryDate?.slice(0, 10) || 'Not set',
+                  }}
+                  disabled={action.busy}
+                  onPress={() =>
+                    setForm({
+                      title: 'Expiry',
+                      fields: [
+                        {
+                          key: 'expiry',
+                          label: 'Expiry date',
+                          type: 'date',
+                          initial: detail.expiryDate?.slice(0, 10) || '',
+                        },
+                      ],
+                      submit: async values => {
+                        const result = await documentsApi.updateDetails(
+                          detail.id,
+                          { expiry: values.expiry || null },
+                        );
+                        setDetail(result.document);
+                        refresh();
+                      },
+                    })
+                  }
+                >
+                  <DocumentDetailStyles.Copy>
+                    <AppText color={detail.expiryDate ? 'primary' : 'muted'}>
+                      {detail.expiryDate
+                        ? detail.expiryDate
+                            .slice(0, 10)
+                            .split('-')
+                            .reverse()
+                            .join('/')
+                        : 'dd/mm/yyyy'}
+                    </AppText>
+                  </DocumentDetailStyles.Copy>
+                  <Calendar size={18} color={theme.colors.textSecondary} />
+                </DocumentDetailStyles.Control>
+              </DocumentDetailStyles.Section>
+            }
+          />
+          <DocumentDetailStyles.Section>
+            <AppText variant="label">Notes</AppText>
+            <AppText color="secondary">
+              {String(
+                (detail.fields as Record<string, unknown>)?.documentNotes ||
+                  (detail.fields as Record<string, unknown>)?.notes ||
+                  'No notes added.',
+              )}
+            </AppText>
+            <Button
+              title="Edit notes"
+              variant="ghost"
+              onPress={() =>
+                setForm({
+                  title: 'Notes',
+                  fields: [
+                    {
+                      key: 'notes',
+                      label: 'Notes',
+                      type: 'multiline',
+                      initial: String(
+                        (detail.fields as Record<string, unknown>)
+                          ?.documentNotes ||
+                          (detail.fields as Record<string, unknown>)?.notes ||
+                          '',
+                      ),
+                    },
+                  ],
+                  submit: async values => {
+                    const result = await documentsApi.updateDetails(detail.id, {
+                      notes: values.notes,
+                    });
+                    setDetail(result.document);
+                    refresh();
+                  },
+                })
+              }
+            />
+          </DocumentDetailStyles.Section>
+          <DocumentDetailStyles.More
+            accessibilityRole="button"
+            accessibilityState={{ expanded: moreDetails }}
+            onPress={() => setMoreDetails(!moreDetails)}
+          >
+            <AppText variant="label">Pages and extracted details</AppText>
+            <ChevronDown size={18} color={theme.colors.textMuted} />
+          </DocumentDetailStyles.More>
+          {moreDetails ? (
+            <Stack>
+              <Details value={detail.fields} />
+              <Button
+                title="Edit notes and expiry"
+                variant="secondary"
+                onPress={() =>
+                  setForm({
+                    title: 'Edit document',
+                    fields: [
+                      {
+                        key: 'notes',
+                        label: 'Notes',
+                        initial: String(
+                          (detail.fields as Record<string, unknown>)
+                            ?.documentNotes ??
+                            (detail.fields as Record<string, unknown>)?.notes ??
+                            '',
+                        ),
+                      },
+                      {
+                        key: 'expiry',
+                        label: 'Expiry date',
+                        type: 'date',
+                        initial: detail.expiryDate?.slice(0, 10) ?? '',
+                      },
+                    ],
+                    submit: async values => {
+                      const result = await documentsApi.updateDetails(
+                        detail.id,
+                        {
+                          notes: values.notes,
+                          expiry: values.expiry || null,
+                        },
+                      );
+                      setDetail(result.document);
+                      refresh();
+                    },
+                  })
+                }
+              />
+              <Button
+                title="Add pages"
+                variant="secondary"
+                disabled={action.busy}
+                onPress={() => {
+                  void action.run(async () => {
+                    const files = await pickDocuments();
+                    if (files.length) {
+                      const result = await documentsApi.addPageFiles(
+                        detail.id,
+                        files,
+                      );
+                      setDetail(result.document);
+                    }
+                  });
+                }}
+              />
+              {detail.pages?.map((page, index) => (
+                <Stack key={page.id}>
+                  <AppText>
+                    {index + 1}. {page.label || page.originalName}
+                  </AppText>
+                  <Button
+                    title="Open page"
+                    variant="secondary"
+                    disabled={action.busy}
+                    onPress={() => {
+                      void action.run(
+                        async () =>
+                          previewDownload(
+                            await documentsApi.downloadPage(detail.id, page.id),
+                          ),
+                        '',
+                      );
+                    }}
+                  />
+                  {index > 0 ? (
+                    <Button
+                      title="Move page up"
+                      variant="ghost"
+                      disabled={action.busy}
+                      onPress={() => {
+                        void action.run(async () => {
+                          const ids = detail.pages!.map(item => item.id);
+                          [ids[index - 1], ids[index]] = [
+                            ids[index],
+                            ids[index - 1],
+                          ];
+                          setDetail(
+                            (await documentsApi.reorderPages(detail.id, ids))
+                              .document,
+                          );
+                        });
+                      }}
+                    />
+                  ) : null}
+                  <Button
+                    title="Replace page"
+                    variant="secondary"
+                    disabled={action.busy}
+                    onPress={() => {
+                      void action.run(async () => {
+                        const files = await pickDocuments();
+                        if (!files.length) return;
+                        if (files.length !== 1)
+                          throw new Error('Select one replacement file.');
+                        const analysis = await documentsApi.analyze(files);
+                        if (!analysis.files[0])
+                          throw new Error(
+                            'Unable to prepare the replacement page.',
+                          );
+                        setDetail(
+                          (
+                            await documentsApi.replacePage(
+                              detail.id,
+                              page.id,
+                              analysis.files[0].tempFileId,
+                            )
+                          ).document,
+                        );
+                        refresh();
+                      }, '');
+                    }}
+                  />
+                  <Button
+                    title="Delete page"
+                    variant="danger"
+                    disabled={action.busy}
+                    onPress={() =>
+                      confirmAction('Delete page?', () => {
+                        void action.run(async () =>
+                          setDetail(
+                            (await documentsApi.deletePage(detail.id, page.id))
+                              .document,
+                          ),
+                        );
+                      })
+                    }
+                  />
+                </Stack>
+              ))}
+            </Stack>
+          ) : null}
+          <ActiveForm form={form} onClose={() => setForm(null)} />
+        </DocumentDetailSheet>
+      ) : null}
+      {!detail ? (
+        <ActiveForm form={form} onClose={() => setForm(null)} />
+      ) : null}
+    </FeaturePage>
   );
 }
-
-const SearchTextInput = TextInput;
-
-const styles = StyleSheet.create({
-  screenContent: {
-    paddingHorizontal: 0,
-  },
-
-  container: {
-    paddingHorizontal: 16,
-  },
-
-  /* Header */
-
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.overlay,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.overlay,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  pressed: {
-    opacity: 0.72,
-  },
-
-  /* Search */
-
-  searchContainer: {
-    height: 44,
-    borderRadius: radius.tile,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-
-  digiLockerButton: {
-    minHeight: 44,
-    borderRadius: radius.tile,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-
-  searchInputWrapper: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  /* React Native TextInput */
-
-  searchInput: {
-    flex: 1,
-  },
-
-  /* Toolbar */
-
-  toolbar: {
-    minHeight: 28,
-  },
-
-  documentCount: {
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
-  },
-
-  toolbarButton: {
-    minHeight: 28,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-
-  toolbarText: {
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
-  },
-
-  /* Filters */
-
-
-  /* Document list */
-
-
-
-
-
-
-
-
-
-
-  /* Empty */
-
-  emptyCard: {
-    padding: 16,
-  },
-
-  previewHeader: {
-    minHeight: 58,
-    gap: 12,
-    paddingBottom: 12,
-  },
-
-  previewTitle: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  previewClose: {
-    width: sizes.minimumTouchTarget,
-    height: sizes.minimumTouchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  previewContent: {
-    flex: 1,
-    minHeight: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  previewFile: {
-    flex: 1,
-    width: '100%',
-  },
-
-  previewTextScroll: {
-    width: '100%',
-    flex: 1,
-  },
-
-  previewPaging: {
-    minHeight: 44,
-    paddingTop: 6,
-  },
-
-  previewPageButton: {
-    width: 44,
-    height: sizes.minimumTouchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-
-  importProgressRoot: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-
-  importProgressCard: {
-    width: '100%',
-    maxWidth: 360,
-    minHeight: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderRadius: radius.surface,
-  },
-
-
-
-
-
-
-
-});

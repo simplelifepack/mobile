@@ -1,4 +1,3 @@
-ios/tmp.xcconfig
 # OSX
 #
 .DS_Store
@@ -77,3 +76,7 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Generated public OAuth build settings
+ios/Google.*.generated.xcconfig
+qa*

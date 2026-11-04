@@ -1,100 +1,43 @@
 import React from 'react';
-import {
-  RefreshControl,
-  StatusBar,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
-import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
+import { StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-import { layout } from '../../design/tokens/spacing';
 const Safe = styled(SafeAreaView)(({ theme }) => ({
   flex: 1,
-  backgroundColor: theme.colors.surface.canvas,
+  backgroundColor: theme.colors.background,
 }));
-const Content = styled.View<{ padded: boolean }>(({ padded }) => ({
+const Content = styled.View<{ padded: boolean }>(({ theme, padded }) => ({
   flex: 1,
-  width: '100%',
-  maxWidth: layout.contentWidth,
-  alignSelf: 'center',
-  paddingHorizontal: padded ? layout.gutter : 0,
+  paddingHorizontal: padded ? theme.spacing.md : 0,
 }));
-const Scroll = styled.ScrollView.attrs<{
-  contentContainerStyle?: StyleProp<ViewStyle>;
-}>(({ contentContainerStyle }) => ({
-  contentContainerStyle: [{ flexGrow: 1 }, contentContainerStyle],
-}))<{ padded: boolean }>(({ padded }) => ({
-  width: '100%',
-  maxWidth: layout.contentWidth,
-  alignSelf: 'center',
-  paddingHorizontal: padded ? layout.gutter : 0,
+const Scroll = styled.ScrollView.attrs({
+  contentContainerStyle: { flexGrow: 1 },
+  keyboardShouldPersistTaps: 'handled' as const,
+  keyboardDismissMode: 'interactive' as const,
+  automaticallyAdjustKeyboardInsets: true,
+})<{ padded: boolean }>(({ theme, padded }) => ({
+  paddingHorizontal: padded ? theme.spacing.md : 0,
 }));
 export function Screen({
   children,
-  floatingAction,
-  overlay,
   scroll = false,
   padded = true,
-  contentContainerStyle,
-  onRefresh,
+  bottomInset = true,
 }: React.PropsWithChildren<{
   scroll?: boolean;
   padded?: boolean;
-  floatingAction?: React.ReactNode;
-  // Rendered over the whole screen, outside the scroll view (e.g. a loading overlay).
-  overlay?: React.ReactNode;
-  contentContainerStyle?: StyleProp<ViewStyle>;
-  onRefresh?: () => Promise<unknown> | void;
+  bottomInset?: boolean;
 }>) {
   const { theme } = useAppTheme();
-  const [refreshing, setRefreshing] = React.useState(false);
-  const handleRefresh = React.useCallback(async () => {
-    if (!onRefresh) return;
-    setRefreshing(true);
-    try {
-      await onRefresh();
-    } catch {
-      // Screens surface their own load errors.
-    } finally {
-      setRefreshing(false);
-    }
-  }, [onRefresh]);
-  const tabInset = React.useContext(BottomTabBarHeightContext) ?? 0;
   return (
-    <Safe
-      edges={tabInset ? ['top', 'left', 'right'] : undefined}
-    >
+    <Safe edges={bottomInset ? ['top', 'bottom'] : ['top']}>
       <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} />
       {scroll ? (
-        <Scroll
-          padded={padded}
-          scrollIndicatorInsets={{ bottom: tabInset }}
-          refreshControl={
-            onRefresh ? (
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor={theme.colors.text.interactive}
-                colors={[theme.colors.text.interactive]}
-              />
-            ) : undefined
-          }
-          contentContainerStyle={[
-            contentContainerStyle,
-            { paddingBottom: tabInset + 16 },
-          ]}
-        >
-          {children}
-        </Scroll>
+        <Scroll padded={padded}>{children}</Scroll>
       ) : (
-        <Content padded={padded} style={{ paddingBottom: tabInset }}>
-          {children}
-        </Content>
+        <Content padded={padded}>{children}</Content>
       )}
-      {floatingAction}
-      {overlay}
     </Safe>
   );
 }

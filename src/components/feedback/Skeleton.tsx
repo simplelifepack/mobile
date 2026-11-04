@@ -1,8 +1,10 @@
 import styled from 'styled-components/native';
-export const Skeleton = styled.View<{ height?: number }>(
-  ({ theme, height = theme.sizes.input }) => ({
+export const Skeleton = styled.View<{ height?: number; $short?: boolean }>(
+  ({ theme, height = theme.sizes.input, $short }) => ({
     height,
-    borderRadius: theme.radius.control,
-    backgroundColor: theme.colors.surface.raised,
+    width: $short ? '45%' : '78%',
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.border,
+    opacity: 0.65,
   }),
 );

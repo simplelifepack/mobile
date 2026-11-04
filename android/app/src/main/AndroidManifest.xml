@@ -2,15 +2,18 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <queries><intent><action android:name="android.media.action.IMAGE_CAPTURE" /></intent></queries>
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
-      android:icon="@mipmap/ic_launcher"
-      android:roundIcon="@mipmap/ic_launcher_round"
+      android:icon="@drawable/readines_logo"
+      android:roundIcon="@drawable/readines_logo"
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:usesCleartextTraffic="${usesCleartextTraffic}"
       android:supportsRtl="true">
+      <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.readines.files" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/readines_file_paths" /></provider>
+      <activity android:name=".DocumentPreviewActivity" android:exported="false" />
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"
@@ -22,11 +25,26 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
-        <intent-filter>
+        <intent-filter><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.DEFAULT" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="readiness" /></intent-filter>
+        <intent-filter android:autoVerify="true">
           <action android:name="android.intent.action.VIEW" />
           <category android:name="android.intent.category.DEFAULT" />
           <category android:name="android.intent.category.BROWSABLE" />
-          <data android:scheme="readiness" />
+          <data android:scheme="https" />
+          <data android:host="readines.com" />
+          <data android:host="www.readines.com" />
+          <data android:host="frontend-web-nine-amber.vercel.app" />
+          <data android:pathPrefix="/invite/" />
+          <data android:pathPrefix="/reset-password" />
+          <data android:pathPrefix="/documents" />
+          <data android:pathPrefix="/packages" />
+          <data android:pathPrefix="/health" />
+          <data android:pathPrefix="/wealth" />
+          <data android:pathPrefix="/family" />
+          <data android:pathPrefix="/trust" />
+          <data android:pathPrefix="/legacy" />
+          <data android:pathPrefix="/settings" />
+          <data android:pathPrefix="/home" />
         </intent-filter>
       </activity>
     </application>

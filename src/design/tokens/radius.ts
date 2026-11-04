@@ -1,8 +1,9 @@
-// Design System 1.0: control 8, surface 12, tile 16, overlay 20, pill.
 export const radius = {
-  control: 8,
-  surface: 12,
-  tile: 16,
-  overlay: 20,
-  pill: 9999,
+  sm: 6,
+  md: 9,
+  lg: 12,
+  xl: 14,
+  panel: 16,
+  tabIndicator: 15,
+  pill: 999,
 } as const;

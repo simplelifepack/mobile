@@ -1,0 +1,6 @@
+<resources>
+    <color name="readines_splash_background">#121216</color>
+    <color name="readines_splash_primary">#A784DE</color>
+    <color name="readines_splash_on_primary">#17141F</color>
+    <color name="readines_splash_halo">#2A2537</color>
+</resources>

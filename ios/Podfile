@@ -29,6 +29,22 @@ target 'ReadinessMobile' do
   )
 
   post_install do |installer|
+    # Current Xcode SDKs reject old deployment targets in dependency bundles.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |build_config|
+        target_version = build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if target_version && Gem::Version.new(target_version) < Gem::Version.new(min_ios_version_supported)
+          build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios_version_supported
+        end
+      end
+    end
+    installer.pods_project.targets.each do |target|
+      if target.name == 'react-native-config'
+        target.build_configurations.each do |configuration|
+          configuration.build_settings['ENVFILE'] = configuration.name == 'Release' ? '.env.production' : '.env'
+        end
+      end
+    end
     react_native_post_install(
       installer,
       config[:reactNativePath],

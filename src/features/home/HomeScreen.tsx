@@ -1,380 +1,470 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ProfileAvatarButton } from '../../components/navigation/ProfileAvatarButton';
-import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import React from 'react';
+import { networkSnapshot, useConnectivity } from '../../network/connectivity';
+import { StatusBar, type ScrollView } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, View } from 'react-native';
 import {
-  AlertCircle,
-  Folder,
   FileText,
-  HeartPulse,
-  ListChecks,
-  Plus,
-  Search,
-  WalletCards,
+  Package,
+  Heart,
+  TrendingUp,
+  CircleAlert,
   ChevronRight,
+  ArrowRight,
+  Check,
 } from 'lucide-react-native';
-
-import { useBootstrapQuery, usePackagesQuery } from '../../services/api';
-import { healthApi, type HealthHomeReminder } from '../../api/health.api';
-import { wealthApi, type WealthRecord } from '../../api/wealth.api';
-import type { DocumentRecord } from '../../api/types';
-import { readinessTone } from '../readiness/readinessTone';
-import { calculatePackReadiness } from '../readiness/calculatePackReadiness';
-import type { MainTabParamList, RootStackParamList } from '../../app/navigation/types';
-import { GlobalSearchModal } from './GlobalSearchModal';
-import type { GlobalSearchResult } from '../../api/search.api';
-
+import type { RootStackParamList } from '../../app/navigation/types';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-
-import { Screen } from '../../components/primitives/Screen';
-import { Stack } from '../../components/primitives/Stack';
-import { Row } from '../../components/primitives/Row';
-import { ListGroup, ListRow } from '../../components/primitives/ListRow';
-import { SectionHeader } from '../../components/primitives/SectionHeader';
-import { Tile, type StatusTone } from '../../components/primitives/Tile';
-import { AppText } from '../../components/primitives/AppText';
-import { BrandLogo } from '../../components/BrandLogo';
-import { radius } from '../../design/tokens/radius';
-import { sizes } from '../../design/tokens/sizes';
-import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
-
-import { LoadingState } from '../../components/feedback/LoadingState';
-import { ErrorState } from '../../components/feedback/ErrorState';
-
-const DAY = 86_400_000;
-
-function daysUntil(value?: string | null, now = Date.now()) {
-  if (!value) return undefined;
-  const time = Date.parse(value);
-  return Number.isNaN(time) ? undefined : Math.ceil((time - now) / DAY);
+import { useAppSelector } from '../../app/store/hooks';
+import { useBootstrapQuery } from '../../services/api';
+import { mobileApi } from '../../api/mobile.api';
+import { packagesApi } from '../../api/packages.api';
+import { useResource } from '../shared/FeatureUI';
+import { dueTiming, packageOverview } from './homeOverview';
+import * as S from './styles';
+import { HomeDataState } from './HomeDataState';
+import { HomeRecovery } from './HomeRecovery';
+import { AppHeader } from '../../components/navigation/AppHeader';
+async function loadHomePackages(signal: AbortSignal) {
+  const first = await packagesApi.list({ limit: 200 }, false, signal);
+  const items = [...first.items];
+  let page = first;
+  while (page.pagination.hasNextPage) {
+    page = await packagesApi.list(
+      {
+        limit: 200,
+        page: page.pagination.page + 1,
+      },
+      false,
+      signal,
+    );
+    items.push(...page.items);
+  }
+  return items;
 }
-
-function documentTitle(document: DocumentRecord) {
-  return document.displayName ?? document.title ?? document.originalName ?? document.documentType;
-}
-
-export function HomeScreen() {
+export function HomeScreen({
+  onInitialReady,
+}: { onInitialReady?: () => void } = {}) {
+  const notifiedReady = React.useRef(false);
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { theme } = useAppTheme();
-  const navigation = useNavigation<
-    CompositeNavigationProp<
-      BottomTabNavigationProp<MainTabParamList, 'Home'>,
-      NativeStackNavigationProp<RootStackParamList>
-    >
-  >();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const openSearchResult = (result: GlobalSearchResult) => {
-    const segment = result.navigation.path.split(/[/?#]/).find(Boolean);
-    if (segment === 'documents') navigation.navigate('Documents');
-    else if (segment === 'packages') navigation.navigate('Packages');
-    else if (segment === 'health') navigation.navigate('Health');
-    else if (segment === 'wealth') navigation.navigate('Wealth');
-  };
-  const [healthReminders, setHealthReminders] = useState<HealthHomeReminder[]>([]);
-  const [reminderError, setReminderError] = useState<string>();
-
-  useEffect(() => {
-    let active = true;
-    healthApi.reminders()
-      .then(items => { if (active) setHealthReminders(items); })
-      .catch(error => {
-        if (active) setReminderError(error instanceof Error ? error.message : 'Unable to load reminders.');
-      });
-    return () => { active = false; };
-  }, []);
-
-  const [wealthRecords, setWealthRecords] = useState<WealthRecord[]>([]);
-
-  useEffect(() => {
-    let active = true;
-    wealthApi.records()
-      .then(items => { if (active) setWealthRecords(items); })
-      .catch(() => {});
-    return () => { active = false; };
-  }, []);
-
-  // --------------------------------------------------------------------------
-  // Existing API — unchanged
-  // --------------------------------------------------------------------------
-
+  const colors = theme.dashboard;
+  const connection = useConnectivity();
+  const offline = connection.offline || connection.unreachable;
+  const user = useAppSelector(state => state.auth.user);
   const bootstrap = useBootstrapQuery();
-  const [packagePage, setPackagePage] = useState(1);
-  const packages = usePackagesQuery({ page: packagePage, limit: 20 });
-
-  useEffect(() => {
-    if (
-      !packages.isFetching &&
-      !packages.isError &&
-      packages.data?.pagination.hasNextPage
-    ) {
-      setPackagePage(page => page + 1);
-    }
-  }, [packages.data?.pagination.hasNextPage, packages.isError, packages.isFetching]);
-
-  const situationStats = useMemo(() => {
-    const items = packages.data?.items ?? [];
-    const documents = bootstrap.data?.documents ?? [];
-    const ready = items.filter(item => {
-      const readiness = calculatePackReadiness(item.requirements, documents);
-      return readiness.totalRequired > 0 && readiness.missingRequired === 0;
-    }).length;
-    return {
-      ready,
-      total: packages.data?.pagination.total ?? items.length,
-    };
-  }, [bootstrap.data?.documents, packages.data]);
-
-  // --------------------------------------------------------------------------
-  // Loading — unchanged functionality
-  // --------------------------------------------------------------------------
-
-  if (bootstrap.isLoading) {
-    return (
-      <Screen>
-        <LoadingState fill label="Loading your readiness overview…" />
-      </Screen>
-    );
-  }
-
-  // --------------------------------------------------------------------------
-  // Error — unchanged functionality
-  // --------------------------------------------------------------------------
-
-  if (
-    bootstrap.error ||
-    !bootstrap.data
-  ) {
-    return (
-      <Screen>
-        <Stack
-          gap="md"
-          style={{
-            padding: theme.spacing.lg,
-          }}
-        >
-          <ErrorState
-            message="Unable to load your readiness overview."
-          />
-
-          <Pressable
-            onPress={() =>
-              bootstrap.refetch()
-            }
-            style={[
-              styles.retryButton,
-              {
-                backgroundColor:
-                  theme.colors.action.primary.default,
-                borderRadius:
-                  theme.radius.control,
-              },
-            ]}
-          >
-            <AppText
-              variant="label"
-              color="onPrimary"
-              align="center"
-            >
-              Retry
-            </AppText>
-          </Pressable>
-        </Stack>
-      </Screen>
-    );
-  }
-
-  const documents = bootstrap.data.documents ?? [];
+  const attention = useResource(mobileApi.health.homeAttention);
+  const wealth = useResource(mobileApi.wealth.records);
+  const packages = useResource(loadHomePackages);
+  const scroll = React.useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const attentionOffset = React.useRef(0);
+  const [expanded, setExpanded] = React.useState(false);
+  const refreshAttention = attention.revalidate;
+  const refreshWealth = wealth.revalidate;
+  const refreshPackages = packages.revalidate;
+  const firstFocus = React.useRef(true);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      if (networkSnapshot().offline) return;
+      refreshAttention();
+      refreshWealth();
+      refreshPackages();
+    }, [refreshAttention, refreshWealth, refreshPackages]),
+  );
+  const documents = React.useMemo(
+    () => bootstrap.data?.documents ?? [],
+    [bootstrap.data?.documents],
+  );
   const now = Date.now();
-  const recentDocuments = [...documents]
-    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
-    .slice(0, 5);
-  const expiringDocuments = documents.filter(document => {
-    const days = daysUntil(document.expiryDate, now);
-    return days !== undefined && days <= 60;
+  const expiring = documents.filter(
+    document =>
+      document.expiryDate &&
+      Date.parse(document.expiryDate) <= now + 60 * 86400000,
+  );
+  const getWealthDate = (record: NonNullable<typeof wealth.data>[number]) =>
+    record.followUpDate ??
+    (['renewalDate', 'maturityDate', 'dueDate', 'policyEndDate']
+      .map(key => record.details[key])
+      .find(value => typeof value === 'string') as string | undefined);
+  const wealthDue = (wealth.data ?? []).filter(record => {
+    const date = getWealthDate(record);
+    return (
+      date &&
+      Date.parse(date) < now + 60 * 86400000 &&
+      record.details.followUpDone !== true
+    );
   });
-  const expiredDocuments = expiringDocuments.filter(document => (daysUntil(document.expiryDate, now) ?? 0) < 0);
-  const overdueReminders = healthReminders.filter(reminder => (daysUntil(reminder.dueDate, now) ?? 0) < 0);
-  const renewalsDue = wealthRecords.filter(record => {
-    const days = daysUntil(String(record.details.renewalDate ?? record.details.maturityDate ?? ''), now);
-    return days !== undefined && days <= 30;
-  });
-  const attentionCount = expiringDocuments.length + healthReminders.length + renewalsDue.length;
-  const overdueCount = expiredDocuments.length + overdueReminders.length;
-  const bannerTone: StatusTone = overdueCount ? 'danger' : 'warning';
-  const readyPercent = situationStats.total
-    ? Math.round((situationStats.ready / situationStats.total) * 100)
-    : 0;
-
+  const attentionItems = [
+    ...expiring.map(document => ({
+      id: `document-${document.id}`,
+      Icon: FileText,
+      title: document.displayName || document.originalName,
+      ...dueTiming(document.expiryDate),
+      onPress: () =>
+        navigation.navigate('DocumentLibrary', { documentId: document.id }),
+    })),
+    ...(attention.data?.reminders ?? []).map(item => ({
+      id: `reminder-${item.id}`,
+      Icon: FileText,
+      title: `${item.memberName} · ${item.title}`,
+      ...dueTiming(item.dueDate),
+      onPress: () => navigation.navigate('Health', { memberId: item.memberId }),
+    })),
+    ...(attention.data?.medications ?? []).map(item => ({
+      id: `medication-${item.id}`,
+      Icon: Heart,
+      title: `${item.memberName} · ${item.title} refill`,
+      ...dueTiming(item.occurredAt),
+      onPress: () =>
+        navigation.navigate('Health', {
+          memberId: item.memberId,
+          tab: 'Medications',
+        }),
+    })),
+    ...wealthDue.map(item => ({
+      id: `wealth-${item.id}`,
+      Icon: TrendingUp,
+      title: item.title,
+      ...dueTiming(getWealthDate(item)),
+      onPress: () => navigation.navigate('Wealth', { recordId: item.id }),
+    })),
+  ].sort((a, b) => a.order - b.order);
+  const overdue = attentionItems.filter(item => item.overdue).length;
+  const loadingOverview =
+    bootstrap.isLoading ||
+    (attention.loading && !attention.data) ||
+    (wealth.loading && !wealth.data) ||
+    (packages.loading && !packages.data);
+  const incompleteOverview = Boolean(
+    bootstrap.error || attention.error || wealth.error || packages.error,
+  );
+  React.useEffect(() => {
+    if (
+      !notifiedReady.current &&
+      (!loadingOverview || incompleteOverview || offline)
+    ) {
+      notifiedReady.current = true;
+      onInitialReady?.();
+    }
+  }, [loadingOverview, incompleteOverview, offline, onInitialReady]);
+  const packStats = React.useMemo(
+    () => packageOverview(packages.data ?? [], documents),
+    [packages.data, documents],
+  );
+  const healthCount =
+    (attention.data?.reminders.length ?? 0) +
+    (attention.data?.medications.length ?? 0);
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const showAttention = () => setExpanded(value => !value);
+  const focusAttention = () => {
+    setExpanded(true);
+    scroll.current?.scrollTo({ y: attentionOffset.current, animated: true });
+  };
+  const unavailable = (
+    loading: boolean,
+    error: unknown,
+    value: string | number,
+  ) => (loading ? '…' : error ? '—' : value);
+  const stats: Array<{
+    label: string;
+    value: string | number;
+    detail: string;
+    badge: number;
+    tone: S.Tone;
+    Icon: typeof FileText;
+    iconColor: string;
+    onPress: () => void;
+    progress?: number;
+  }> = [
+    {
+      label: 'Documents',
+      value: unavailable(
+        bootstrap.isLoading && !bootstrap.data,
+        bootstrap.data ? undefined : bootstrap.error,
+        documents.length,
+      ),
+      detail: `${expiring.length} expiring soon`,
+      badge: expiring.length,
+      tone: expiring.length ? 'danger' : 'info',
+      Icon: FileText,
+      iconColor: colors.accent,
+      onPress: () => navigation.navigate('DocumentLibrary'),
+    },
+    {
+      label: 'Packages',
+      value: unavailable(
+        packages.loading && !packages.data,
+        packages.data ? undefined : packages.error,
+        `${packStats.ready}/${packStats.total}`,
+      ),
+      detail: `${packStats.percent}% ready`,
+      badge: 0,
+      tone: packStats.percent === 100 ? 'success' : 'accent',
+      Icon: Package,
+      iconColor: colors.accent,
+      onPress: () => navigation.navigate('Packages'),
+      progress: packStats.percent,
+    },
+    {
+      label: 'Health',
+      value: unavailable(
+        attention.loading && !attention.data,
+        attention.data ? undefined : attention.error,
+        healthCount,
+      ),
+      detail: healthCount === 1 ? 'task pending' : 'tasks pending',
+      badge: healthCount,
+      tone: healthCount ? 'warning' : 'info',
+      Icon: Heart,
+      iconColor: colors.health,
+      onPress: () => navigation.navigate('Health'),
+    },
+    {
+      label: 'Wealth',
+      value: unavailable(
+        wealth.loading && !wealth.data,
+        wealth.data ? undefined : wealth.error,
+        wealthDue.length,
+      ),
+      detail: wealthDue.length === 1 ? 'follow-up due' : 'follow-ups due',
+      badge: wealthDue.length,
+      tone: 'info',
+      Icon: TrendingUp,
+      iconColor: colors.warning,
+      onPress: () => navigation.navigate('Wealth'),
+    },
+  ];
   return (
-    <Screen
-      scroll
-      padded={false}
-      onRefresh={() => Promise.all([bootstrap.refetch(), packages.refetch()])}
-    >
-      <GlobalSearchModal
-        visible={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onOpenResult={openSearchResult}
-      />
-      <Stack gap="lg" style={styles.container}>
-        <Row align="center" justify="space-between" style={styles.appBar}>
-          <Row align="center" gap="sm">
-            <BrandLogo size={sizes.icon.lg} />
-            <AppText variant="heading">ReadiNes</AppText>
-          </Row>
-          <Row gap="sm">
-            <Pressable
-              onPress={() => setSearchOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Search"
-              style={[styles.headerButton, { borderColor: theme.colors.border.default, backgroundColor: theme.colors.surface.default }]}
+    <S.HomeSafe>
+      <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} />
+      <S.HomeScroll ref={scroll}>
+        <S.HomeContent>
+          <AppHeader
+            embedded
+            title={`${greeting}, ${user?.name?.trim().split(' ')[0] || 'there'}`}
+            subtitle="Here's your Readines overview"
+          />
+          <HomeDataState
+            loading={loadingOverview && !incompleteOverview && !offline}
+            refreshing={
+              bootstrap.isFetching ||
+              attention.loading ||
+              wealth.loading ||
+              packages.loading
+            }
+          >
+            <S.Panel
+              onLayout={event => {
+                attentionOffset.current = event.nativeEvent.layout.y;
+              }}
             >
-              <Search size={sizes.icon.md} color={theme.colors.text.secondary} strokeWidth={2} />
-            </Pressable>
-            <ProfileAvatarButton />
-          </Row>
-        </Row>
-
-        <View style={styles.grid}>
-          <Tile
-            icon={Folder}
-            title="Documents"
-            status={
-              expiringDocuments.length
-                ? `${expiringDocuments.length} expiring soon`
-                : documents.length
-                  ? `${documents.length} stored`
-                  : 'None added yet'
-            }
-            statusTone={expiredDocuments.length ? 'danger' : expiringDocuments.length ? 'warning' : 'neutral'}
-            onPress={() => navigation.navigate('Documents')}
-          />
-          <Tile
-            icon={ListChecks}
-            title="Packages"
-            status={`${situationStats.ready} of ${situationStats.total} ready`}
-            statusTone={situationStats.total ? readinessTone(readyPercent) : 'neutral'}
-            onPress={() => navigation.navigate('Packages')}
-          />
-          <Tile
-            icon={HeartPulse}
-            title="Health"
-            status={
-              overdueReminders.length
-                ? `${overdueReminders.length} overdue`
-                : healthReminders.length
-                  ? `${healthReminders.length} tasks pending`
-                  : 'All caught up'
-            }
-            statusTone={overdueReminders.length ? 'danger' : healthReminders.length ? 'warning' : 'neutral'}
-            onPress={() => navigation.navigate('Health')}
-          />
-          <Tile
-            icon={WalletCards}
-            title="Wealth"
-            status={renewalsDue.length ? `${renewalsDue.length} renewals due` : 'No renewals due'}
-            statusTone={renewalsDue.length ? 'info' : 'neutral'}
-            onPress={() => navigation.navigate('Wealth')}
-          />
-        </View>
-
-        {reminderError ? (
-          <AppText variant="caption" color="secondary">Reminders are temporarily unavailable.</AppText>
-        ) : null}
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${attentionCount} items need your attention`}
-          onPress={() => navigation.navigate(healthReminders.length ? 'Health' : 'Documents')}
-          style={({ pressed }) => [
-            styles.needsBanner,
-            {
-              borderColor: theme.colors.status[bannerTone].border,
-              backgroundColor: theme.colors.status[bannerTone].surface,
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}
-        >
-          <View style={styles.needsIcon}>
-            <AlertCircle size={sizes.icon.md} color={theme.colors.status[bannerTone].icon} strokeWidth={2} />
-          </View>
-          <View style={styles.needsCopy}>
-            <AppText style={[styles.needsTitle, { color: theme.colors.status[bannerTone].text }]}>
-              {attentionCount} {attentionCount === 1 ? 'item needs' : 'items need'} your attention
-            </AppText>
-            <AppText style={[styles.needsSubtitle, { color: theme.colors.status[bannerTone].text }]}>
-              {overdueCount} overdue · View all
-            </AppText>
-          </View>
-          <ChevronRight size={sizes.icon.sm} color={theme.colors.status[bannerTone].icon} strokeWidth={2} />
-        </Pressable>
-
-        <View style={styles.section}>
-          <SectionHeader title="Quick actions" />
-          <View style={styles.grid}>
-            <Tile
-              icon={Plus}
-              title="Add document"
-              status="Upload a new file"
-              onPress={() => navigation.navigate('Documents')}
+              <S.PanelHeader
+                accessibilityRole="button"
+                accessibilityState={{ expanded }}
+                onPress={showAttention}
+              >
+                <S.ListCopy>
+                  <S.Label>Needs attention</S.Label>
+                </S.ListCopy>
+                <S.PanelCount>
+                  <S.PanelCountText>{attentionItems.length}</S.PanelCountText>
+                </S.PanelCount>
+                <ChevronRight size={18} color={colors.subtle} />
+              </S.PanelHeader>
+              {attentionItems
+                .slice(0, expanded ? undefined : 3)
+                .map(
+                  ({ id, Icon, title, label, overdue: isOverdue, onPress }) => (
+                    <S.TaskRow
+                      key={id}
+                      accessibilityRole="button"
+                      onPress={onPress}
+                    >
+                      <S.IconBadge $soft>
+                        <Icon size={20} color={colors.accent} />
+                      </S.IconBadge>
+                      <S.TaskCopy>
+                        <S.Label>{title}</S.Label>
+                        {isOverdue ? (
+                          <S.ToneText $tone="danger" variant="caption">
+                            {label}
+                          </S.ToneText>
+                        ) : (
+                          <S.Copy variant="caption">{label}</S.Copy>
+                        )}
+                      </S.TaskCopy>
+                    </S.TaskRow>
+                  ),
+                )}
+              {!attentionItems.length ? (
+                <S.TaskRow>
+                  <S.Copy>
+                    {offline
+                      ? 'No tasks were due in your last loaded overview. Reconnect to check for changes.'
+                      : incompleteOverview
+                        ? 'Some sections could not be refreshed. Retry below to check for tasks.'
+                        : 'No tasks need your attention.'}
+                  </S.Copy>
+                </S.TaskRow>
+              ) : attentionItems.length > 3 ? (
+                <S.ShowAll accessibilityRole="button" onPress={showAttention}>
+                  <S.ToneText $tone="accent">
+                    {expanded
+                      ? 'Show less'
+                      : `Show all ${attentionItems.length}`}
+                  </S.ToneText>
+                </S.ShowAll>
+              ) : null}
+            </S.Panel>
+            <S.MetricGrid>
+              {stats.map(
+                ({
+                  label,
+                  value,
+                  detail,
+                  badge,
+                  tone,
+                  Icon,
+                  iconColor,
+                  onPress,
+                  progress,
+                }) => (
+                  <S.MetricTile
+                    key={label}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${label}, ${value}, ${detail}`}
+                    onPress={onPress}
+                  >
+                    <S.TileTop>
+                      <S.IconBadge>
+                        <Icon size={20} color={iconColor} />
+                      </S.IconBadge>
+                      {badge ? (
+                        <S.CountBadge $tone={tone}>
+                          <S.ToneText $tone={tone} variant="caption">
+                            {badge}
+                          </S.ToneText>
+                        </S.CountBadge>
+                      ) : label === 'Packages' && packStats.total > 0 ? (
+                        <S.CountBadge
+                          $tone={
+                            packStats.percent === 100 ? 'success' : 'accent'
+                          }
+                        >
+                          {packStats.percent === 100 ? (
+                            <Check size={13} color={colors.success} />
+                          ) : (
+                            <S.ToneText $tone="accent" variant="caption">
+                              {packStats.percent}%
+                            </S.ToneText>
+                          )}
+                        </S.CountBadge>
+                      ) : null}
+                    </S.TileTop>
+                    <S.MetricCopy>
+                      <S.Copy variant="caption">{label}</S.Copy>
+                      <S.Value>{value}</S.Value>
+                      <S.ToneText $tone={tone} variant="caption">
+                        {detail}
+                      </S.ToneText>
+                    </S.MetricCopy>
+                    {progress !== undefined ? (
+                      <S.ProgressTrack
+                        accessibilityRole="progressbar"
+                        accessibilityLabel="Packages ready"
+                        accessibilityValue={{ min: 0, max: 100, now: progress }}
+                      >
+                        <S.ProgressFill $value={progress} />
+                      </S.ProgressTrack>
+                    ) : (
+                      <S.LinkRow>
+                        <S.ToneText $tone="accent" variant="caption">
+                          View all
+                        </S.ToneText>
+                        <ArrowRight size={15} color={colors.accent} />
+                      </S.LinkRow>
+                    )}
+                  </S.MetricTile>
+                ),
+              )}
+            </S.MetricGrid>
+            <S.Banner
+              accessibilityRole="button"
+              accessibilityLabel={
+                attentionItems.length
+                  ? `View ${attentionItems.length} ${attentionItems.length === 1 ? 'item' : 'items'} needing attention`
+                  : 'View account overview'
+              }
+              onPress={focusAttention}
+            >
+              <S.IconBadge $solid>
+                <CircleAlert size={20} color={colors.onAccent} />
+              </S.IconBadge>
+              <S.ListCopy>
+                <S.Label>
+                  {offline
+                    ? 'Your last loaded overview'
+                    : loadingOverview
+                      ? 'Checking your overview…'
+                      : incompleteOverview
+                        ? 'Some account data could not be refreshed'
+                        : attentionItems.length
+                          ? `${attentionItems.length} ${attentionItems.length === 1 ? 'item needs' : 'items need'} your attention`
+                          : 'You’re all caught up'}
+                </S.Label>
+                <S.ToneText $tone="accent" variant="caption">
+                  {overdue ? `${overdue} overdue · ` : ''}
+                  {offline
+                    ? 'Reconnect to check for new tasks'
+                    : loadingOverview || incompleteOverview
+                      ? 'See account status below'
+                      : attentionItems.length
+                        ? 'View all'
+                        : 'Nothing needs attention today'}
+                </S.ToneText>
+              </S.ListCopy>
+              <ChevronRight size={20} color={colors.accent} />
+            </S.Banner>
+            <HomeRecovery
+              sections={[
+                {
+                  label: 'Documents and account',
+                  error: bootstrap.error,
+                  loading: bootstrap.isFetching,
+                  retry: bootstrap.refetch,
+                },
+                {
+                  label: 'Health',
+                  error: attention.error,
+                  issue: attention.issue,
+                  loading: attention.loading,
+                  retry: attention.revalidate,
+                },
+                {
+                  label: 'Wealth',
+                  error: wealth.error,
+                  issue: wealth.issue,
+                  loading: wealth.loading,
+                  retry: wealth.revalidate,
+                },
+                {
+                  label: 'Packages',
+                  error: packages.error,
+                  loading: packages.loading,
+                  retry: packages.revalidate,
+                },
+              ]}
             />
-            <Tile
-              icon={ListChecks}
-              title="Create package"
-              status="Organise what you need"
-              onPress={() => navigation.navigate('Packages')}
-            />
-          </View>
-        </View>
-
-        {recentDocuments.length ? (
-          <View style={styles.section}>
-            <SectionHeader
-              title="Recently added"
-              actionLabel="See all"
-              onAction={() => navigation.navigate('Documents')}
-            />
-            <ListGroup>
-              {recentDocuments.slice(0, 3).map(document => (
-                <ListRow
-                  key={document.id}
-                  icon={<FileText size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
-                  title={documentTitle(document)}
-                  subtitle={document.category ?? document.documentType}
-                  onPress={() => navigation.navigate('Documents')}
-                />
-              ))}
-            </ListGroup>
-          </View>
-        ) : null}
-      </Stack>
-    </Screen>
+          </HomeDataState>
+        </S.HomeContent>
+      </S.HomeScroll>
+    </S.HomeSafe>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingTop: 0, paddingBottom: 24 },
-  appBar: { minHeight: sizes.header },
-  headerButton: { width: 44, height: 44, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  retryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
-
-  section: { gap: 8 },
-
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-
-  needsBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    minHeight: 56,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderRadius: radius.surface,
-  },
-  needsIcon: { width: 32, height: 32, borderRadius: radius.control, alignItems: 'center', justifyContent: 'center' },
-  needsCopy: { flex: 1, gap: 2 },
-  needsTitle: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: fontWeights.semibold },
-  needsSubtitle: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
-});

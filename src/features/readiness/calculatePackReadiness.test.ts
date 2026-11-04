@@ -39,16 +39,6 @@ describe('calculatePackReadiness', () => {
     expect(result.requirements[0].status).toBe('ready');
   });
 
-  it('matches implied document capabilities from the web readiness rules', () => {
-    const result = calculatePackReadiness(
-      [requirement(['identity_proof'])],
-      [document({ normalizedType: 'passport', capabilities: undefined })],
-    );
-
-    expect(result.requirements[0].assignmentSource).toBe('AUTO');
-    expect(result.requirements[0].status).toBe('ready');
-  });
-
   it('rejects expired, mismatched-owner, and stale documents', () => {
     const requirements = [requirement(['passport'], { maxAgeDays: 30 })];
     const result = calculatePackReadiness(
@@ -66,44 +56,163 @@ describe('calculatePackReadiness', () => {
       percentage: 0,
     });
   });
+});
 
-  it('uses pending documents but excludes rejected documents', () => {
+it('honors a saved user override while continuing to reject expired assigned documents', () => {
+  const assigned: PackageRequirement = {
+    ...requirement(['passport']),
+    assignment: { documentId: 'document', assignmentSource: 'USER_OVERRIDE' },
+  };
+  const accepted = calculatePackReadiness(
+    [assigned],
+    [document({ normalizedType: 'identity_card', owner: 'spouse' })],
+  );
+  expect(accepted.percentage).toBe(100);
+  expect(accepted.requirements[0].assignmentSource).toBe('USER_OVERRIDE');
+  const expired = calculatePackReadiness(
+    [assigned],
+    [document({ expiryDate: '2020-01-01' })],
+  );
+  expect(expired.percentage).toBe(0);
+});
+it('recognizes the same implied identity capabilities as the web app', () => {
+  expect(
+    calculatePackReadiness([requirement(['address_proof'])], [document()])
+      .percentage,
+  ).toBe(100);
+});
+
+it.each([
+  'Aadhaar (UIDAI) Card',
+  'Permanent Account Number Card',
+  'PAN Verification Record',
+])('recognizes %s as identity evidence', name => {
+  expect(
+    calculatePackReadiness(
+      [requirement(['identity_proof'])],
+      [document({ normalizedType: undefined, documentType: name })],
+    ).percentage,
+  ).toBe(100);
+});
+
+it('maps Aadhaar to generic identity and address requirements while preserving specific document requirements', () => {
+  const result = calculatePackReadiness(
+    [
+      requirement(['identity_document']),
+      { ...requirement(['address_proof']), id: 'address' },
+      { ...requirement(['pan']), id: 'pan' },
+      { ...requirement(['passport']), id: 'passport' },
+    ],
+    [
+      document({
+        normalizedType: 'aadhaar',
+        documentType: 'aadhaar',
+        capabilities: ['aadhaar'],
+        owner: 'self',
+        classificationStatus: 'detected',
+        ownershipStatus: 'verified',
+      }),
+    ],
+  );
+  expect(result.requirements.map(r => r.status)).toEqual([
+    'ready',
+    'ready',
+    'missing',
+    'missing',
+  ]);
+});
+
+it.each([
+  'financial_proof',
+  'medical_document',
+  'education_proof',
+  'employment_proof',
+  'property_proof',
+  'insurance_proof',
+  'custom_farm_certificate',
+])(
+  'matches server-provided capabilities for any document category: %s',
+  capability => {
     const result = calculatePackReadiness(
-      [requirement(['passport'])],
+      [requirement([capability])],
       [
-        document({ classificationStatus: 'pending' }),
         document({
-          id: 'rejected',
-          classificationStatus: 'rejected',
+          normalizedType: 'catalogue_document',
+          documentType: 'catalogue_document',
+          capabilities: [capability],
         }),
       ],
     );
+    expect(result.percentage).toBe(100);
+  },
+);
 
-    expect(result.satisfiedRequired).toBe(1);
-    expect(result.requirements[0].matchedDocument?.id).toBe('document');
+it('ranks exact types first and narrower capability matches independently of upload order', () => {
+  const licence = document({
+    id: 'licence',
+    normalizedType: 'driving_licence',
+    confidence: 99,
   });
-
-  it('uses a saved requirement assignment before automatic matching', () => {
-    const assigned = document({
-      id: 'assigned',
-      normalizedType: 'birth_certificate',
-    });
-    const requirementWithAssignment: PackageRequirement = {
-      ...requirement(['passport']),
-      assignment: {
-        documentId: 'assigned',
-        assignmentSource: 'USER_SELECTED',
-      },
-    };
-    const result = calculatePackReadiness(
-      [requirementWithAssignment],
-      [assigned],
-    );
-
-    expect(result.requirements[0]).toMatchObject({
-      assignmentSource: 'USER_SELECTED',
-      status: 'ready',
-      matchedDocument: { id: 'assigned' },
-    });
+  const aadhaar = document({
+    id: 'aadhaar',
+    normalizedType: 'aadhaar',
+    confidence: 95,
   });
+  const pan = document({ id: 'pan', normalizedType: 'pan', confidence: 95 });
+  const requirements = [
+    requirement(['driving_licence']),
+    { ...requirement(['address_proof']), id: 'address' },
+    { ...requirement(['identity_proof']), id: 'identity' },
+  ];
+  for (const docs of [
+    [licence, aadhaar, pan],
+    [pan, aadhaar, licence],
+  ]) {
+    expect(
+      calculatePackReadiness(requirements, docs).requirements.map(
+        r => r.matchedDocument?.id,
+      ),
+    ).toEqual(['licence', 'aadhaar', 'aadhaar']);
+  }
+});
+it('preserves a user-selected document even when another automatic match ranks higher', () => {
+  const licence = document({
+    id: 'licence',
+    normalizedType: 'driving_licence',
+  });
+  const aadhaar = document({ id: 'aadhaar', normalizedType: 'aadhaar' });
+  const slot = {
+    ...requirement(['address_proof']),
+    assignment: {
+      documentId: 'licence',
+      assignmentSource: 'USER_SELECTED' as const,
+    },
+  };
+  expect(
+    calculatePackReadiness([slot], [licence, aadhaar]).requirements[0]
+      .matchedDocument?.id,
+  ).toBe('licence');
+});
+it('does not count one account-holder Aadhaar as both child and parent documents', () => {
+  const roles = ['Child Aadhaar card', 'Parent Aadhaar card'].map(
+    (title, i) => ({
+      ...requirement(['aadhaar']),
+      id: `role-${i}`,
+      title,
+      owner: 'self',
+    }),
+  );
+  const aadhaar = document({ normalizedType: 'aadhaar' });
+  expect(calculatePackReadiness(roles, [aadhaar]).satisfiedRequired).toBe(0);
+  const child = { ...aadhaar, id: 'child', owner: 'child' };
+  expect(
+    calculatePackReadiness(roles, [aadhaar, child]).satisfiedRequired,
+  ).toBe(1);
+  roles[1].assignment = {
+    documentId: aadhaar.id,
+    assignmentSource: 'USER_SELECTED',
+  };
+  expect(
+    calculatePackReadiness(roles, [aadhaar, child]).satisfiedRequired,
+  ).toBe(2);
 });

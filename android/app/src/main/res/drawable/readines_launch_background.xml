@@ -1,0 +1,5 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/readines_splash_background" />
+    <item android:drawable="@drawable/readines_splash_halo" android:width="144dp" android:height="144dp" android:gravity="center" />
+    <item android:drawable="@drawable/readines_splash_mark" android:width="84dp" android:height="84dp" android:gravity="center" />
+</layer-list>

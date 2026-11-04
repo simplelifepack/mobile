@@ -1,3 +1,4 @@
+import { OnboardingLayout } from '../../components/primitives/Layout';
 import React from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ShieldCheck, Files, ListChecks } from 'lucide-react-native';
@@ -31,7 +32,7 @@ const pages: Record<keyof OnboardingStackParamList, Page> = {
   },
   PrivacyIntro: {
     title: 'Private by design.',
-    body: 'A device-first architecture, private document storage, and app lock foundations keep sensitive information under your control.',
+    body: 'Keep your records in private storage and use app lock to protect access on this device.',
     icon: 'shield',
   },
 };
@@ -51,29 +52,22 @@ export function OnboardingScreen({
   const finish = () => dispatch(onboardingCompleted());
   return (
     <Screen>
-      <Stack
-        gap="xl"
-        style={{
-          flex: 1,
-          justifyContent: 'space-between',
-          paddingVertical: theme.spacing.lg,
-        }}
-      >
+      <OnboardingLayout>
         <Row justify="flex-end">
           <Button title="Skip" variant="ghost" onPress={finish} />
         </Row>
         <Stack gap="lg">
-          <Icon size={56} color={theme.colors.text.interactive} />
+          <Icon size={56} color={theme.colors.primary} />
           <AppText variant="display">{page.title}</AppText>
           <AppText color="secondary">{page.body}</AppText>
         </Stack>
         <Button
-          title={page.next ? 'Next' : 'Get Started'}
+          title={page.next ? 'Next' : 'Get started'}
           onPress={() =>
             page.next ? navigation.navigate(page.next) : finish()
           }
         />
-      </Stack>
+      </OnboardingLayout>
     </Screen>
   );
 }
