@@ -300,16 +300,25 @@ function PackageCard({
   onPress: () => void;
 }) {
 
+  const { theme } = useAppTheme();
   const isReady = percentage >= 100;
+  const PackageGlyph = getPackageIcon(item.title);
 
   return (
-    <ListRow
-      leading={<ReadinessRing percentage={percentage} size={40} />}
-      title={item.title}
-      subtitle={isReady ? 'Everything in place' : `${satisfiedRequired} of ${totalRequired} ready`}
-      trailing={isReady ? <StatusBadge label="Ready" status="success" /> : undefined}
-      onPress={onPress}
-    />
+    <ListGroup>
+      <ListRow
+        leading={
+          <Row align="center" gap="sm">
+            <ReadinessRing percentage={percentage} size={40} />
+            <PackageGlyph size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />
+          </Row>
+        }
+        title={item.title}
+        subtitle={isReady ? 'Everything in place' : `${satisfiedRequired} of ${totalRequired} ready`}
+        trailing={isReady ? <StatusBadge label="Ready" status="success" /> : undefined}
+        onPress={onPress}
+      />
+    </ListGroup>
   );
 }
 
@@ -1548,7 +1557,7 @@ export function ReadinessScreen() {
               ) : null}
             </Stack>
           ) : (
-            <ListGroup>{cards.map(({ item, readiness }) => (
+            <Stack gap="sm">{cards.map(({ item, readiness }) => (
               <PackageCard
                 key={item.slug}
                 item={item}
@@ -1557,7 +1566,7 @@ export function ReadinessScreen() {
                 totalRequired={readiness.totalRequired}
                 onPress={() => setSelectedSlug(item.slug)}
               />
-            ))}</ListGroup>
+            ))}</Stack>
           )}
 
           {/* LOAD MORE */}
