@@ -11,7 +11,6 @@ import {
   Linking,
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -46,6 +45,17 @@ import type {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentDetailSheet } from './DocumentDetailSheet';
+import { DocumentFilterSheet } from './DocumentFilterSheet';
+import {
+  activeFilterCount,
+  applyDocumentFilters,
+  defaultFilters,
+  documentCategory,
+  documentPersonName,
+  matchesQuickFilter,
+  quickFilterLabels,
+  type DocumentFilters,
+} from './documentFilters';
 import { useDocumentsQuery } from '../../services/api';
 import { documentsApi } from '../../api/documents.api';
 import {
@@ -84,16 +94,6 @@ const PreviewModalSurface = styled.View(({ theme }) => ({
 const PreviewSafeArea = styled(SafeAreaView)(() => ({
   flex: 1,
 }));
-
-const categories = [
-  'All',
-  'Identity',
-  'Health',
-  'Finance',
-  'Home',
-  'Travel',
-  'Other',
-];
 
 function categoryFor(type: string) {
   const value = type.toLowerCase();
@@ -191,7 +191,7 @@ export function DocumentsScreen() {
   } = useDocumentsQuery();
 
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('All');
+  const [filters, setFilters] = useState<DocumentFilters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
   const [selectionMode, setSelectionMode] =
     useState(false);
@@ -312,7 +312,7 @@ export function DocumentsScreen() {
       setShowAddDocumentsSheet(false);
       setDetailId(undefined);
       setQuery('');
-      setCategory('All');
+      setFilters(defaultFilters);
       await refetch();
       Alert.alert(
         'Document added',
@@ -376,33 +376,33 @@ export function DocumentsScreen() {
   };
 
   const documents = useMemo(() => {
-    const normalizedQuery = query
-      .trim()
-      .toLowerCase();
-
-    return (data ?? []).filter(document => {
-      const title = getDocumentTitle(document);
-
-      const searchableText = [
-        title,
+    const normalizedQuery = query.trim().toLowerCase();
+    const searched = (data ?? []).filter(document => {
+      if (!normalizedQuery) return true;
+      return [
+        getDocumentTitle(document),
         document.originalName,
         document.documentType,
-        categoryFor(document.documentType),
+        documentCategory(document),
+        documentPersonName(document),
       ]
         .join(' ')
-        .toLowerCase();
-
-      const matchesSearch =
-        !normalizedQuery ||
-        searchableText.includes(normalizedQuery);
-
-      const matchesCategory =
-        category === 'All' ||
-        categoryFor(document.documentType) === category;
-
-      return matchesSearch && matchesCategory;
+        .toLowerCase()
+        .includes(normalizedQuery);
     });
-  }, [category, data, query]);
+    return applyDocumentFilters(searched, filters);
+  }, [data, filters, query]);
+
+  const filterOptions = useMemo(() => {
+    const all = data ?? [];
+    return {
+      categories: [...new Set(all.map(documentCategory))].sort(),
+      people: [...new Set(all.map(documentPersonName))].sort(),
+      quickCounts: Object.fromEntries(
+        quickFilterLabels.map(([key]) => [key, all.filter(document => matchesQuickFilter(document, key)).length]),
+      ),
+    };
+  }, [data]);
 
   const toggleSelection = (id: string) => {
     setSelectedIds(current =>
@@ -601,7 +601,7 @@ export function DocumentsScreen() {
 
             <Pressable
               onPress={() =>
-                setShowFilters(value => !value)
+                setShowFilters(true)
               }
               style={({ pressed }) => [
                 styles.toolbarButton,
@@ -623,7 +623,7 @@ export function DocumentsScreen() {
                   },
                 ]}
               >
-                Filter
+                {activeFilterCount(filters) ? `Filter · ${activeFilterCount(filters)}` : 'Filter'}
               </AppText>
             </Pressable>
             {selectionMode && selectedIds.length ? (
@@ -653,51 +653,6 @@ export function DocumentsScreen() {
           </Row>
         </Row>
 
-        {/* Filters */}
-        {showFilters ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={
-              styles.filterContent
-            }
-          >
-            {categories.map(item => {
-              const active = category === item;
-
-              return (
-                <Pressable
-                  key={item}
-                  onPress={() => setCategory(item)}
-                  style={({ pressed }) => [
-                    styles.filterPill,
-                    {
-                      backgroundColor: active
-                        ? theme.colors.action.primary.default
-                        : theme.colors.surface.raised,
-                      borderColor: active
-                        ? theme.colors.border.interactive
-                        : theme.colors.border.default,
-                    },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <AppText
-                    variant="label"
-                    color={
-                      active
-                        ? 'onPrimary'
-                        : 'secondary'
-                    }
-                    style={styles.filterText}
-                  >
-                    {item}
-                  </AppText>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        ) : null}
 
         </Stack>
 
@@ -755,6 +710,16 @@ export function DocumentsScreen() {
             },
           },
         ]}
+      />
+
+      <DocumentFilterSheet
+        visible={showFilters}
+        filters={filters}
+        quickCounts={filterOptions.quickCounts}
+        categories={filterOptions.categories}
+        people={filterOptions.people}
+        onChange={setFilters}
+        onClose={() => setShowFilters(false)}
       />
 
       {detailDocument ? (
@@ -1014,25 +979,6 @@ const styles = StyleSheet.create({
 
   /* Filters */
 
-  filterContent: {
-    gap: 8,
-    paddingRight: 16,
-    paddingVertical: 2,
-  },
-
-  filterPill: {
-    minHeight: sizes.minimumTouchTarget,
-    borderRadius: radius.overlay,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  filterText: {
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
 
   /* Document list */
 
