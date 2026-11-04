@@ -122,7 +122,7 @@ function readinessColor(
   percentage: number,
   theme: ReturnType<typeof useAppTheme>['theme'],
 ) {
-  return theme.colors.status[readinessTone(percentage)].text;
+  return theme.colors.status[readinessTone(percentage)].icon;
 }
 
 function getPackageIcon(title: string) {
