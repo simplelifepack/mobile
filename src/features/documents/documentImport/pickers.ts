@@ -53,9 +53,17 @@ const PHOTO_OPTIONS = {
 } as const;
 
 async function selectPhoto(useCamera: boolean): Promise<SelectedDocument | undefined> {
-  const result = useCamera
-    ? await launchCamera({ ...PHOTO_OPTIONS, cameraType: 'back' })
-    : await launchImageLibrary({ ...PHOTO_OPTIONS, selectionLimit: 1 });
+  if (pickerOpen) return undefined;
+  pickerOpen = true;
+  let result;
+  try {
+    await wait(PICKER_PRESENT_DELAY_MS);
+    result = useCamera
+      ? await launchCamera({ ...PHOTO_OPTIONS, cameraType: 'back' })
+      : await launchImageLibrary({ ...PHOTO_OPTIONS, selectionLimit: 1 });
+  } finally {
+    pickerOpen = false;
+  }
 
   if (result.didCancel) return undefined;
   if (result.errorCode) {
