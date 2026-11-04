@@ -856,16 +856,16 @@ export function WealthScreen({
       }
     >
       <Stack
-        gap="lg"
+        gap="sm"
         style={[
           styles.container,
           {
-            paddingTop: theme.spacing.sm,
+            paddingTop: theme.spacing.xs,
             paddingBottom: theme.spacing.xl,
           },
         ]}
       >
-        <Stack gap="md">
+        <Stack gap="sm">
         <Header
           onSearch={() =>
             setSearchVisible(value => !value)
@@ -946,7 +946,7 @@ export function WealthScreen({
 
         </Stack>
 
-        <Stack gap="md">
+        <Stack gap="sm">
         <ReadinessCard
           records={records}
           lendingItems={lendingItems}
@@ -979,7 +979,7 @@ export function WealthScreen({
 
         </Stack>
 
-        <Stack gap="md">
+        <Stack gap="sm">
         <CategoryTabs
           selected={selectedCategory}
           onSelect={setSelectedCategory}
