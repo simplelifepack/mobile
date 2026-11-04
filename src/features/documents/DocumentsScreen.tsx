@@ -58,6 +58,8 @@ import {
 } from './documentFilters';
 import { useDocumentsQuery } from '../../services/api';
 import { documentsApi } from '../../api/documents.api';
+import { healthApi, isMemberResolution } from '../../api/health.api';
+import { healthRecordType, isHealthDocument } from './documentDetails';
 import {
   analyzeSelectedDocument,
   captureDocumentPhoto,
@@ -319,10 +321,13 @@ export function DocumentsScreen() {
       setDetailId(undefined);
       setQuery('');
       setFilters(defaultFilters);
+      const addedToHealth = await syncToHealth(result.document);
       await refetch();
       Alert.alert(
         'Document added',
-        `${result.document.displayName ?? result.document.title ?? document.title} is now in your vault.`,
+        `${result.document.displayName ?? result.document.title ?? document.title} is now in your vault${
+          addedToHealth ? ' and your Health records' : ''
+        }.`,
       );
     } catch (saveError) {
       if (__DEV__) console.warn('[save payload]', JSON.stringify(payload).slice(0, 1500));
@@ -338,6 +343,17 @@ export function DocumentsScreen() {
       );
     } finally {
       setIsImporting(false);
+    }
+  };
+
+  // Best effort: the document is already saved, so a Health failure must not fail the upload.
+  const syncToHealth = async (saved: DocumentRecord) => {
+    if (!isHealthDocument(saved)) return false;
+    try {
+      const record = await healthApi.createRecord({ documentId: saved.id, type: healthRecordType(saved) });
+      return !isMemberResolution(record);
+    } catch {
+      return false;
     }
   };
 
