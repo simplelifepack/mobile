@@ -12,6 +12,7 @@ import {
   packageSourceLinks,
   sourceHostname,
   sourceProviderName,
+  uniqueSources,
 } from './packageSource';
 import { ChangeDocumentSheet } from './ChangeDocumentSheet';
 import { CustomPackBottomSheet } from './CustomPackBottomSheet';
@@ -797,11 +798,6 @@ function PackageDetailBottomSheet({
                           >
                             {requirement.title}
                           </AppText>
-                          {requirement.description ? (
-                            <AppText variant="body" color="secondary">
-                              {requirement.description}
-                            </AppText>
-                          ) : null}
                         </View>
                         <Pressable
                           onPress={() => {
@@ -977,7 +973,7 @@ function PackageDetailBottomSheet({
                         Sources
                       </AppText>
                     </View>
-                    {selected.verificationSources.slice(0, 4).map(source => (
+                    {uniqueSources(selected.verificationSources).slice(0, 4).map(source => (
                       <Pressable
                         key={`${source.title}-${source.url}`}
                         accessibilityRole="link"

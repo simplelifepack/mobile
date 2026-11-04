@@ -65,9 +65,20 @@ export function sourceProviderName(source: SourceLike) {
 
 export type SourceLink = { url: string; name: string; title?: string };
 
+export function uniqueSources<T extends { url?: string }>(sources: T[] = []) {
+  const seen = new Set<string>();
+  return sources.filter(item => {
+    if (!item.url) return false;
+    const key = item.url.trim().replace(/\/+$/, '').toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function packageSourceLinks(pack?: PackageSummary): SourceLink[] {
   if (!pack) return [];
-  const verified = (pack.verificationSources ?? []).filter(item => item.url);
+  const verified = uniqueSources(pack.verificationSources);
   if (verified.length) {
     return verified.map(item => ({
       url: item.url,
