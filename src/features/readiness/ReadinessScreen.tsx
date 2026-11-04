@@ -973,7 +973,16 @@ function PackageDetailBottomSheet({
                         Sources
                       </AppText>
                     </View>
-                    {uniqueSources(selected.verificationSources).slice(0, 4).map(source => (
+                    {uniqueSources(
+                      selected.verificationSources?.filter(
+                        (source, index, all) =>
+                          all.findIndex(
+                            other =>
+                              sourceProviderName(other) === sourceProviderName(source) &&
+                              other.title === source.title,
+                          ) === index,
+                      ),
+                    ).slice(0, 4).map(source => (
                       <Pressable
                         key={`${source.title}-${source.url}`}
                         accessibilityRole="link"

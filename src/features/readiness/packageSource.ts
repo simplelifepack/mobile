@@ -80,11 +80,19 @@ export function packageSourceLinks(pack?: PackageSummary): SourceLink[] {
   if (!pack) return [];
   const verified = uniqueSources(pack.verificationSources);
   if (verified.length) {
-    return verified.map(item => ({
-      url: item.url,
-      name: sourceProviderName(item),
-      title: item.title,
-    }));
+    const seenNames = new Set<string>();
+    return verified
+      .map(item => ({
+        url: item.url,
+        name: sourceProviderName(item),
+        title: item.title,
+      }))
+      .filter(link => {
+        const key = link.name.toLowerCase();
+        if (seenNames.has(key)) return false;
+        seenNames.add(key);
+        return true;
+      });
   }
   return pack.source?.url
     ? [
