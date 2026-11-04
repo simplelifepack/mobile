@@ -31,7 +31,7 @@ function Chip({ label, count, active, onPress }: { label: string; count?: number
         },
       ]}
     >
-      <AppText variant="labelMd" color={active ? 'heading' : 'secondary'}>
+      <AppText variant="label" color={active ? 'heading' : 'secondary'}>
         {count === undefined ? label : `${label} · ${count}`}
       </AppText>
     </Pressable>
@@ -46,7 +46,7 @@ function Group({ title, options, value, onSelect }: {
 }) {
   return (
     <View style={styles.group}>
-      <AppText variant="heading">{title}</AppText>
+      <AppText variant="label" color="secondary">{title}</AppText>
       <View style={styles.chips}>
         {options.map(option => (
           <Chip
@@ -154,8 +154,8 @@ const styles = StyleSheet.create({
   handle: { width: sizes.sheetHandle.width, height: sizes.sheetHandle.height, borderRadius: radius.pill, alignSelf: 'center', marginBottom: 12 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  content: { gap: 24, paddingVertical: 8 },
-  group: { gap: 12 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 40, paddingHorizontal: 16, justifyContent: 'center', borderWidth: 1, borderRadius: radius.pill },
+  content: { gap: 12, paddingVertical: 4 },
+  group: { gap: 8 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: { minHeight: 32, paddingHorizontal: 12, justifyContent: 'center', borderWidth: 1, borderRadius: radius.pill },
 });
