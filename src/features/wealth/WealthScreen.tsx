@@ -527,10 +527,13 @@ function LendingSection({
         </Pressable>
       </Row>
 
-      <ListGroup>
-        {items.map(item => (
-          <ListRow
+      <View>
+        {items.map((item, index) => (
+          <View
             key={item.id}
+            style={index > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.border.subtle } : undefined}
+          >
+          <ListRow
             icon={
               <CircleDollarSign
                 size={sizes.icon.md}
@@ -553,6 +556,7 @@ function LendingSection({
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Delete ${item.name}`}
+                  hitSlop={8}
                   onPress={() => onDelete(item.id)}
                   style={styles.deleteTarget}
                 >
@@ -561,8 +565,9 @@ function LendingSection({
               </Row>
             }
           />
+          </View>
         ))}
-      </ListGroup>
+      </View>
     </Card>
   );
 }
@@ -1977,7 +1982,7 @@ const styles = StyleSheet.create({
 
 
 
-  deleteTarget: { width: sizes.minimumTouchTarget, height: sizes.minimumTouchTarget, alignItems: 'center', justifyContent: 'center' },
+  deleteTarget: { width: 24, height: 32, alignItems: 'center', justifyContent: 'center' },
   amountColumn: {
     alignItems: 'flex-end',
   },
