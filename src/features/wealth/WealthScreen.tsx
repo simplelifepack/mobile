@@ -332,6 +332,19 @@ function ReadinessCard({
   );
 }
 
+const GROUP_PREVIEW_COUNT = 3;
+
+// Records missing proof, access notes or a nominee, so gaps are visible without opening a record.
+function recordGaps(record: WealthRecord) {
+  const details = record.details;
+  const hasDocument = (record.attachments?.length ?? record.attachmentDocumentIds?.length ?? 0) > 0;
+  return [
+    !hasDocument ? 'No document' : '',
+    !(details.accessInstruction || record.notes) ? 'No access note' : '',
+    !details.nominee && (record.type === 'ASSET' || record.type === 'INSURANCE') ? 'No nominee' : '',
+  ].filter(Boolean);
+}
+
 function WealthGroupCard({
   title,
   records,
@@ -341,9 +354,14 @@ function WealthGroupCard({
   records: WealthRecord[];
   total: number;
 }) {
+  const { theme } = useAppTheme();
+  const [expanded, setExpanded] = React.useState(false);
+
   if (!records.length) {
     return null;
   }
+
+  const visible = expanded ? records : records.slice(0, GROUP_PREVIEW_COUNT);
 
   return (
     <View style={styles.groupCard}>
@@ -352,9 +370,20 @@ function WealthGroupCard({
         <AppText variant="heading" color="secondary">{formatMoney(total)}</AppText>
       </Row>
       <ListGroup>
-        {records.map(record => (
+        {visible.map(record => (
           <WealthRecordRow key={record.id} record={record} />
         ))}
+        {records.length > GROUP_PREVIEW_COUNT ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setExpanded(value => !value)}
+            style={styles.showAll}
+          >
+            <AppText variant="labelMd" style={{ color: theme.colors.text.interactive }}>
+              {expanded ? 'Show less' : `Show all ${records.length}`}
+            </AppText>
+          </Pressable>
+        ) : null}
       </ListGroup>
     </View>
   );
@@ -365,8 +394,11 @@ function WealthRecordRow({ record }: { record: WealthRecord }) {
   const details = record.details;
   const isLoan = record.type === 'LOAN_GIVEN' || record.type === 'LOAN_TAKEN';
   const Icon = isLoan ? Landmark : record.type === 'INSURANCE' ? ShieldCheck : Building2;
-  const metaLabel =
-    record.type === 'ASSET' ? 'Bank account' : record.type === 'INSURANCE' ? 'Insurance' : 'Mortgage';
+  const metaLabel = String(
+    details.assetType ?? details.subtype ?? details.loanType ?? details.insuranceType ??
+      (record.type === 'ASSET' ? 'Account' : record.type === 'INSURANCE' ? 'Insurance' : 'Loan'),
+  );
+  const gaps = recordGaps(record);
 
   const institution = String(
     details.institution ?? details.bank ?? details.provider ?? details.company ?? '',
@@ -390,7 +422,7 @@ function WealthRecordRow({ record }: { record: WealthRecord }) {
       icon={<Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
       title={record.title}
       subtitle={subtitle}
-      extra={record.notes || undefined}
+      extra={gaps.length ? gaps.join(' · ') : undefined}
       trailing={
         <AppText
           variant="heading"
@@ -1876,6 +1908,12 @@ const styles = StyleSheet.create({
 
   groupHeader: {
     paddingHorizontal: 4,
+  },
+
+  showAll: {
+    minHeight: sizes.minimumTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
 
