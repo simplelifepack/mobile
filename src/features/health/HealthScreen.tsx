@@ -446,7 +446,7 @@ floatingAction={
   </>
 }    >
       <Stack
-        gap="md"
+        gap="sm"
         style={[
           styles.container,
           {
@@ -531,7 +531,7 @@ floatingAction={
 
         {activeTab ===
         'Overview' ? (
-          <Stack gap="lg">
+          <Stack gap="md">
             {/* RESULTS HEADER */}
 
            <Row

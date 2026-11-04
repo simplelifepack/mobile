@@ -198,18 +198,18 @@ export const styles = StyleSheet.create({
 
   healthTabContent: {
     paddingHorizontal: 2,
-    paddingBottom: 20,
+    paddingBottom: 8,
   },
   healthTabCard: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.overlay,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     overflow: 'hidden',
   },
   healthSectionEyebrow: {
     letterSpacing: 1.5,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
   healthReminderRow: {
     minHeight: 86,
@@ -282,12 +282,12 @@ export const styles = StyleSheet.create({
     textAlign: 'right',
   },
   healthSectionHeader: {
-    minHeight: 54,
+    minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
   healthSectionTitleRow: {
     flexDirection: 'row',
@@ -666,8 +666,8 @@ resultsCount: {
   // --------------------------------------------------------------------------
 
   remindersCard: {
-    padding: 16,
-    gap: 6,
+    padding: 12,
+    gap: 4,
   },
 
   sectionTitle: {
@@ -677,7 +677,7 @@ resultsCount: {
   },
 
   addReminder: {
-    minHeight: sizes.minimumTouchTarget,
+    minHeight: 32,
     borderRadius: radius.surface,
     borderWidth: 1,
     paddingHorizontal: 12,
@@ -713,8 +713,8 @@ resultsCount: {
   // --------------------------------------------------------------------------
 
   medicalCard: {
-    padding: 16,
-    gap: 12,
+    padding: 12,
+    gap: 8,
   },
 
   editButton: {
