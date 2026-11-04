@@ -1,3 +1,5 @@
+import type { HealthMeasurement } from '../../api/health.api';
+
 
 
 
@@ -19,8 +21,7 @@ export type ReadingView = {
   unit: string;
   status: string;
   range?: string;
-  dates: string[];
-  values: number[];
+  measurements: HealthMeasurement[];
   color: 'danger' | 'primary';
   sourceName?: string;
 };

@@ -238,7 +238,6 @@ export function HealthScreen() {
     .filter(metric => metric.latest)
     .map(metric => {
       const latest = metric.latest!;
-      const points = metric.measurements.slice(-4);
       const outsideRange =
         (latest.referenceMin != null && latest.value < latest.referenceMin) ||
         (latest.referenceMax != null && latest.value > latest.referenceMax);
@@ -262,15 +261,7 @@ export function HealthScreen() {
             : latest.referenceMin != null
               ? `over ${latest.referenceMin}`
               : undefined),
-        dates: points.map(point =>
-          point.measuredAt
-            ? new Date(point.measuredAt).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-              })
-            : '',
-        ),
-        values: points.map(point => point.value),
+        measurements: metric.measurements,
         color: outsideRange ? 'danger' : 'primary',
         sourceName: latest.originalName,
       };

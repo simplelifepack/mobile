@@ -7,10 +7,9 @@ import {
 FileText
 } from 'lucide-react-native';
 
-import Svg,{
-Circle,
-Polyline,
-} from 'react-native-svg';
+import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import type { HealthMeasurement } from '../../../api/health.api';
+import { trendGeometry, CHART } from '../trendGeometry';
 
 
 import { useAppTheme } from '../../../design/theme/ThemeProvider';
@@ -24,157 +23,86 @@ import { ReadingView } from '../healthTypes';
 import { sizes } from '../../../design/tokens/sizes';
 
 export function TrendChart({
-  values,
-  color,
-  labels,
-  range,
+  measurements,
+  tone,
 }: {
-  values: number[];
-  color: string;
-  labels: string[];
-  range?: string;
+  measurements: HealthMeasurement[];
+  tone: 'danger' | 'primary';
 }) {
   const { theme } = useAppTheme();
+  const chart = trendGeometry(measurements);
+  if (!chart) return null;
 
-  const width = 340;
-  const height = 92;
-
-  const left = 30;
-  const right = 10;
-  const top = 8;
-  const bottom = 20;
-
-  const chartWidth =
-    width - left - right;
-
-  const chartHeight =
-    height - top - bottom;
-
-  const min =
-    Math.min(...values);
-
-  const max =
-    Math.max(...values);
-
-  const spread =
-    max - min || 1;
-
-  const points = values.map(
-    (value, index) => {
-      const x =
-        left +
-        (chartWidth *
-          index) /
-          Math.max(
-            values.length - 1,
-            1,
-          );
-
-      const y =
-        top +
-        chartHeight -
-        ((value - min) /
-          spread) *
-          chartHeight;
-
-      return `${x},${y}`;
-    },
-  );
+  const { rows, points, min, max, limits, y, sequential } = chart;
+  const latest = rows[rows.length - 1];
+  const stroke = tone === 'danger' ? theme.colors.status.danger.text : theme.colors.text.interactive;
+  const rangeColor = theme.colors.status.success.text;
+  const axis = theme.colors.border.default;
+  const labelProps = {
+    fill: theme.colors.text.tertiary,
+    fontSize: theme.typography.caption.fontSize,
+    fontWeight: theme.typography.caption.fontWeight,
+  };
+  const day = (value: string | null) => value?.slice(0, 10) || 'Undated';
 
   return (
-    <View
-      style={styles.chartContainer}
-    >
+    <View>
       <Svg
         width="100%"
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
+        height={CHART.height}
+        viewBox={`0 0 ${CHART.width} ${CHART.height}`}
+        accessibilityLabel={`Trend: ${rows.map(row => `${day(row.measuredAt)}: ${row.value} ${row.unit}`).join(', ')}`}
       >
-        <Circle
-          cx={left}
-          cy={height - bottom}
-          r={2}
-          fill={theme.colors.border.default}
-        />
-
-        <Polyline
-          points={points.join(
-            ' ',
-          )}
-          fill="none"
-          stroke={color}
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {values.map(
-          (value, index) => {
-            const [
-              x,
-              y,
-            ] = points[
-              index
-            ]
-              .split(',')
-              .map(Number);
-
-            return (
-              <Circle
-                key={`${value}-${index}`}
-                cx={x}
-                cy={y}
-                r={
-                  index ===
-                  values.length - 1
-                    ? 5
-                    : 3
-                }
-                fill={color}
-              />
-            );
-          },
-        )}
+        {limits.length ? (
+          <Rect
+            x={CHART.left}
+            width={CHART.right - CHART.left}
+            y={y(latest.referenceMax ?? max)}
+            height={Math.max(0, y(latest.referenceMin ?? min) - y(latest.referenceMax ?? max))}
+            fill={rangeColor}
+            opacity={0.12}
+          />
+        ) : null}
+        {limits.map(limit => (
+          <React.Fragment key={limit}>
+            <Line
+              x1={CHART.left}
+              x2={CHART.right}
+              y1={y(limit)}
+              y2={y(limit)}
+              stroke={rangeColor}
+              strokeDasharray="3 4"
+            />
+            <SvgText x={CHART.right - 2} y={y(limit) - 4} textAnchor="end" {...labelProps}>
+              {limit} {latest.unit}
+            </SvgText>
+          </React.Fragment>
+        ))}
+        <Line x1={CHART.left} y1={CHART.bottom} x2={CHART.right} y2={CHART.bottom} stroke={axis} />
+        <Line x1={CHART.left} y1={CHART.top} x2={CHART.left} y2={CHART.bottom} stroke={axis} />
+        <SvgText x={CHART.left - 7} y={CHART.top + 6} textAnchor="end" {...labelProps}>
+          {Number(max.toPrecision(3))}
+        </SvgText>
+        <SvgText x={CHART.left - 7} y={CHART.bottom} textAnchor="end" {...labelProps}>
+          {Number(min.toPrecision(3))}
+        </SvgText>
+        {points.length > 1 ? (
+          <Polyline
+            points={points.map(point => `${point.x},${point.y}`).join(' ')}
+            fill="none"
+            stroke={stroke}
+            strokeWidth={2}
+            strokeLinejoin="round"
+          />
+        ) : null}
+        {points.map((point, index) => (
+          <Circle key={rows[index].id} cx={point.x} cy={point.y} r={index === points.length - 1 ? 5 : 3} fill={stroke} />
+        ))}
       </Svg>
-
-      <View
-        style={
-          styles.chartLabels
-        }
-      >
-        <AppText
-          variant="caption"
-          color="muted"
-        >
-          {labels[0]}
-        </AppText>
-
-        <AppText
-          variant="caption"
-          color="muted"
-        >
-          {labels[labels.length - 1]}
-        </AppText>
-      </View>
-
-      {range ? (
-        <AppText
-          variant="caption"
-          style={[
-            styles.chartRange,
-            {
-              color:
-                theme.colors.status.success.text,
-            },
-          ]}
-        >
-          printed range ≤{' '}
-          {range.replace(
-            'under ',
-            '',
-          )}
-        </AppText>
-      ) : null}
+      <AppText variant="caption" color="muted">
+        {day(rows[0].measuredAt)} — {day(latest.measuredAt)} · {rows.length} {rows.length === 1 ? 'reading' : 'readings'}
+        {sequential ? ' · Ordered by reading; spacing is not elapsed time' : ''}
+      </AppText>
     </View>
   );
 }
@@ -190,12 +118,6 @@ export function ReadingCard({
   reading: ReadingView;
 }) {
   const { theme } = useAppTheme();
-
-  const lineColor =
-    reading.color ===
-    'danger'
-      ? theme.colors.status.danger.text
-      : theme.colors.text.interactive;
 
   return (
     <Card
@@ -273,18 +195,7 @@ export function ReadingCard({
         </AppText>
       </Row>
 
-      <TrendChart
-        values={
-          reading.values
-        }
-        color={lineColor}
-        labels={
-          reading.dates
-        }
-        range={
-          reading.range
-        }
-      />
+      <TrendChart measurements={reading.measurements} tone={reading.color} />
 
       <Row
         align="center"

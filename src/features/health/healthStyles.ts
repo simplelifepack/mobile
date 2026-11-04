@@ -622,29 +622,6 @@ resultsCount: {
   // Chart
   // --------------------------------------------------------------------------
 
-  chartContainer: {
-    width: '100%',
-    height: 102,
-    position: 'relative',
-  },
-
-  chartLabels: {
-    position: 'absolute',
-    left: 30,
-    right: 10,
-    bottom: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-
-  chartRange: {
-    position: 'absolute',
-    right: 10,
-    bottom: 22,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-
   removeReading: {
     fontSize: fontSize.caption,
     lineHeight: lineHeight.caption,

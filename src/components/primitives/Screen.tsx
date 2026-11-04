@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { layout } from '../../design/tokens/spacing';
+import { AppText } from './AppText';
 const Safe = styled(SafeAreaView)(({ theme }) => ({
   flex: 1,
   backgroundColor: theme.colors.surface.canvas,
@@ -86,6 +87,11 @@ export function Screen({
             { paddingBottom: tabInset + 16 },
           ]}
         >
+          {refreshing ? (
+            <AppText variant="caption" color="secondary" align="center" accessibilityLiveRegion="polite">
+              Refreshing…
+            </AppText>
+          ) : null}
           {children}
         </Scroll>
       ) : (
