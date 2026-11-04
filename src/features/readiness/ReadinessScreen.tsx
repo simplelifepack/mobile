@@ -489,14 +489,14 @@ function PackageDetailBottomSheet({
             </View>
             <View style={styles.packageHeaderCopy}>
               <AppText
-                variant="heading"
+                variant="listTitle"
                 numberOfLines={2}
                 style={styles.sheetTitle}
               >
                 {selected?.title ?? 'Package'}
               </AppText>
               <AppText
-                variant="body"
+                variant="bodySm"
                 color="secondary"
                 style={styles.packageSubtitle}
               >
@@ -544,7 +544,7 @@ function PackageDetailBottomSheet({
             ) : null}
 
             {selected && readiness ? (
-              <Stack gap="md">
+              <Stack gap="sm">
                 <View
                   style={[
                     styles.sourceCard,
@@ -612,7 +612,7 @@ function PackageDetailBottomSheet({
                 </View>
 
                 <View style={styles.readinessSummaryRow}>
-                  <ReadinessRing percentage={readiness.percentage} size={88} />
+                  <ReadinessRing percentage={readiness.percentage} size={56} />
                   <AppText
                     variant="body"
                     color="secondary"
@@ -650,7 +650,7 @@ function PackageDetailBottomSheet({
                       strokeWidth={2.5}
                     />
 
-                    <AppText variant="heading" style={styles.vaultTitle}>
+                    <AppText variant="listTitle" style={styles.vaultTitle}>
                       Already in your vault ({readyRequirements.length})
                     </AppText>
                   </View>
@@ -777,7 +777,7 @@ function PackageDetailBottomSheet({
                         color={theme.colors.status.warning.text}
                         strokeWidth={2}
                       />
-                      <AppText variant="heading" style={styles.vaultTitle}>
+                      <AppText variant="listTitle" style={styles.vaultTitle}>
                         Still needed ({missingRequirements.length})
                       </AppText>
                     </View>
@@ -851,7 +851,7 @@ function PackageDetailBottomSheet({
                         color={theme.colors.text.secondary}
                         strokeWidth={2}
                       />
-                      <AppText variant="heading" style={styles.vaultTitle}>
+                      <AppText variant="listTitle" style={styles.vaultTitle}>
                         Not needed ({skippedRequirements.length})
                       </AppText>
                     </View>
@@ -912,7 +912,7 @@ function PackageDetailBottomSheet({
                       color={theme.colors.text.secondary}
                       strokeWidth={2}
                     />
-                    <AppText variant="heading" style={styles.vaultTitle}>
+                    <AppText variant="listTitle" style={styles.vaultTitle}>
                       In this download
                     </AppText>
                     <AppText variant="caption" color="secondary">
@@ -980,7 +980,7 @@ function PackageDetailBottomSheet({
                         { borderBottomColor: theme.colors.border.default },
                       ]}
                     >
-                      <AppText variant="heading" style={styles.vaultTitle}>
+                      <AppText variant="listTitle" style={styles.vaultTitle}>
                         Sources
                       </AppText>
                     </View>
@@ -1965,12 +1965,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingBottom: 12,
+    paddingBottom: 8,
     borderBottomWidth: 1,
   },
   sheetPackageIcon: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1979,15 +1979,15 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   sheetCloseButton: {
-    width: sizes.minimumTouchTarget,
-    height: sizes.minimumTouchTarget,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.tile,
+    borderRadius: radius.pill,
     borderWidth: 1,
   },
   sheetContent: {
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 32,
   },
   sheetLoading: {
@@ -2001,23 +2001,22 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderRadius: radius.tile,
-    gap: 8,
+    gap: 4,
   },
   sourceText: {},
   checkedRow: {
     minHeight: 28,
   },
   packageHeaderCopy: { flex: 1, minWidth: 0, gap: 4 },
-  packageSubtitle: { fontSize: fontSize.body, lineHeight: lineHeight.body },
+  packageSubtitle: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm },
   sourceProvider: { fontSize: fontSize.body, lineHeight: lineHeight.body, fontWeight: fontWeights.bold, textDecorationLine: 'underline' },
   sourceLinks: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   sourcesNote: { padding: 12 },
   readinessSummaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    paddingVertical: 8,
-    marginBottom: 4,
+    gap: 12,
+    paddingVertical: 0,
   },
   readinessSummaryText: { fontSize: fontSize.body, lineHeight: lineHeight.body },
   missingRequirementRow: {
@@ -2030,8 +2029,8 @@ const styles = StyleSheet.create({
   },
   missingRequirementCopy: { flex: 1, minWidth: 0, gap: 2 },
   addRequirementButton: {
-    minWidth: 56,
-    minHeight: sizes.minimumTouchTarget,
+    minWidth: 48,
+    minHeight: 32,
     paddingHorizontal: 12,
     borderWidth: 1,
     borderRadius: radius.tile,
@@ -2067,7 +2066,7 @@ const styles = StyleSheet.create({
   downloadActionText: { fontSize: fontSize.body, fontWeight: fontWeights.bold },
   actionPill: {
     alignSelf: 'flex-start',
-    minHeight: sizes.minimumTouchTarget,
+    minHeight: 32,
     justifyContent: 'center',
     paddingHorizontal: 12,
     borderWidth: 1,
@@ -2094,7 +2093,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   vaultHeader: {
-    minHeight: 52,
+    minHeight: 40,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -2105,9 +2104,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   vaultRow: {
-    minHeight: 70,
+    minHeight: 56,
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
