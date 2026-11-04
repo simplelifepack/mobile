@@ -28,6 +28,7 @@ import {
   Image as ImageIcon,
   Landmark,
   Plane,
+  FileCheck2,
   Search,
   SlidersHorizontal,
   Trash2,
@@ -180,6 +181,7 @@ function formatDocumentDate(createdAt?: string, expiryDate?: string | null) {
 export function DocumentsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { theme } = useAppTheme();
+  const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<React.ElementRef<typeof TextInput>>(null);
   const previewRequestId = useRef(0);
 
@@ -218,6 +220,11 @@ export function DocumentsScreen() {
       FileSystem.unlink(path).catch(() => undefined);
     };
   }, [previewPath]);
+
+  const toggleSearch = () => {
+    if (searchOpen) setQuery('');
+    setSearchOpen(open => !open);
+  };
 
   const openPreview = async (
     document: DocumentRecord,
@@ -506,7 +513,7 @@ export function DocumentsScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Search documents"
-              onPress={() => searchInputRef.current?.focus()}
+              onPress={toggleSearch}
               style={({ pressed }) => [
                 styles.headerButton,
                 {
@@ -528,30 +535,55 @@ export function DocumentsScreen() {
           </Row>
         </Row>
 
-        {/* Search */}
-        <View
-          style={[
-            styles.searchContainer,
+        {/* Search (opened from the header icon) */}
+        {searchOpen ? (
+          <View
+            style={[
+              styles.searchContainer,
+              {
+                backgroundColor: theme.colors.surface.default,
+                borderColor: theme.colors.border.default,
+              },
+            ]}
+          >
+            <Search size={sizes.icon.lg} color={theme.colors.text.secondary} strokeWidth={2} />
+            <SearchInput
+              inputRef={searchInputRef}
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search documents..."
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close search"
+              hitSlop={10}
+              onPress={toggleSearch}
+            >
+              <X size={sizes.icon.md} color={theme.colors.text.secondary} />
+            </Pressable>
+          </View>
+        ) : null}
+
+        {/* DigiLocker import */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Import issued documents from DigiLocker"
+          onPress={() => navigation.navigate('DigiLocker')}
+          style={({ pressed }) => [
+            styles.digiLockerButton,
             {
-              backgroundColor:
-                theme.colors.surface.default,
+              backgroundColor: theme.colors.surface.brandTint,
               borderColor: theme.colors.border.default,
             },
+            pressed && styles.pressed,
           ]}
         >
-          <Search
-            size={sizes.icon.lg}
-            color={theme.colors.text.secondary}
-            strokeWidth={2}
-          />
-
-          <SearchInput
-            inputRef={searchInputRef}
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search documents..."
-          />
-        </View>
+          <FileCheck2 size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />
+          <AppText variant="labelMd" style={styles.digiLockerText}>
+            Import from DigiLocker
+          </AppText>
+          <ChevronRight size={sizes.icon.md} color={theme.colors.icon.secondary} />
+        </Pressable>
 
         {/* Count / Select / Filter */}
         <Row
@@ -944,6 +976,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+
+  digiLockerButton: {
+    minHeight: 44,
+    borderRadius: radius.tile,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  digiLockerText: {
+    flex: 1,
   },
 
   searchInputWrapper: {
