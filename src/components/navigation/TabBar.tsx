@@ -1,22 +1,12 @@
 import React from 'react';
-import { Platform, StyleSheet } from 'react-native';
 import {
   BottomTabBarHeightCallbackContext,
   type BottomTabBarProps,
 } from '@react-navigation/bottom-tabs';
-import {
-  HeartPulse,
-  LayoutGrid,
-  Plane,
-  Wallet,
-  FolderOpen,
-} from 'lucide-react-native';
+import { Archive, Files, Heart, House, PiggyBank } from 'lucide-react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from '@react-native-community/blur';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
-import { darkTheme } from '../../design/theme/dark';
-import { shadows } from '../../design/tokens/shadows';
 import { sizes } from '../../design/tokens/sizes';
 import { fontWeights } from '../../design/tokens/typography';
 import { AppText } from '../primitives/AppText';
@@ -46,10 +36,8 @@ const Pill = styled.View(({ theme }) => ({
   overflow: 'hidden',
   borderRadius: theme.radius.pill,
   borderWidth: 1,
-  borderColor: theme.colors.overlay.glassBorder,
-  borderTopColor: theme.colors.overlay.glassEdge,
-  backgroundColor: theme.colors.overlay.glass,
-  ...shadows.floating,
+  borderColor: theme.colors.border.emphasis,
+  backgroundColor: theme.colors.surface.default,
 }));
 
 const Item = styled.Pressable({
@@ -61,19 +49,19 @@ const Item = styled.Pressable({
 });
 
 const IconPill = styled.View(({ theme }) => ({
-  width: 56,
-  height: 30,
+  width: 44,
+  height: 36,
   borderRadius: theme.radius.pill,
   alignItems: 'center',
   justifyContent: 'center',
 }));
 
 const icons = {
-  Home: LayoutGrid,
-  Documents: FolderOpen,
-  Packages: Plane,
-  Health: HeartPulse,
-  Wealth: Wallet,
+  Home: House,
+  Documents: Files,
+  Packages: Archive,
+  Health: Heart,
+  Wealth: PiggyBank,
 };
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -86,28 +74,14 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       onLayout={e => reportHeight?.(e.nativeEvent.layout.height)}
     >
       <Pill>
-        <BlurView
-          style={StyleSheet.absoluteFill}
-          blurType={
-            theme === darkTheme
-              ? Platform.OS === 'ios'
-                ? 'ultraThinMaterialDark'
-                : 'dark'
-              : Platform.OS === 'ios'
-                ? 'ultraThinMaterialLight'
-                : 'light'
-          }
-          blurAmount={10}
-          reducedTransparencyFallbackColor={theme.colors.surface.default}
-        />
         {state.routes.map((route, index) => {
           const focused = state.index === index;
-          const Icon = icons[route.name as keyof typeof icons] ?? LayoutGrid;
+          const Icon = icons[route.name as keyof typeof icons] ?? House;
           const label = String(
             descriptors[route.key].options.title ?? route.name,
           );
           const tint = focused
-            ? theme.colors.icon.interactive
+            ? theme.colors.text.onBrand
             : theme.colors.icon.secondary;
           return (
             <Item
@@ -127,10 +101,10 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             >
               <IconPill
                 style={
-                  focused && { backgroundColor: theme.colors.surface.brandTint }
+                  focused && { backgroundColor: theme.colors.action.primary.default }
                 }
               >
-                <Icon size={theme.sizes.icon.lg} color={tint} />
+                <Icon size={theme.sizes.icon.md} color={tint} />
               </IconPill>
               <AppText
                 variant="caption"

@@ -1354,7 +1354,7 @@ export function ReadinessScreen() {
       }
     >
       <Stack
-        gap="sm"
+        gap="md"
         style={[
           styles.container,
           {
@@ -1559,7 +1559,7 @@ export function ReadinessScreen() {
               ) : null}
             </Stack>
           ) : (
-            <Stack gap="sm">{cards.map(({ item, readiness }) => (
+            <Stack gap="md">{cards.map(({ item, readiness }) => (
               <PackageCard
                 key={item.slug}
                 item={item}
@@ -1756,8 +1756,8 @@ const styles = StyleSheet.create({
   },
 
   categoryChip: {
-    height: 32,
-    paddingHorizontal: 12,
+    height: 36,
+    paddingHorizontal: 16,
     borderRadius: radius.pill,
     borderWidth: 1,
     alignItems: 'center',
@@ -1779,9 +1779,9 @@ const styles = StyleSheet.create({
   },
 
   packageCard: {
-    minHeight: 72,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    minHeight: 80,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
   },

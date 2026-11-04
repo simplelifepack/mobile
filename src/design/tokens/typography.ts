@@ -10,9 +10,9 @@ const role = (
 
 // Design System 1.0 text roles. Nothing is below the 12px caption floor.
 export const textRoles = {
-  displayLg: role(34, 40, '700', -0.6),
-  displayMd: role(28, 34, '700', -0.4),
-  headingXl: role(24, 30, '700', -0.3),
+  displayLg: role(34, 40, '600', -0.6),
+  displayMd: role(28, 34, '600', -0.4),
+  headingXl: role(24, 30, '600', -0.3),
   headingLg: role(22, 28, '600', -0.3),
   headingMd: role(20, 26, '600', -0.2),
   headingSm: role(17, 22, '600', -0.2),
@@ -24,7 +24,7 @@ export const textRoles = {
   labelMd: role(15, 20, '500'),
   labelSm: role(13, 16, '500'),
   captionMd: role(12, 16, '500'),
-  numericLg: role(28, 34, '700', -0.4),
+  numericLg: role(28, 34, '600', -0.4),
   numericMd: role(20, 24, '600', -0.2),
 } as const;
 
@@ -76,5 +76,5 @@ export const fontWeights = {
   regular: '400',
   medium: '500',
   semibold: '600',
-  bold: '700',
+  bold: '600',
 } as const;
