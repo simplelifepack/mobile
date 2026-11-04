@@ -1889,7 +1889,7 @@ const styles = StyleSheet.create({
   /* Required wealth groups */
 
   sosButton: {
-    minHeight: 58,
+    minHeight: 48,
     borderRadius: radius.surface,
     flexDirection: 'row',
     alignItems: 'center',
