@@ -446,7 +446,7 @@ floatingAction={
   </>
 }    >
       <Stack
-        gap="lg"
+        gap="md"
         style={[
           styles.container,
           {
@@ -485,7 +485,7 @@ floatingAction={
 
         </Stack>
 
-        <Stack gap="md">
+        <Stack gap="sm">
         {/* MEMBER PROFILE */}
 
         {member ? (

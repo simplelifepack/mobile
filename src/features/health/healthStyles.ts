@@ -431,13 +431,13 @@ headerButton: {
   },
 
 memberItem: {
-  width: 72,
+  width: 60,
   alignItems: 'center',
-  gap: 6,
+  gap: 4,
 },
   memberAvatar: {
-    width: 64,
-    height: 64,
+    width: 48,
+    height: 48,
     borderRadius: radius.pill,
     borderWidth: 2,
     alignItems: 'center',
@@ -467,8 +467,8 @@ memberItem: {
   },
 
   profileAvatar: {
-    width: 66,
-    height: 66,
+    width: 52,
+    height: 52,
     borderRadius: radius.tile,
     borderWidth: 2,
     alignItems: 'center',
@@ -476,8 +476,8 @@ memberItem: {
   },
 
   profileAvatarText: {
-    fontSize: fontSize.headingLg,
-    lineHeight: lineHeight.headingLg,
+    fontSize: fontSize.headingSm,
+    lineHeight: lineHeight.headingSm,
     fontWeight: fontWeights.semibold,
   },
 
@@ -500,10 +500,10 @@ profileMeta: {
   // --------------------------------------------------------------------------
 
   prepareVisit: {
-  minHeight: 64,
+  minHeight: 48,
   borderRadius: radius.tile,
-  paddingHorizontal: 20,
-  paddingVertical: 12,
+  paddingHorizontal: 16,
+  paddingVertical: 8,
   flexDirection: 'row',
   alignItems: 'center',
   gap: 12,
@@ -522,16 +522,16 @@ prepareText: {
 
   quickActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
 
   quickAction: {
   flex: 1,
-  minHeight: 60,
+  minHeight: 44,
   borderRadius: radius.tile,
   borderWidth: 1,
   paddingHorizontal: 12,
-  paddingVertical: 12,
+  paddingVertical: 8,
   flexDirection: 'row',
   alignItems: 'center',
   gap: 8,
