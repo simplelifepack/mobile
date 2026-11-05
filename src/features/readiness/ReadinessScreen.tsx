@@ -654,7 +654,7 @@ function PackageDetailBottomSheet({
                 </View>
 
                 {/* ==========================================================
-                    Already in your vault
+                    Available documents
                 ========================================================== */}
 
                 <View
@@ -681,7 +681,7 @@ function PackageDetailBottomSheet({
                     />
 
                     <AppText variant="listTitle" style={styles.vaultTitle}>
-                      Already in your vault ({readyRequirements.length})
+                      Available documents ({readyRequirements.length})
                     </AppText>
                   </View>
 
