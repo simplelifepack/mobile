@@ -10,22 +10,22 @@ const role = (
 
 // Design System 1.0 text roles. Nothing is below the 12px caption floor.
 export const textRoles = {
-  displayLg: role(34, 40, '600', -0.6),
-  displayMd: role(28, 34, '600', -0.4),
-  headingXl: role(24, 30, '600', -0.3),
-  headingLg: role(22, 28, '600', -0.3),
-  headingMd: role(20, 26, '600', -0.2),
-  headingSm: role(17, 22, '600', -0.2),
-  headingXs: role(15, 20, '600', -0.1),
+  displayLg: role(34, 40, '500', -0.6),
+  displayMd: role(28, 34, '500', -0.4),
+  headingXl: role(24, 30, '500', -0.3),
+  headingLg: role(22, 28, '500', -0.3),
+  headingMd: role(20, 26, '500', -0.2),
+  headingSm: role(17, 22, '500', -0.2),
+  headingXs: role(15, 20, '500', -0.1),
   bodyLg: role(17, 24, '400', -0.1),
   bodyMd: role(15, 22, '400'),
   bodySm: role(13, 18, '400'),
-  labelLg: role(17, 22, '500', -0.1),
-  labelMd: role(15, 20, '500'),
-  labelSm: role(13, 16, '500'),
-  captionMd: role(12, 16, '500'),
-  numericLg: role(28, 34, '600', -0.4),
-  numericMd: role(20, 24, '600', -0.2),
+  labelLg: role(17, 22, '400', -0.1),
+  labelMd: role(15, 20, '400'),
+  labelSm: role(13, 16, '400'),
+  captionMd: role(12, 16, '400'),
+  numericLg: role(28, 34, '500', -0.4),
+  numericMd: role(20, 24, '500', -0.2),
 } as const;
 
 export type TextRole = keyof typeof textRoles;
@@ -74,7 +74,7 @@ export const lineHeight = {
 
 export const fontWeights = {
   regular: '400',
-  medium: '500',
-  semibold: '600',
-  bold: '600',
+  medium: '400',
+  semibold: '500',
+  bold: '500',
 } as const;
