@@ -60,7 +60,8 @@ import {
 } from './documentFilters';
 import { useDocumentsQuery } from '../../services/api';
 import { documentsApi } from '../../api/documents.api';
-import { healthApi, isMemberResolution, type HealthMember, type HealthRecordDetail } from '../../api/health.api';
+import { healthApi, isMemberResolution, type HealthMemberResolution, type HealthMember, type HealthRecordDetail } from '../../api/health.api';
+import { HealthMemberForm } from '../health/components/HealthForms';
 import { documentContextLabel, healthRecordType, isHealthDocument } from './documentDetails';
 import {
   analyzeSelectedDocument,
@@ -215,6 +216,14 @@ export function DocumentsScreen() {
     members: HealthMember[];
   }>();
   const [isImporting, setIsImporting] = useState(false);
+  const [healthSyncing, setHealthSyncing] = useState(false);
+  const [profilePrompt, setProfilePrompt] = useState<{
+    document: DocumentRecord;
+    name: string;
+    patientName?: string | null;
+    candidates: Array<{ id: string; name: string }>;
+  }>();
+  const [profileFormVisible, setProfileFormVisible] = useState(false);
   const [previewError, setPreviewError] = useState<string>();
   const previewPages = previewDocument?.pages ?? [];
 
@@ -334,8 +343,7 @@ export function DocumentsScreen() {
         setHealthPrompt({ document: result.document, name: savedName, members });
         return;
       }
-      const healthRecord = await syncToHealth(result.document);
-      Alert.alert('Document added', `${savedName} is now in your vault${healthSummary(healthRecord)}`);
+      await completeHealthSync(result.document, savedName);
     } catch (saveError) {
       if (__DEV__) console.warn('[save payload]', JSON.stringify(payload).slice(0, 1500));
       Alert.alert(
@@ -359,23 +367,19 @@ export function DocumentsScreen() {
     healthNoteRef.current = note;
   };
 
-  const syncToHealth = async (saved: DocumentRecord, memberId?: string) => {
+  const syncToHealth = async (saved: DocumentRecord, memberId?: string): Promise<HealthRecordDetail | HealthMemberResolution | undefined> => {
     setHealthNote('');
     if (!isHealthDocument(saved)) return undefined;
     try {
-      const record = await healthApi.createRecord({ documentId: saved.id, memberId, type: healthRecordType(saved) });
-      if (isMemberResolution(record)) {
-        setHealthNote(' It was not added to Health: create a Health profile for the patient, then add it from Health.');
-        return undefined;
-      }
-      return record;
+      return await healthApi.createRecord({ documentId: saved.id, memberId, type: healthRecordType(saved) });
     } catch (syncError) {
       setHealthNote(` It was not added to Health: ${syncError instanceof Error ? syncError.message : 'please try again.'}`);
       return undefined;
     }
   };
 
-  const healthSummary = (record?: HealthRecordDetail) => {
+  const healthSummary = (record?: HealthRecordDetail | HealthMemberResolution) => {
+    if (record && isMemberResolution(record)) return '.';
     if (!record) return `.${healthNoteRef.current}`;
     if (record.measurements.length) {
       return ` and Health, with ${record.measurements.length} value(s) read from it.`;
@@ -385,12 +389,48 @@ export function DocumentsScreen() {
       : ' and Health.';
   };
 
+  // Adds the document to Health; when no profile matches the patient, asks which profile to use.
+  const completeHealthSync = async (saved: DocumentRecord, name: string, memberId?: string) => {
+    setHealthSyncing(true);
+    let result: HealthRecordDetail | HealthMemberResolution | undefined;
+    try {
+      result = memberId || isHealthDocument(saved) ? await syncToHealth(saved, memberId) : undefined;
+    } finally {
+      setHealthSyncing(false);
+    }
+    if (result && isMemberResolution(result)) {
+      const candidates = result.memberMatch.candidates.length
+        ? result.memberMatch.candidates
+        : await healthApi.members().catch(() => []);
+      setProfilePrompt({ document: saved, name, patientName: result.patient?.name, candidates });
+      return;
+    }
+    Alert.alert('Document added', `${name} is now in your vault${healthSummary(result)}`);
+  };
+
   const finishHealthPrompt = async (memberId?: string) => {
     const prompt = healthPrompt;
     if (!prompt) return;
     setHealthPrompt(undefined);
-    const record = memberId ? await syncToHealth(prompt.document, memberId) : undefined;
-    Alert.alert('Document added', `${prompt.name} is now in your vault${healthSummary(record)}`);
+    if (!memberId) {
+      Alert.alert('Document added', `${prompt.name} is now in your vault.`);
+      return;
+    }
+    await completeHealthSync(prompt.document, prompt.name, memberId);
+  };
+
+  const finishProfilePrompt = async (memberId?: string) => {
+    const prompt = profilePrompt;
+    if (!prompt) return;
+    setProfilePrompt(undefined);
+    if (!memberId) {
+      Alert.alert(
+        'Document added',
+        `${prompt.name} is now in your vault. It was not added to Health: choose a profile for the patient from Health.`,
+      );
+      return;
+    }
+    await completeHealthSync(prompt.document, prompt.name, memberId);
   };
 
   const processSelectedDocument = async (
@@ -843,6 +883,37 @@ export function DocumentsScreen() {
       />
 
       <ActionSheet
+        visible={Boolean(profilePrompt) && !profileFormVisible}
+        title={profilePrompt?.patientName ? `Whose report is this? (${profilePrompt.patientName})` : 'Whose report is this?'}
+        onClose={() => finishProfilePrompt()}
+        options={[
+          ...(profilePrompt?.candidates ?? []).map(member => ({
+            label: member.name,
+            icon: HeartPulse,
+            onPress: () => finishProfilePrompt(member.id),
+          })),
+          {
+            label: profilePrompt?.patientName ? `Create profile for ${profilePrompt.patientName}` : 'Create new profile',
+            icon: HeartPulse,
+            onPress: () => setProfileFormVisible(true),
+          },
+          { label: 'Not now', onPress: () => finishProfilePrompt() },
+        ]}
+      />
+
+      {profileFormVisible ? (
+        <HealthMemberForm
+          initialName={profilePrompt?.patientName ?? ''}
+          onClose={() => setProfileFormVisible(false)}
+          onSave={async payload => {
+            const created = await healthApi.createMember(payload);
+            setProfileFormVisible(false);
+            await finishProfilePrompt(created.id);
+          }}
+        />
+      ) : null}
+
+      <ActionSheet
         visible={picker === 'category'}
         title="Category"
         onClose={() => setPicker(undefined)}
@@ -893,8 +964,8 @@ export function DocumentsScreen() {
         />
       ) : null}
 
-      <Modal visible={isImporting} transparent animationType="fade" statusBarTranslucent>
-        <LoadingState overlay size={48} label="Preparing document" />
+      <Modal visible={isImporting || healthSyncing} transparent animationType="fade" statusBarTranslucent>
+        <LoadingState overlay size={48} label={healthSyncing ? 'Adding to Health' : 'Preparing document'} />
       </Modal>
 
       <Modal

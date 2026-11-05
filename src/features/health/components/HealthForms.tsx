@@ -383,8 +383,10 @@ export function toIsoDate(value: string): string | null {
 export function HealthMemberForm({
   onClose,
   onSave,
+  initialName = '',
 }: {
   onClose: () => void;
+  initialName?: string;
   onSave: (payload: {
     name: string;
     relation: string;
@@ -392,7 +394,7 @@ export function HealthMemberForm({
     dateOfBirth: string | null;
   }) => Promise<void>;
 }) {
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initialName);
   const [relation, setRelation] = useState('');
   const [customRelation, setCustomRelation] = useState('');
   const [bloodGroup, setBloodGroup] = useState('Unknown');
