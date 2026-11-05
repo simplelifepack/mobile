@@ -2076,6 +2076,11 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNNotifee (9.1.8):
+    - React-Core
+    - RNNotifee/NotifeeCore (= 9.1.8)
+  - RNNotifee/NotifeeCore (9.1.8):
+    - React-Core
   - RNScreens (4.27.0):
     - hermes-engine
     - RCTRequired
@@ -2277,6 +2282,7 @@ DEPENDENCIES:
   - "RNGoogleSignin (from `../node_modules/@react-native-google-signin/google-signin`)"
   - RNKeychain (from `../node_modules/react-native-keychain`)
   - RNNitroSQLite (from `../node_modules/react-native-nitro-sqlite`)
+  - "RNNotifee (from `../node_modules/@notifee/react-native`)"
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
   - SocketRocket (from `build/rndeps-facades/SocketRocket`)
@@ -2495,6 +2501,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-keychain"
   RNNitroSQLite:
     :path: "../node_modules/react-native-nitro-sqlite"
+  RNNotifee:
+    :path: "../node_modules/@notifee/react-native"
   RNScreens:
     :path: "../node_modules/react-native-screens"
   RNSVG:
@@ -2613,6 +2621,7 @@ SPEC CHECKSUMS:
   RNGoogleSignin: f98d6e730364a34b6551f2cbb7749c4d84ec7ab1
   RNKeychain: 551d42b0ef53426f82551a0cc961cfa10ad33afa
   RNNitroSQLite: 80aaddc34bb34829675df918a50bf51516853463
+  RNNotifee: 5e3b271e8ea7456a36eec994085543c9adca9168
   RNScreens: 0135deb65b65d207ee6294d0baf06681e1071d93
   RNSVG: 6c9bcbf53822153be6f6c1484f6b0b57c0040d21
   SocketRocket: 37aec555668fb852ec12e3c0de59a86ca58f0871

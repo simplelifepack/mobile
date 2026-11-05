@@ -64,6 +64,7 @@ import { Row } from '../../components/primitives/Row';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { AddToHealthSheet,MetricPickerModal } from './components/AddToHealthSheet';
+import { syncReminderNotifications } from '../../notifications/reminderNotifications';
 import { HealthMemberForm,HealthReadingForm,HealthReminderForm,MedicationForm } from './components/HealthForms';
 import { HealthTabs,PrepareVisit,QuickActions } from './components/HealthNavigation';
 import { EmergencyInfoSheet } from './components/EmergencyInfoSheet';
@@ -134,6 +135,7 @@ export function HealthScreen() {
       ]);
       setMembers(loadedMembers);
       setReminders(loadedReminders);
+      void syncReminderNotifications(loadedReminders);
       const memberId = selectedMember || loadedMembers[0]?.id;
       if (memberId && !selectedMember) setSelectedMember(memberId);
       if (memberId) await refreshMemberData(memberId);
@@ -1053,7 +1055,11 @@ floatingAction={
                 memberId: selectedMember,
                 ...payload,
               });
-              setReminders(current => [created, ...current]);
+              setReminders(current => {
+                const next = [created, ...current];
+                void syncReminderNotifications(next);
+                return next;
+              });
               setReminderFormVisible(false);
             }}
           />

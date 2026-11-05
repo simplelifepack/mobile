@@ -21,6 +21,7 @@ import {
 
 import { useBootstrapQuery, usePackagesQuery } from '../../services/api';
 import { healthApi, type HealthHomeReminder } from '../../api/health.api';
+import { syncReminderNotifications } from '../../notifications/reminderNotifications';
 import { wealthApi, type WealthRecord } from '../../api/wealth.api';
 import type { DocumentRecord } from '../../api/types';
 import { calculatePackReadiness } from '../readiness/calculatePackReadiness';
@@ -87,7 +88,10 @@ export function HomeScreen() {
   useEffect(() => {
     let active = true;
     healthApi.reminders()
-      .then(items => { if (active) setHealthReminders(items); })
+      .then(items => {
+        if (active) setHealthReminders(items);
+        void syncReminderNotifications(items);
+      })
       .catch(error => {
         if (active) setReminderError(error instanceof Error ? error.message : 'Unable to load reminders.');
       });

@@ -66,3 +66,16 @@ jest.mock('react-native-blob-util', () => ({
   __esModule: true,
   default: { ios: { openDocument: jest.fn() }, android: { actionViewIntent: jest.fn() } },
 }));
+
+jest.mock('@notifee/react-native', () => ({
+  __esModule: true,
+  default: {
+    requestPermission: jest.fn(async () => ({ authorizationStatus: 1 })),
+    createChannel: jest.fn(),
+    getTriggerNotificationIds: jest.fn(async () => []),
+    cancelTriggerNotification: jest.fn(),
+    createTriggerNotification: jest.fn(),
+  },
+  AuthorizationStatus: { AUTHORIZED: 1 },
+  TriggerType: { TIMESTAMP: 0 },
+}));
