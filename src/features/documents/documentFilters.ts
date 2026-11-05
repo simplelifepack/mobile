@@ -74,8 +74,6 @@ export function matchesQuickFilter(document: DocumentRecord, quick: QuickFilter,
 export function activeFilterCount(filters: DocumentFilters) {
   return (
     Number(filters.quick !== 'all') +
-    Number(filters.category !== ALL) +
-    Number(filters.person !== ALL) +
     Number(filters.sort !== defaultFilters.sort)
   );
 }

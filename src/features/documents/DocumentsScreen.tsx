@@ -18,6 +18,7 @@ import {
 import {
   Check,
   Camera,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileCheck2,
@@ -47,6 +48,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentDetailSheet } from './DocumentDetailSheet';
 import { DocumentFilterSheet } from './DocumentFilterSheet';
 import {
+  ALL,
   activeFilterCount,
   applyDocumentFilters,
   defaultFilters,
@@ -192,6 +194,7 @@ export function DocumentsScreen() {
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<DocumentFilters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
+  const [picker, setPicker] = useState<'category' | 'person'>();
   const [selectionMode, setSelectionMode] =
     useState(false);
   const [selectedIds, setSelectedIds] = useState<
@@ -735,6 +738,34 @@ export function DocumentsScreen() {
           </Row>
         </Row>
 
+        <Row gap="sm">
+          {([
+            ['category', 'Category', filters.category === ALL ? 'All' : filters.category],
+            ['person', 'Person', filters.person === ALL ? 'Everyone' : filters.person],
+          ] as const).map(([key, title, value]) => {
+            const active = value !== 'All' && value !== 'Everyone';
+            return (
+              <Pressable
+                key={key}
+                accessibilityRole="button"
+                accessibilityLabel={`${title}: ${value}`}
+                onPress={() => setPicker(key)}
+                style={({ pressed }) => [
+                  styles.selectorChip,
+                  {
+                    backgroundColor: active ? theme.colors.selection.surface : theme.colors.surface.default,
+                    borderColor: active ? theme.colors.selection.border : theme.colors.border.default,
+                  },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <AppText variant="label" color="secondary">{title}:</AppText>
+                <AppText variant="label" color="heading" numberOfLines={1} style={styles.selectorValue}>{value}</AppText>
+                <ChevronDown size={sizes.icon.sm} color={theme.colors.icon.secondary} />
+              </Pressable>
+            );
+          })}
+        </Row>
 
         </Stack>
 
@@ -807,12 +838,38 @@ export function DocumentsScreen() {
         ]}
       />
 
+      <ActionSheet
+        visible={picker === 'category'}
+        title="Category"
+        onClose={() => setPicker(undefined)}
+        options={['All', ...filterOptions.categories].map(name => ({
+          label: name,
+          selected: (name === 'All' ? ALL : name) === filters.category,
+          onPress: () => {
+            setFilters(current => ({ ...current, category: name === 'All' ? ALL : name }));
+            setPicker(undefined);
+          },
+        }))}
+      />
+
+      <ActionSheet
+        visible={picker === 'person'}
+        title="Person"
+        onClose={() => setPicker(undefined)}
+        options={['Everyone', ...filterOptions.people].map(name => ({
+          label: name,
+          selected: (name === 'Everyone' ? ALL : name) === filters.person,
+          onPress: () => {
+            setFilters(current => ({ ...current, person: name === 'Everyone' ? ALL : name }));
+            setPicker(undefined);
+          },
+        }))}
+      />
+
       <DocumentFilterSheet
         visible={showFilters}
         filters={filters}
         quickCounts={filterOptions.quickCounts}
-        categories={filterOptions.categories}
-        people={filterOptions.people}
         onChange={setFilters}
         onClose={() => setShowFilters(false)}
       />
@@ -1054,6 +1111,19 @@ const styles = StyleSheet.create({
   toolbar: {
     minHeight: 28,
   },
+
+  selectorChip: {
+    flex: 1,
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: radius.pill,
+  },
+
+  selectorValue: { flex: 1 },
 
   documentCount: {
     fontSize: fontSize.bodySm,

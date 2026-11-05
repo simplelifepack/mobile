@@ -7,7 +7,6 @@ import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { radius } from '../../design/tokens/radius';
 import { sizes } from '../../design/tokens/sizes';
 import {
-  ALL,
   defaultFilters,
   quickFilterLabels,
   sortLabels,
@@ -66,16 +65,12 @@ export function DocumentFilterSheet({
   visible,
   filters,
   quickCounts,
-  categories,
-  people,
   onChange,
   onClose,
 }: {
   visible: boolean;
   filters: DocumentFilters;
   quickCounts: Record<string, number>;
-  categories: string[];
-  people: string[];
   onChange: (filters: DocumentFilters) => void;
   onClose: () => void;
 }) {
@@ -98,7 +93,7 @@ export function DocumentFilterSheet({
           <View style={styles.header}>
             <AppText variant="title">Filters</AppText>
             <View style={styles.actions}>
-              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => onChange(defaultFilters)}>
+              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => onChange({ ...defaultFilters, category: filters.category, person: filters.person })}>
                 <AppText variant="label" color="secondary">Reset</AppText>
               </Pressable>
               <Pressable accessibilityRole="button" hitSlop={8} onPress={onClose}>
@@ -116,18 +111,6 @@ export function DocumentFilterSheet({
                 label,
                 count: value === 'all' || value === 'proofs' ? undefined : quickCounts[value],
               }))}
-            />
-            <Group
-              title="Category"
-              value={filters.category}
-              onSelect={value => set('category', value)}
-              options={[{ value: ALL, label: 'All' }, ...categories.map(name => ({ value: name, label: name }))]}
-            />
-            <Group
-              title="Person"
-              value={filters.person}
-              onSelect={value => set('person', value)}
-              options={[{ value: ALL, label: 'Everyone' }, ...people.map(name => ({ value: name, label: name }))]}
             />
             <Group
               title="Sort"
