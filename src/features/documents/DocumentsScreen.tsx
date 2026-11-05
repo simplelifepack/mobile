@@ -350,18 +350,29 @@ export function DocumentsScreen() {
   };
 
   // Best effort: the document is already saved, so a Health failure must not fail the upload.
+  const healthNoteRef = useRef('');
+  const setHealthNote = (note: string) => {
+    healthNoteRef.current = note;
+  };
+
   const syncToHealth = async (saved: DocumentRecord, memberId?: string) => {
+    setHealthNote('');
     if (!isHealthDocument(saved)) return undefined;
     try {
       const record = await healthApi.createRecord({ documentId: saved.id, memberId, type: healthRecordType(saved) });
-      return isMemberResolution(record) ? undefined : record;
-    } catch {
+      if (isMemberResolution(record)) {
+        setHealthNote(' It was not added to Health: create a Health profile for the patient, then add it from Health.');
+        return undefined;
+      }
+      return record;
+    } catch (syncError) {
+      setHealthNote(` It was not added to Health: ${syncError instanceof Error ? syncError.message : 'please try again.'}`);
       return undefined;
     }
   };
 
   const healthSummary = (record?: HealthRecordDetail) => {
-    if (!record) return '.';
+    if (!record) return `.${healthNoteRef.current}`;
     if (record.measurements.length) {
       return ` and Health, with ${record.measurements.length} value(s) read from it.`;
     }
