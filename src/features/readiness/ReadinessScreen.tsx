@@ -1585,7 +1585,7 @@ export function ReadinessScreen() {
               ) : null}
             </Stack>
           ) : (
-            <Stack gap="md">{cards.map(({ item, readiness }) => (
+            <Stack gap="sm">{cards.map(({ item, readiness }) => (
               <PackageCard
                 key={item.slug}
                 item={item}
