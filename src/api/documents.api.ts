@@ -62,6 +62,11 @@ export const documentsApi = {
       `/documents/${encodeURIComponent(id)}/pages/${encodeURIComponent(pageId)}/preview`,
       `${Dirs.CacheDir}/readiness-preview-${Date.now()}${extensionForMimeType(mimeType)}`,
     ),
+  bulkDownload: (ids: string[]) =>
+    downloadToFile(`/documents/bulk-download`, `${Dirs.CacheDir}/readiness-documents-${Date.now()}.zip`, {
+      method: 'POST',
+      body: { ids },
+    }),
   assignmentOptions: () =>
     request<Array<{ id: string; name: string }>>('/documents/assignment-options', {
       requiresAuth: true,

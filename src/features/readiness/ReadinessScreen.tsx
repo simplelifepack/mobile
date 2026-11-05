@@ -22,14 +22,18 @@ import {
   Alert,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
 
 import Svg, { Circle } from 'react-native-svg';
+import { FileSystem } from 'react-native-file-access';
+import { documentsApi } from '../../api/documents.api';
 
 import {
   Car,
@@ -377,6 +381,7 @@ function PackageDetailBottomSheet({
   const [addMenuId, setAddMenuId] = useState<string>();
 
   const [skippedIds, setSkippedIds] = useState<string[]>([]);
+  const [downloading, setDownloading] = useState(false);
 
   if (!visible) {
     return null;
@@ -404,6 +409,30 @@ function PackageDetailBottomSheet({
     setTimeout(action, 400);
   };
   const downloadable = readyRequirements.filter(item => item.matchedDocument);
+
+  const downloadPackage = async () => {
+    const ids = [...new Set(downloadable.map(item => item.matchedDocument!.id))];
+    if (!ids.length || downloading) return;
+    setDownloading(true);
+    try {
+      const file = await documentsApi.bulkDownload(ids);
+      const name = `${selected?.title ?? 'package'}-documents.zip`.replace(/[\\/:*?"<>|]+/g, '_');
+      if (Platform.OS === 'android') {
+        await FileSystem.cpExternal(file.path, name, 'downloads');
+        Alert.alert('Documents downloaded', `Saved to Downloads/${name}.`);
+      } else {
+        await Share.share({ title: name, url: `file://${file.path}` });
+      }
+      await FileSystem.unlink(file.path).catch(() => undefined);
+    } catch (downloadError) {
+      Alert.alert(
+        'Download failed',
+        downloadError instanceof Error ? downloadError.message : 'The documents could not be downloaded.',
+      );
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const sourceLinks = packageSourceLinks(selected);
 
@@ -671,7 +700,7 @@ function PackageDetailBottomSheet({
                             color="secondary"
                             style={styles.requirementGroupHeading}
                           >
-                            {ready ? 'Found in Readiness' : 'Still needed'}
+                            {ready ? 'Found in Readiness' : 'Missing'}
                           </AppText>
                         ) : null}
 
@@ -779,7 +808,7 @@ function PackageDetailBottomSheet({
                         strokeWidth={2}
                       />
                       <AppText variant="listTitle" style={styles.vaultTitle}>
-                        Still needed ({missingRequirements.length})
+                        Missing documents ({missingRequirements.length})
                       </AppText>
                     </View>
 
@@ -943,20 +972,16 @@ function PackageDetailBottomSheet({
                   ))}
                   <Pressable
                     accessibilityRole="button"
-                    onPress={() => {
-                      Alert.alert(
-                        'Download not connected',
-                        'Connect this button to your document bundle/export API.',
-                      );
-                    }}
+                    disabled={!downloadable.length || downloading}
+                    onPress={downloadPackage}
                     style={[
                       styles.downloadAction,
-                      { backgroundColor: theme.colors.action.primary.default },
+                      { backgroundColor: theme.colors.action.primary.default, opacity: !downloadable.length || downloading ? 0.55 : 1 },
                     ]}
                   >
                     <Download size={sizes.icon.md} color={theme.colors.text.onBrand} strokeWidth={2.5} />
                     <AppText variant="label" style={[styles.downloadActionText, { color: theme.colors.text.onBrand }]}>
-                      Download
+                      {downloading ? 'Preparing…' : 'Download'}
                     </AppText>
                   </Pressable>
                 </View>

@@ -225,7 +225,11 @@ export async function uploadMultipart<T>(
   return upload(true);
 }
 
-export async function downloadToFile(path: string, destination: string) {
+export async function downloadToFile(
+  path: string,
+  destination: string,
+  options: { method?: 'GET' | 'POST'; body?: unknown } = {},
+) {
   const download = async (
     retryOnUnauthorized: boolean,
   ): Promise<{
@@ -238,11 +242,13 @@ export async function downloadToFile(path: string, destination: string) {
 
     const headers: Record<string, string> = {};
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+    if (options.body !== undefined) headers['Content-Type'] = 'application/json';
     let response;
     try {
       response = await FileSystem.fetch(`${environment.apiUrl}${path}`, {
-        method: 'GET',
+        method: options.method ?? 'GET',
         headers,
+        body: options.body === undefined ? undefined : JSON.stringify(options.body),
         path: destination,
       });
     } catch (error) {
