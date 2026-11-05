@@ -420,6 +420,7 @@ function WealthRecordRow({ record }: { record: WealthRecord }) {
 
   return (
     <ListRow
+      compact
       icon={<Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
       title={record.title}
       subtitle={subtitle}
