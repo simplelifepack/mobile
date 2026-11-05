@@ -332,7 +332,7 @@ export function WealthHoldingForm({
               ) : null}
             </View>
 
-            {field('Name', text('name', 'e.g. Investment portfolio'))}
+            {field('Name', text('name', 'e.g. Investment portfolio', { maxLength: 160 }))}
             <Row gap="md">
               {field('Kind', select(kinds.find(item => item.value === f.kind)?.label ?? '', () => setPicker('kind')), true)}
               {field('Type', select(f.type || 'Select type', () => setPicker('type')), true)}

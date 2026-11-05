@@ -65,6 +65,9 @@ export type HealthHomeReminder = {
   origin: string;
 };
 
+export type MedicationTime = 'morning' | 'afternoon' | 'night';
+export type MealTiming = 'before_food' | 'after_food' | 'with_food' | 'any_time';
+
 export type HealthMedication = {
   id: string;
   memberId: string;
@@ -316,9 +319,9 @@ export const healthApi = {
     payload: {
       name: string;
       dose: string;
-      frequency?: string | null;
-      repeats: boolean;
-      runsOutAt?: string | null;
+      whenToTake: MedicationTime[];
+      mealTiming: MealTiming;
+      repeatRunsOut?: string | null;
     },
   ) =>
     request<HealthMedication>(

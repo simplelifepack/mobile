@@ -463,11 +463,14 @@ export function DocumentsScreen() {
   }, [data]);
 
   const toggleSelection = (id: string) => {
-    setSelectedIds(current =>
-      current.includes(id)
-        ? current.filter(item => item !== id)
-        : [...current, id],
-    );
+    setSelectedIds(current => {
+      if (current.includes(id)) return current.filter(item => item !== id);
+      if (current.length >= 100) {
+        Alert.alert('Selection limit reached', 'You can delete up to 100 documents at a time.');
+        return current;
+      }
+      return [...current, id];
+    });
   };
 
   const toggleSelectionMode = () => {

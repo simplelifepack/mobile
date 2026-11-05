@@ -841,7 +841,7 @@ export function WealthScreen({
           : 'ASSET';
       const record = await wealthApi.createRecord({
         type,
-        title: document.title,
+        title: document.title.trim().slice(0, 160),
         details: {
           sourceDocumentId: document.id,
           sourceDocumentCategory: doc.category,

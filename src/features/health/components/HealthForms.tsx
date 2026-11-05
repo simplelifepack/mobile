@@ -14,7 +14,9 @@ X
 
 
 import {
-healthApi
+healthApi,
+type MealTiming,
+type MedicationTime,
 } from '../../../api/health.api';
 
 import { useAppTheme } from '../../../design/theme/ThemeProvider';
@@ -225,9 +227,9 @@ export function MedicationForm({
       await healthApi.createMedication(memberId, {
         name: name.trim(),
         dose: dose.trim(),
-        frequency: `${timeOfDay}; ${mealTiming}`,
-        repeats: Boolean(runsOutIso),
-        runsOutAt: runsOutIso,
+        whenToTake: [timeOfDay.toLowerCase() as MedicationTime],
+        mealTiming: mealTiming.toLowerCase().replace(' ', '_') as MealTiming,
+        repeatRunsOut: runsOutIso,
       });
       await onCreated();
       onClose();

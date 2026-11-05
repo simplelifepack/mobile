@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Linking, Pressable, StyleSheet } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet } from 'react-native';
 import { ArrowLeft, Cloud, Mail } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -104,9 +104,14 @@ export function IntegrationsScreen() {
   });
 
   const toggleCandidate = (id: string) =>
-    setSelectedIds(current => current.includes(id)
-      ? current.filter(value => value !== id)
-      : [...current, id]);
+    setSelectedIds(current => {
+      if (current.includes(id)) return current.filter(value => value !== id);
+      if (current.length >= 25) {
+        Alert.alert('Selection limit reached', 'You can import up to 25 Gmail attachments at a time.');
+        return current;
+      }
+      return [...current, id];
+    });
 
   if (loading) {
     return <Screen><SkeletonList label="Loading integrations…" /></Screen>;

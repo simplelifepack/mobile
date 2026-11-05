@@ -354,13 +354,13 @@ export function CustomPackBottomSheet({
   ========================================================================== */
 
   const addRequirement = () => {
-    setRequirements(current => [...current, '']);
+    setRequirements(current => current.length >= 40 ? current : [...current, '']);
   };
 
   const addFromArchive = (label: string) => {
-    setRequirements(current => [
+    setRequirements(current => current.length >= 40 ? current : [
       ...current.filter(item => item.trim()),
-      label.trim(),
+      label.trim().slice(0, 120),
     ]);
   };
 
@@ -578,6 +578,18 @@ export function CustomPackBottomSheet({
       .filter(Boolean);
 
     if (!canSave || lookupLoading) {
+      return;
+    }
+
+    if (
+      packName.trim().length > 120 ||
+      purpose.trim().length > 160 ||
+      cleanedRequirements.length > 40 ||
+      cleanedRequirements.some(item => item.length > 120)
+    ) {
+      setLookupError(
+        'Use a pack name up to 120 characters, description up to 160, and up to 40 requirements of 120 characters each.',
+      );
       return;
     }
 
@@ -799,6 +811,7 @@ function LookupStep({
         <TextInput
           value={purpose}
           onChangeText={setPurpose}
+          maxLength={160}
           placeholder="My son's school admission"
           placeholderTextColor={theme.colors.text.secondary}
           multiline
@@ -1014,6 +1027,7 @@ function ResultStep({
         <TextInput
           value={packName}
           onChangeText={setPackName}
+          maxLength={120}
           placeholder="Name this pack"
           placeholderTextColor={theme.colors.text.secondary}
           style={[
@@ -1035,6 +1049,7 @@ function ResultStep({
         <TextInput
           value={purpose}
           onChangeText={setPurpose}
+          maxLength={160}
           placeholder="What is this pack for?"
           placeholderTextColor={theme.colors.text.secondary}
           multiline
@@ -1087,6 +1102,7 @@ function ResultStep({
                 <TextInput
                   value={requirement}
                   onChangeText={value => updateRequirement(index, value)}
+                  maxLength={120}
                   placeholder="Document name"
                   placeholderTextColor={theme.colors.text.secondary}
                   style={[
@@ -1131,8 +1147,10 @@ function ResultStep({
 
         <Pressable
           onPress={addRequirement}
+          disabled={requirements.length >= 40}
           style={[
             styles.addRequirementButton,
+            requirements.length >= 40 && styles.disabledButton,
             {
               backgroundColor: theme.colors.surface.raised,
               borderColor: theme.colors.border.default,

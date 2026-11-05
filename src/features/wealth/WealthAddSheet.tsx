@@ -230,7 +230,7 @@ export function LentBorrowedForm({
                 </AppText>
               </View>
             </Pressable>
-            {field('What for', input(whatFor, setWhatFor, 'e.g. car down payment, hospital bill, wedding advance'))}
+            {field('What for', input(whatFor, setWhatFor, 'e.g. car down payment, hospital bill, wedding advance', { maxLength: 160 }))}
             <Row gap="md">
               {field('Amount', input(amount, setAmount, '0', { keyboardType: 'decimal-pad' }), true)}
               {field('Currency', select(currency, () => setPicker('currency')), true)}
@@ -248,7 +248,7 @@ export function LentBorrowedForm({
                 {field('Who', input(who, setWho, 'e.g. Rohan K (friend), Meera (sister)'))}
                 <Row gap="md">
                   {field('Follow up on', dateInput(followUpOn, setFollowUpOn), true)}
-                  {field('Follow-up note', input(followUpNote, setFollowUpNote, 'e.g. check if cheque cleared'), true)}
+                  {field('Follow-up note', input(followUpNote, setFollowUpNote, 'e.g. check if cheque cleared', { maxLength: 2000 }), true)}
                 </Row>
               </>
             ) : null}

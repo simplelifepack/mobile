@@ -34,7 +34,10 @@ function queryString(query: PackageQuery) {
 
 export const packagesApi = {
   list: (query: PackageQuery = {}) =>
-    request<PackageListResponse>(`/api/packages?${queryString(query)}`, {
+    request<PackageListResponse>(`/api/packages?${queryString({
+      ...query,
+      search: query.search?.slice(0, 160),
+    })}`, {
       requiresAuth: true,
     }),
   get: (slug: string) =>
