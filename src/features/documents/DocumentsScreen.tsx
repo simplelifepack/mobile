@@ -831,20 +831,8 @@ export function DocumentsScreen() {
         />
       ) : null}
 
-      <Modal visible={isImporting} transparent animationType="fade">
-        <View style={[styles.importProgressRoot, { backgroundColor: theme.colors.overlay.scrim }]}>
-          <View
-            style={[
-              styles.importProgressCard,
-              {
-                backgroundColor: theme.colors.surface.default,
-                borderColor: theme.colors.border.default,
-              },
-            ]}
-          >
-            <LoadingState label="Encrypting and preparing document…" />
-          </View>
-        </View>
+      <Modal visible={isImporting} transparent animationType="fade" statusBarTranslucent>
+        <LoadingState overlay size={48} label="Preparing document" />
       </Modal>
 
       <Modal
@@ -1151,26 +1139,7 @@ const styles = StyleSheet.create({
   },
 
 
-  importProgressRoot: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
 
-  importProgressCard: {
-    width: '100%',
-    maxWidth: 360,
-    minHeight: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderRadius: radius.surface,
-  },
 
 
 
