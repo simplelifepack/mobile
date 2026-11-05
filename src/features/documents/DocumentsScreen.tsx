@@ -58,7 +58,7 @@ import {
 } from './documentFilters';
 import { useDocumentsQuery } from '../../services/api';
 import { documentsApi } from '../../api/documents.api';
-import { healthApi, isMemberResolution } from '../../api/health.api';
+import { healthApi, isMemberResolution, type HealthMember } from '../../api/health.api';
 import { documentContextLabel, healthRecordType, isHealthDocument } from './documentDetails';
 import {
   analyzeSelectedDocument,
@@ -205,6 +205,11 @@ export function DocumentsScreen() {
   const [previewPageIndex, setPreviewPageIndex] = useState(0);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [showAddDocumentsSheet, setShowAddDocumentsSheet] = useState(false);
+  const [healthPrompt, setHealthPrompt] = useState<{
+    document: DocumentRecord;
+    name: string;
+    members: HealthMember[];
+  }>();
   const [isImporting, setIsImporting] = useState(false);
   const [previewError, setPreviewError] = useState<string>();
   const previewPages = previewDocument?.pages ?? [];
@@ -316,13 +321,19 @@ export function DocumentsScreen() {
       setDetailId(undefined);
       setQuery('');
       setFilters(defaultFilters);
-      const addedToHealth = await syncToHealth(result.document);
+      const savedName = result.document.displayName ?? result.document.title ?? document.title;
+      const members = isHealthDocument(result.document)
+        ? await healthApi.members().catch(() => [])
+        : [];
       await refetch();
+      if (members.length) {
+        setHealthPrompt({ document: result.document, name: savedName, members });
+        return;
+      }
+      const addedToHealth = await syncToHealth(result.document);
       Alert.alert(
         'Document added',
-        `${result.document.displayName ?? result.document.title ?? document.title} is now in your vault${
-          addedToHealth ? ' and your Health records' : ''
-        }.`,
+        `${savedName} is now in your vault${addedToHealth ? ' and your Health records' : ''}.`,
       );
     } catch (saveError) {
       if (__DEV__) console.warn('[save payload]', JSON.stringify(payload).slice(0, 1500));
@@ -342,14 +353,25 @@ export function DocumentsScreen() {
   };
 
   // Best effort: the document is already saved, so a Health failure must not fail the upload.
-  const syncToHealth = async (saved: DocumentRecord) => {
+  const syncToHealth = async (saved: DocumentRecord, memberId?: string) => {
     if (!isHealthDocument(saved)) return false;
     try {
-      const record = await healthApi.createRecord({ documentId: saved.id, type: healthRecordType(saved) });
+      const record = await healthApi.createRecord({ documentId: saved.id, memberId, type: healthRecordType(saved) });
       return !isMemberResolution(record);
     } catch {
       return false;
     }
+  };
+
+  const finishHealthPrompt = async (memberId?: string) => {
+    const prompt = healthPrompt;
+    if (!prompt) return;
+    setHealthPrompt(undefined);
+    const added = memberId ? await syncToHealth(prompt.document, memberId) : false;
+    Alert.alert(
+      'Document added',
+      `${prompt.name} is now in your vault${added ? ' and added to Health' : ''}.`,
+    );
   };
 
   const processSelectedDocument = async (
@@ -752,6 +774,20 @@ export function DocumentsScreen() {
               navigation.navigate('DigiLocker');
             },
           },
+        ]}
+      />
+
+      <ActionSheet
+        visible={Boolean(healthPrompt)}
+        title="Add to Health for"
+        onClose={() => finishHealthPrompt()}
+        options={[
+          ...(healthPrompt?.members ?? []).map(member => ({
+            label: member.name,
+            icon: HeartPulse,
+            onPress: () => finishHealthPrompt(member.id),
+          })),
+          { label: 'Not now', onPress: () => finishHealthPrompt() },
         ]}
       />
 
