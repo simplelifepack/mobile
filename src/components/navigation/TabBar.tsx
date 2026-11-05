@@ -34,7 +34,7 @@ const Pill = styled.View(({ theme }) => ({
   height: PILL_HEIGHT,
   paddingHorizontal: theme.spacing.xs,
   overflow: 'hidden',
-  borderRadius: theme.radius.pill,
+  borderRadius: theme.radius.overlay * 1.6,
   borderWidth: 1,
   borderColor: theme.colors.border.emphasis,
   backgroundColor: theme.colors.surface.default,
@@ -53,6 +53,7 @@ const IconPill = styled.View(({ theme }) => ({
   height: 36,
   // Android can draw a huge radius as a square; 20 is >= half the 36px height, so it stays a full oval.
   borderRadius: theme.radius.overlay,
+  overflow: 'hidden',
   alignItems: 'center',
   justifyContent: 'center',
 }));
