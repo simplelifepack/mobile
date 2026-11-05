@@ -45,6 +45,8 @@ import { PinChangeModal } from './PinChangeModal';
 import { AccountDataSection } from './AccountDataSection';
 import { DeleteAccountModal } from './ProfileDialogs';
 import { PreferencesSection } from './PreferencesSection';
+import { AppModal } from '../../components/feedback/AppModal';
+import { SUPPORT_CONTENT, type SupportTopic } from './supportContent';
 import { accountApi } from '../../api/account.api';
 import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
@@ -134,47 +136,13 @@ export function ProfileScreen() {
     }
   };
 
-  /**
-   * Support actions.
-   *
-   * These use Alert for now because the existing
-   * navigation type does not expose dedicated
-   * support routes.
-   */
-  const openWhatsNew = () => {
-    Alert.alert(
-      "What's new",
-      'Latest changes in ReadiNes',
-    );
-  };
-
-  const openHelp = () => {
-    Alert.alert(
-      'Help and FAQs',
-      'Straight answers, including the uncomfortable ones.',
-    );
-  };
-
-  const openFeedback = () => {
-    Alert.alert(
-      'Send feedback',
-      'Tell us what is broken or missing.',
-    );
-  };
-
-  const openPrivacy = () => {
-    Alert.alert(
-      'Privacy and terms',
-      'How your data is handled.',
-    );
-  };
-
-  const openAbout = () => {
-    Alert.alert(
-      'About ReadiNes',
-      'ReadiNes — Be ready for life’s important moments.',
-    );
-  };
+  const [supportTopic, setSupportTopic] = useState<SupportTopic>();
+  const openWhatsNew = () => setSupportTopic('whatsnew');
+  const openHelp = () => setSupportTopic('faq');
+  const openFeedback = () => setSupportTopic('feedback');
+  const openPrivacy = () => setSupportTopic('privacy');
+  const openAbout = () => setSupportTopic('about');
+  const support = supportTopic ? SUPPORT_CONTENT[supportTopic] : undefined;
 
   return (
     <Screen scroll>
@@ -517,6 +485,15 @@ export function ProfileScreen() {
         onSchedule={scheduleDeletion}
       />
 
+      <AppModal visible={Boolean(support)} onClose={() => setSupportTopic(undefined)}>
+        <AppText variant="heading">{support?.title}</AppText>
+        {support?.sections.map(section => (
+          <Stack key={section.title} gap="xs">
+            <AppText variant="label">{section.title}</AppText>
+            <AppText variant="caption" color="secondary">{section.body}</AppText>
+          </Stack>
+        ))}
+      </AppModal>
     </Screen>
   );
 }
