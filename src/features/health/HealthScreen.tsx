@@ -135,6 +135,7 @@ export function HealthScreen() {
       setMembers(loadedMembers);
       setReminders(loadedReminders);
       const memberId = selectedMember || loadedMembers[0]?.id;
+      if (memberId && !selectedMember) setSelectedMember(memberId);
       if (memberId) await refreshMemberData(memberId);
       setHealthError(undefined);
     } catch (loadError) {
