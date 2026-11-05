@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
-import { BlurView } from '@react-native-community/blur';
-import { darkTheme } from '../../design/theme/dark';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
+import { radius } from '../../design/tokens/radius';
+import { AppText } from '../primitives/AppText';
 import { BrandMark } from '../BrandMark';
 
 export function LoadingState({
@@ -43,24 +43,22 @@ export function LoadingState({
   });
 
   if (overlay || fill) {
-    const dark = theme === darkTheme;
     return (
       <View
         accessibilityRole="progressbar"
         accessibilityLabel={label}
-        pointerEvents="none"
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: theme.colors.overlay.scrim }]}
       >
-        <BlurView
-          style={StyleSheet.absoluteFill}
-          blurType={Platform.OS === 'ios' ? (dark ? 'ultraThinMaterialDark' : 'ultraThinMaterialLight') : dark ? 'dark' : 'light'}
-          blurAmount={10}
-          reducedTransparencyFallbackColor={theme.colors.surface.canvas}
-        />
-        <View style={styles.overlayLogo}>
+        <View
+          style={[
+            styles.box,
+            { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default },
+          ]}
+        >
           <Animated.View style={{ opacity, transform: [{ scale }] }}>
             <BrandMark color={theme.colors.text.interactive} size={size} />
           </Animated.View>
+          <AppText variant="labelMd" color="secondary">Loading</AppText>
         </View>
       </View>
     );
@@ -80,5 +78,6 @@ export function LoadingState({
 
 const styles = StyleSheet.create({
   inline: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
-  overlayLogo: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
+  overlay: { alignItems: 'center', justifyContent: 'center' },
+  box: { alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: radius.overlay, paddingHorizontal: 32, paddingVertical: 24 },
 });
