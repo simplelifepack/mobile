@@ -710,6 +710,7 @@ export function DocumentsScreen() {
 
               return (
                 <ListRow
+                  roomy
                   key={document.id}
                   icon={<Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
                   title={getDocumentTitle(document)}

@@ -15,6 +15,8 @@ type ListRowProps = {
   title: string;
   // Compact rows (long lists of names) use the smaller label role.
   compact?: boolean;
+  // Taller row for primary lists such as Documents.
+  roomy?: boolean;
   subtitle?: string;
   // Third line reserved for an exception, e.g. "No nominee named".
   extra?: string;
@@ -28,7 +30,7 @@ type ListRowProps = {
 };
 
 // Design System 3.2 list row. Dividers between rows come from ListGroup.
-export function ListRow({ icon, leading, title, compact, subtitle, extra, danger, disabled, trailing, selected, children, onPress }: ListRowProps) {
+export function ListRow({ icon, leading, title, compact, roomy, subtitle, extra, danger, disabled, trailing, selected, children, onPress }: ListRowProps) {
   const { theme } = useAppTheme();
 
   return (
@@ -38,7 +40,7 @@ export function ListRow({ icon, leading, title, compact, subtitle, extra, danger
         accessibilityState={selected === undefined ? undefined : { selected }}
         disabled={disabled || !onPress}
         onPress={onPress}
-        style={({ pressed }) => [styles.row, { opacity: disabled ? 0.55 : pressed ? 0.82 : 1 }]}
+        style={({ pressed }) => [styles.row, roomy && styles.roomy, { opacity: disabled ? 0.55 : pressed ? 0.82 : 1 }]}
       >
         {leading ?? (icon ? (
           <View style={[styles.well, { backgroundColor: theme.colors.surface.brandTint }]}>{icon}</View>
@@ -105,6 +107,7 @@ export function ListGroup({ children, strongDividers }: React.PropsWithChildren<
 
 const styles = StyleSheet.create({
   group: { borderRadius: radius.surface, overflow: 'hidden' },
+  roomy: { minHeight: sizes.listRow + 12, paddingVertical: 12 },
   row: {
     minHeight: sizes.listRow,
     flexDirection: 'row',
