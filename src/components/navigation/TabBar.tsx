@@ -51,7 +51,8 @@ const Item = styled.Pressable({
 const IconPill = styled.View(({ theme }) => ({
   width: 44,
   height: 36,
-  borderRadius: theme.radius.pill,
+  // Android can draw a huge radius as a square; 20 is >= half the 36px height, so it stays a full oval.
+  borderRadius: theme.radius.overlay,
   alignItems: 'center',
   justifyContent: 'center',
 }));
