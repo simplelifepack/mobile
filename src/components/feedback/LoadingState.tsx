@@ -4,8 +4,6 @@ import { BlurView } from '@react-native-community/blur';
 import { darkTheme } from '../../design/theme/dark';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { BrandMark } from '../BrandMark';
-import { AppText } from '../primitives/AppText';
-import { Stack } from '../primitives/Stack';
 
 export function LoadingState({
   label = 'Loading…',
@@ -16,7 +14,7 @@ export function LoadingState({
   label?: string;
   size?: number;
   fill?: boolean;
-  // Logo only, centred over the screen with no box or text.
+  // Logo only, centred over the screen with no box or text. `fill` behaves the same way.
   overlay?: boolean;
 }) {
   const { theme } = useAppTheme();
@@ -44,7 +42,7 @@ export function LoadingState({
     outputRange: [0.45, 1, 0.45],
   });
 
-  if (overlay) {
+  if (overlay || fill) {
     const dark = theme === darkTheme;
     return (
       <View
@@ -71,24 +69,16 @@ export function LoadingState({
   return (
     <View
       accessibilityRole="progressbar"
-      style={
-        fill
-          ? { flex: 1, alignItems: 'center', justifyContent: 'center' }
-          : { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 }
-      }
+      style={styles.inline}
     >
-      <Stack align="center" gap="sm">
-        <AppText variant="caption" color="muted">
-          {label}
-        </AppText>
-        <Animated.View style={{ opacity, transform: [{ scale }] }}>
-          <BrandMark color={theme.colors.text.interactive} size={size} />
-        </Animated.View>
-      </Stack>
+      <Animated.View style={{ opacity, transform: [{ scale }] }}>
+        <BrandMark color={theme.colors.text.interactive} size={size} />
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  inline: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   overlayLogo: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
 });
