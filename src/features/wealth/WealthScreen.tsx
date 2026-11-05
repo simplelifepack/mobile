@@ -32,6 +32,7 @@ import { sizes } from '../../design/tokens/sizes';
 import { ListGroup, ListRow } from '../../components/primitives/ListRow';
 import { Row } from '../../components/primitives/Row';
 import { ProcessingOverlay } from '../../components/feedback/ProcessingOverlay';
+import { SkeletonList } from '../../components/feedback/SkeletonList';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { AppText } from '../../components/primitives/AppText';
 import { Card } from '../../components/primitives/Card';
@@ -877,7 +878,6 @@ export function WealthScreen({
       scroll
       padded={false}
       onRefresh={refreshRecords}
-      overlay={loading ? <LoadingState overlay size={48} label="Loading wealth records" /> : null}
       contentContainerStyle={styles.screenContent}
       floatingAction={
         guestPreview ? null : (
@@ -975,7 +975,9 @@ export function WealthScreen({
 
         </Stack>
 
-        <Stack gap="sm">
+        {loading ? <SkeletonList label="Loading wealth…" /> : null}
+
+        <Stack gap="sm" style={loading ? styles.hidden : undefined}>
         <ReadinessCard
           records={records}
           lendingItems={lendingItems}
@@ -1418,6 +1420,7 @@ function WealthHandoffModal({ onClose }: { onClose: () => void }) {
 
 
 const styles = StyleSheet.create({
+  hidden: { display: 'none' },
 
   sosPanel: {
     maxHeight: '92%',

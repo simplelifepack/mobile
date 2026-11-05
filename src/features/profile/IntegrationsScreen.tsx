@@ -8,7 +8,7 @@ import { api } from '../../services/api';
 import type { RootStackParamList } from '../../app/navigation/types';
 import { integrationsApi, type DriveStatus, type GmailCandidate, type GmailStatus } from '../../api/integrations.api';
 import { ErrorState } from '../../components/feedback/ErrorState';
-import { LoadingState } from '../../components/feedback/LoadingState';
+import { SkeletonList } from '../../components/feedback/SkeletonList';
 import { AppText } from '../../components/primitives/AppText';
 import { Button } from '../../components/primitives/Button';
 import { Card } from '../../components/primitives/Card';
@@ -109,7 +109,7 @@ export function IntegrationsScreen() {
       : [...current, id]);
 
   if (loading) {
-    return <Screen><LoadingState fill label="Loading integrations…" /></Screen>;
+    return <Screen><SkeletonList label="Loading integrations…" /></Screen>;
   }
 
   return (

@@ -53,7 +53,7 @@ type HealthDocumentType,
 
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 
-import { LoadingState } from '../../components/feedback/LoadingState';
+import { SkeletonList } from '../../components/feedback/SkeletonList';
 import { ProcessingOverlay } from '../../components/feedback/ProcessingOverlay';
 import { AppText } from '../../components/primitives/AppText';
 import { ActionSheet } from '../../components/primitives/ActionSheet';
@@ -407,7 +407,6 @@ export function HealthScreen() {
       scroll
       padded={false}
       onRefresh={refreshAll}
-      overlay={loadingMembers || loadingOverview ? <LoadingState overlay size={48} label="Loading health records" /> : null}
 floatingAction={
   <>
     <FloatingActionButton
@@ -489,7 +488,9 @@ floatingAction={
 
         </Stack>
 
-        <Stack gap="sm">
+        {loadingMembers || loadingOverview ? <SkeletonList label="Loading health…" /> : null}
+
+        <Stack gap="sm" style={loadingMembers || loadingOverview ? styles.hidden : undefined}>
         {/* MEMBER PROFILE */}
 
         {member ? (

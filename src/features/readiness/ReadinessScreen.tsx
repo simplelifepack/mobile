@@ -70,6 +70,7 @@ import { AppText } from '../../components/primitives/AppText';
 import { Button } from '../../components/primitives/Button';
 import { FloatingActionButton } from '../../components/primitives/FloatingActionButton';
 
+import { SkeletonList } from '../../components/feedback/SkeletonList';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { EmptyState } from '../../components/feedback/EmptyState';
@@ -1298,7 +1299,7 @@ export function ReadinessScreen() {
   if (!guestPreview && (packages.isLoading || documentsQuery.isLoading)) {
     return (
       <Screen>
-        <LoadingState fill label="Loading packages…" />
+        <SkeletonList label="Loading packages…" />
       </Screen>
     );
   }

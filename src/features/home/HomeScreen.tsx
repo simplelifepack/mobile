@@ -41,7 +41,7 @@ import { radius } from '../../design/tokens/radius';
 import { sizes } from '../../design/tokens/sizes';
 import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
 
-import { LoadingState } from '../../components/feedback/LoadingState';
+import { SkeletonList } from '../../components/feedback/SkeletonList';
 import { ErrorState } from '../../components/feedback/ErrorState';
 
 const DAY = 86_400_000;
@@ -142,7 +142,7 @@ export function HomeScreen() {
   if (bootstrap.isLoading) {
     return (
       <Screen>
-        <LoadingState fill label="Loading your readiness overview…" />
+        <SkeletonList label="Loading overview…" />
       </Screen>
     );
   }

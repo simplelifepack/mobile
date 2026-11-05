@@ -80,6 +80,7 @@ import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { ErrorState } from '../../components/feedback/ErrorState';
+import { SkeletonList } from '../../components/feedback/SkeletonList';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
@@ -496,7 +497,7 @@ export function DocumentsScreen() {
   if (isLoading) {
     return (
       <Screen>
-        <LoadingState fill label="Loading your document vault…" />
+        <SkeletonList label="Loading documents…" />
       </Screen>
     );
   }

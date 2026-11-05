@@ -5,6 +5,7 @@ import { radius } from '../../design/tokens/radius';
 
 
 export const styles = StyleSheet.create({
+  hidden: { display: 'none' },
 
   // --------------------------------------------------------------------------
   // Main container
