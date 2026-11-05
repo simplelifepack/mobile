@@ -1,6 +1,7 @@
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation,type CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import React,{ useEffect,useMemo,useState } from 'react';
 import {
 Alert,
@@ -144,6 +145,16 @@ export function HealthScreen() {
       );
     }
   };
+
+  // Records can be added from Documents while this tab stays mounted, so reload on return.
+  const hasFocusedOnce = React.useRef(false);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (hasFocusedOnce.current) void refreshAll();
+      hasFocusedOnce.current = true;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedMember]),
+  );
 
   useEffect(() => {
     let active = true;

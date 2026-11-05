@@ -58,7 +58,7 @@ import {
 } from './documentFilters';
 import { useDocumentsQuery } from '../../services/api';
 import { documentsApi } from '../../api/documents.api';
-import { healthApi, isMemberResolution, type HealthMember } from '../../api/health.api';
+import { healthApi, isMemberResolution, type HealthMember, type HealthRecordDetail } from '../../api/health.api';
 import { documentContextLabel, healthRecordType, isHealthDocument } from './documentDetails';
 import {
   analyzeSelectedDocument,
@@ -330,11 +330,8 @@ export function DocumentsScreen() {
         setHealthPrompt({ document: result.document, name: savedName, members });
         return;
       }
-      const addedToHealth = await syncToHealth(result.document);
-      Alert.alert(
-        'Document added',
-        `${savedName} is now in your vault${addedToHealth ? ' and your Health records' : ''}.`,
-      );
+      const healthRecord = await syncToHealth(result.document);
+      Alert.alert('Document added', `${savedName} is now in your vault${healthSummary(healthRecord)}`);
     } catch (saveError) {
       if (__DEV__) console.warn('[save payload]', JSON.stringify(payload).slice(0, 1500));
       Alert.alert(
@@ -354,24 +351,31 @@ export function DocumentsScreen() {
 
   // Best effort: the document is already saved, so a Health failure must not fail the upload.
   const syncToHealth = async (saved: DocumentRecord, memberId?: string) => {
-    if (!isHealthDocument(saved)) return false;
+    if (!isHealthDocument(saved)) return undefined;
     try {
       const record = await healthApi.createRecord({ documentId: saved.id, memberId, type: healthRecordType(saved) });
-      return !isMemberResolution(record);
+      return isMemberResolution(record) ? undefined : record;
     } catch {
-      return false;
+      return undefined;
     }
+  };
+
+  const healthSummary = (record?: HealthRecordDetail) => {
+    if (!record) return '.';
+    if (record.measurements.length) {
+      return ` and Health, with ${record.measurements.length} value(s) read from it.`;
+    }
+    return record.processingStatus === 'failed' || record.processingStatus === 'ai_processing_disabled'
+      ? ' and Health, but its values could not be read automatically.'
+      : ' and Health.';
   };
 
   const finishHealthPrompt = async (memberId?: string) => {
     const prompt = healthPrompt;
     if (!prompt) return;
     setHealthPrompt(undefined);
-    const added = memberId ? await syncToHealth(prompt.document, memberId) : false;
-    Alert.alert(
-      'Document added',
-      `${prompt.name} is now in your vault${added ? ' and added to Health' : ''}.`,
-    );
+    const record = memberId ? await syncToHealth(prompt.document, memberId) : undefined;
+    Alert.alert('Document added', `${prompt.name} is now in your vault${healthSummary(record)}`);
   };
 
   const processSelectedDocument = async (
