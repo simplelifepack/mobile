@@ -37,7 +37,7 @@ export function buildEmergencyCardRows(
     { label: 'Conditions', value: member.conditions || NOT_ANSWERED },
     { label: 'Current meds', value: medicineSummary(records) },
     { label: 'Primary physician', value: member.primaryDoctor || NOT_ANSWERED },
-    { label: 'Preferred hospital', value: records.find(record => record.provider)?.provider || NOT_ANSWERED },
+    { label: 'Preferred hospital', value: member.preferredHospital || records.find(record => record.provider)?.provider || NOT_ANSWERED },
     { label: 'Emergency contact', value: contact || '-' },
     {
       label: 'Insurance',

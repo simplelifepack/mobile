@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Check, FileText, X } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '../../components/primitives/AppText';
 import { Button } from '../../components/primitives/Button';
 import { SearchBar } from '../../components/primitives/SearchBar';
@@ -45,6 +46,7 @@ export function ChangeDocumentSheet({
   onClose: () => void;
 }) {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState('');
   const [warning, setWarning] = useState<DocumentRecord | null>(null);
@@ -135,9 +137,9 @@ export function ChangeDocumentSheet({
   };
 
   return (
-    <Modal transparent animationType="slide" onRequestClose={onClose}>
+    <Modal transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={[styles.overlay, { backgroundColor: theme.colors.overlay.scrim }]}
+        style={[styles.overlay, { backgroundColor: theme.colors.overlay.scrim, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
@@ -147,6 +149,7 @@ export function ChangeDocumentSheet({
             {
               backgroundColor: theme.colors.surface.canvas,
               borderColor: theme.colors.border.default,
+              paddingBottom: Math.max(24, insets.bottom + 8),
             },
           ]}
         >

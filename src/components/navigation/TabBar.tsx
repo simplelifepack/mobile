@@ -109,7 +109,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 <Icon size={theme.sizes.icon.md} color={tint} />
               </IconPill>
               <AppText
-                variant="caption"
+                variant="navigation"
                 numberOfLines={1}
                 style={{
                   color: focused

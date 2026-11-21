@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View, KeyboardAvoidingView } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View, KeyboardAvoidingView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
@@ -26,6 +27,7 @@ export function CredentialChangeModal({
   onPasswordChanged,
 }: CredentialChangeModalProps) {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState<'form' | 'otp'>('form');
   const [newEmail, setNewEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -116,10 +118,13 @@ export function CredentialChangeModal({
       visible={Boolean(kind)}
       transparent
       animationType="slide"
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
-        <View style={[styles.panel, { backgroundColor: theme.colors.surface.canvas }]}>
+      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
+        <ScrollView keyboardShouldPersistTaps="handled" style={[styles.sheet, { backgroundColor: theme.colors.surface.canvas }]}
+          contentContainerStyle={[styles.panel, { paddingBottom: Math.max(32, insets.bottom + 8) }]}>
           <AppText style={styles.title}>
             {step === 'otp'
               ? 'Verify change'
@@ -215,7 +220,7 @@ export function CredentialChangeModal({
               </AppText>
             </Pressable>
           </Row>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -253,6 +258,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
+  sheet: { flexGrow: 0, maxHeight: '100%', borderTopLeftRadius: radius.overlay, borderTopRightRadius: radius.overlay },
   panel: {
     paddingHorizontal: 24,
     paddingTop: 24,

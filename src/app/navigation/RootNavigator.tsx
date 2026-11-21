@@ -9,6 +9,8 @@ import { AuthNavigator } from './AuthNavigator';
 import { MainTabs } from './MainTabs';
 import { AppLockScreen } from '../../components/security/AppLockScreen';
 import { ProfileScreen } from '../../features/profile/ProfileScreen';
+import { EmergencyAccessScreen } from '../../features/profile/EmergencyAccessScreen';
+import { SubscriptionScreen } from '../../features/profile/SubscriptionScreen';
 import { DigiLockerScreen } from '../../features/integrations/digilocker/DigiLockerScreen';
 import { IntegrationsScreen } from '../../features/profile/IntegrationsScreen';
 import { PinSetupScreen } from '../../features/auth/screens/PinSetupScreen';
@@ -19,7 +21,7 @@ import { Button } from '../../components/primitives/Button';
 import { useAppDispatch } from '../store/hooks';
 import { restoreSession } from '../../features/auth/authSlice';
 import { useBootstrapQuery } from '../../services/api';
-import { fontWeights } from '../../design/tokens/typography';
+import { fontFamilies, fontWeights } from '../../design/tokens/typography';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['readiness://'],
@@ -50,10 +52,10 @@ export function RootNavigator() {
       notification: theme.colors.status.danger.text,
     },
     fonts: {
-      regular: { fontFamily: 'System', fontWeight: fontWeights.regular },
-      medium: { fontFamily: 'System', fontWeight: fontWeights.medium },
-      bold: { fontFamily: 'System', fontWeight: fontWeights.bold },
-      heavy: { fontFamily: 'System', fontWeight: fontWeights.bold },
+      regular: { fontFamily: fontFamilies.regular, fontWeight: fontWeights.regular },
+      medium: { fontFamily: fontFamilies.medium, fontWeight: fontWeights.medium },
+      bold: { fontFamily: fontFamilies.bold, fontWeight: fontWeights.bold },
+      heavy: { fontFamily: fontFamilies.bold, fontWeight: fontWeights.bold },
     },
   };
   return (
@@ -92,6 +94,8 @@ export function RootNavigator() {
             <>
               <Stack.Screen name="Main" component={MainTabs} />
               <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+              <Stack.Screen name="EmergencyAccess" component={EmergencyAccessScreen} />
               <Stack.Screen name="Integrations" component={IntegrationsScreen} />
               <Stack.Screen name="DigiLocker" component={DigiLockerScreen} />
             </>

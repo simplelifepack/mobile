@@ -8,6 +8,7 @@ type RequestOptions = {
   method?: 'DELETE' | 'GET' | 'PATCH' | 'POST';
   requiresAuth?: boolean;
   retryOnUnauthorized?: boolean;
+  timeoutMs?: number;
 };
 
 export type MultipartFile = {
@@ -26,6 +27,7 @@ export class ApiError extends Error {
     readonly status: number,
     readonly code?: string,
     readonly errorId?: string,
+    readonly details?: Record<string, unknown>,
   ) {
     super(message);
   }
@@ -52,9 +54,9 @@ let refreshOutcome: Promise<RefreshOutcome> | null = null;
 // errors (thrown) and 5xx responses keep the stored session so it can retry.
 const REQUEST_TIMEOUT_MS = 20000;
 
-function fetchWithTimeout(url: string, init: RequestInit) {
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   return fetch(url, { ...init, signal: controller.signal }).finally(() =>
     clearTimeout(timer),
   );
@@ -114,17 +116,21 @@ async function performRequest<T>(
   if (options.requiresAuth && accessToken)
     headers.Authorization = `Bearer ${accessToken}`;
   if (__DEV__) console.debug(`[API] ${options.method ?? 'GET'} ${path}`);
-  const response = await fetchWithTimeout(`${environment.apiUrl}${path}`, {
-    method: options.method ?? 'GET',
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    credentials: 'include',
-  });
+  const response = await fetchWithTimeout(
+    `${environment.apiUrl}${path}`,
+    {
+      method: options.method ?? 'GET',
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      credentials: 'include',
+    },
+    options.timeoutMs,
+  );
   const data = (await response.json().catch(() => ({}))) as {
     message?: string;
     code?: string;
     errorId?: string;
-  };
+  } & Record<string, unknown>;
   if (
     response.status === 401 &&
     options.requiresAuth &&
@@ -140,13 +146,15 @@ async function performRequest<T>(
       response.status,
       data.code,
       data.errorId,
+      data,
     );
   return data as T;
 }
 
 export function request<T>(path: string, options: RequestOptions = {}) {
   const method = options.method ?? 'GET';
-  const key = `${method}:${path}:${options.requiresAuth ? (accessToken ?? '') : ''}`;
+  const bodyKey = method === 'GET' ? '' : JSON.stringify(options.body);
+  const key = `${method}:${path}:${options.requiresAuth ? (accessToken ?? '') : ''}:${bodyKey}`;
   const existing = requests.get(key) as Promise<T> | undefined;
   if (existing) return existing;
   const promise = performRequest<T>(path, options).finally(() =>
@@ -160,6 +168,7 @@ export async function uploadMultipart<T>(
   path: string,
   fields: Record<string, string>,
   files: MultipartFile[],
+  options: { signal?: AbortSignal } = {},
 ): Promise<T> {
   const upload = async (retryOnUnauthorized: boolean): Promise<T> => {
     const formData = new FormData();
@@ -176,6 +185,7 @@ export async function uploadMultipart<T>(
 
     const headers: Record<string, string> = {};
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+    const startedAt = Date.now();
     if (__DEV__) console.debug(`[API] POST ${path} (multipart)`);
 
     const response = await fetch(`${environment.apiUrl}${path}`, {
@@ -183,11 +193,13 @@ export async function uploadMultipart<T>(
       headers,
       body: formData,
       credentials: 'include',
+      signal: options.signal,
     }).catch(error => {
+      if (options.signal?.aborted) throw error;
       console.warn(
         '[API] multipart failed',
         path,
-        files.map(f => f.uri),
+        `${files.length} file(s)`,
         String(error),
       );
       throw error;
@@ -196,7 +208,12 @@ export async function uploadMultipart<T>(
       message?: string;
       code?: string;
       errorId?: string;
-    };
+    } & Record<string, unknown>;
+    if (__DEV__) {
+      console.debug(
+        `[API] POST ${path} ${response.status} ${Date.now() - startedAt}ms (multipart)`,
+      );
+    }
 
     if (
       response.status === 401 &&
@@ -217,6 +234,7 @@ export async function uploadMultipart<T>(
         response.status,
         data.code,
         data.errorId,
+        data,
       );
     }
     return data as T;

@@ -1,4 +1,7 @@
-import { documentsApi } from '../../api/documents.api';
+import { saveDocumentWithDuplicatePrompt } from '../documents/documentImport/duplicatePrompt';
+import { suggestDocumentTitle } from '../documents/documentImport/documentNaming';
+import { needsPrescriptionReview, type HealthDocumentType, type HealthUploadReview } from '../../api/healthExtraction';
+import type { DocumentAnalysisResponse } from '../../api/types';
 import {
 healthApi,
 isMemberResolution,
@@ -10,7 +13,7 @@ analyzeSelectedDocument,
 type SelectedDocument,
 } from '../documents/documentImport';
 
-export type HealthDocumentType = 'lab_report' | 'medical_report' | 'prescription';
+export type { HealthDocumentType } from '../../api/healthExtraction';
 
 export const healthDocumentTypeLabels: Record<HealthDocumentType, string> = {
   lab_report: 'Lab Report',
@@ -20,44 +23,81 @@ export const healthDocumentTypeLabels: Record<HealthDocumentType, string> = {
 
 export type HealthImportResult =
   | { kind: 'record'; record: HealthRecordDetail }
-  | { kind: 'resolution'; resolution: HealthMemberResolution };
+  | { kind: 'resolution'; resolution: HealthMemberResolution }
+  | { kind: 'review'; analysis: DocumentAnalysisResponse };
 
-// Mirrors the web flow: encrypt + analyze, save as a Medical document, then create the health record.
+export class HealthDocumentSavedError extends Error {}
+
 export async function importHealthRecord(
   selected: SelectedDocument,
   options: { memberId?: string; type?: HealthDocumentType; aiConsent: boolean },
 ): Promise<HealthImportResult> {
   const analysis = await analyzeSelectedDocument(selected, options.aiConsent);
-  const aiDisabled = analysis.warnings.some(
-    warning => warning.code === 'AI_PROCESSING_DISABLED',
+  if (needsPrescriptionReview(analysis.document.healthExtraction)) {
+    return { kind: 'review', analysis };
+  }
+  return saveHealthRecordAnalysis(selected, options, analysis);
+}
+
+export async function saveHealthRecordAnalysis(
+  selected: SelectedDocument,
+  options: { memberId?: string; type?: HealthDocumentType; aiConsent: boolean },
+  analysis: DocumentAnalysisResponse,
+  healthReview?: HealthUploadReview,
+): Promise<HealthImportResult> {
+  const analysisUnavailable = analysis.warnings.some(
+    warning => warning.code === 'AI_PROCESSING_DISABLED' ||
+      warning.code === 'AI_ANALYSIS_UNAVAILABLE' ||
+      warning.code === 'OPENAI_API_KEY_MISSING' ||
+      warning.code === 'OPENAI_API_AUTH_FAILED' ||
+      warning.code === 'OPENAI_QUOTA_EXCEEDED',
   );
-  const saved = await documentsApi.save({
+  if (analysis.document.category !== 'Medical' && analysis.warnings.length === 0) {
+    throw new Error('This file was not identified as a Health document. Upload it in Documents.');
+  }
+  if (!analysis.files.length) {
+    throw new Error('The upload did not return a temporary file.');
+  }
+  const type = healthReview?.extraction.documentType ?? options.type ?? analysis.document.healthExtraction?.documentType;
+  const saved = await saveDocumentWithDuplicatePrompt({
+    ...(healthReview ? { healthReview } : {}),
     tempFileIds: analysis.files.map(file => file.tempFileId),
     originalName: analysis.files[0]?.originalName ?? selected.fileName,
     mimeType: analysis.files[0]?.mimeType ?? selected.mimeType,
     size: analysis.files.reduce((sum, file) => sum + file.size, 0),
-    title: selected.fileName,
+    title: suggestDocumentTitle(analysis, selected.fileName),
     category: 'Medical',
-    documentType: options.type
-      ? healthDocumentTypeLabels[options.type]
+    documentType: type
+      ? healthDocumentTypeLabels[type]
       : 'Medical Report',
-    confidence: aiDisabled || !options.aiConsent ? 0 : 90,
+    confidence: analysisUnavailable || !options.aiConsent ? 0 : 90,
     fields: {},
     reviewFields: [],
     rawExtractedText: '',
     warnings: analysis.warnings,
     evidence: [],
-    analysisSource: options.aiConsent && !aiDisabled ? 'ai' : 'rules',
-    duplicateAction: 'keep_both',
+    analysisSource: options.aiConsent && !analysisUnavailable ? 'ai' : 'rules',
+    duplicateAction: 'fail',
     owner: 'self',
     userConfirmedUnknown: true,
     verified: false,
   });
-  const record = await healthApi.createRecord({
-    memberId: options.memberId,
-    documentId: saved.document.id,
-    ...(options.type ? { type: options.type } : {}),
-  });
+  let record = saved.healthRecord;
+  if (record === undefined) {
+    if (healthReview) {
+      throw new HealthDocumentSavedError('The document was saved, but this server did not confirm the reviewed prescription. Check the document and contact support before trying again.');
+    }
+    try {
+      record = await healthApi.createRecord({
+        memberId: options.memberId,
+        documentId: saved.document.id,
+        ...(type ? { type } : {}),
+      });
+    } catch (error) {
+      throw new Error(`The document was saved, but could not be added to Health: ${error instanceof Error ? error.message : 'Please try again from Documents.'}`);
+    }
+  }
+  if (!record) throw new HealthDocumentSavedError('The document was saved without a Health record. Please check it in Documents.');
   return isMemberResolution(record)
     ? { kind: 'resolution', resolution: record }
     : { kind: 'record', record };

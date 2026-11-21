@@ -11,11 +11,30 @@ export type HealthMember = {
   emergencyContactName?: string | null;
   emergencyContactPhone?: string | null;
   primaryDoctor?: string | null;
+  preferredHospital?: string | null;
   insuranceProvider?: string | null;
   insurancePolicyNumber?: string | null;
   createdAt: string;
   updatedAt: string;
 };
+
+export type HealthMemberUpdate = Partial<Pick<
+  HealthMember,
+  | 'name'
+  | 'relation'
+  | 'bloodGroup'
+  | 'dateOfBirth'
+  | 'conditions'
+  | 'allergies'
+  | 'emergencyContactName'
+  | 'emergencyContactPhone'
+  | 'primaryDoctor'
+  | 'preferredHospital'
+  | 'insuranceProvider'
+  | 'insurancePolicyNumber'
+>>;
+
+export type HealthMemberCreate = HealthMemberUpdate & { name: string; relation: string };
 
 export type HealthMeasurement = {
   id: string;
@@ -33,9 +52,30 @@ export type HealthMeasurement = {
   referenceMax?: number | null;
   referenceText?: string | null;
   measuredAt: string | null;
+  timeZone?: string | null;
+  source?: string | null;
+  notes?: string | null;
   sourceType: string;
   isTracked?: boolean;
   aliases?: string[];
+};
+
+export type MeasurementPayload = {
+  metricKey: string;
+  displayName: string;
+  originalName?: string;
+  value: number;
+  secondaryValue?: number | null;
+  unit: string;
+  context?: string | null;
+  bodySite?: string | null;
+  referenceMin?: number | null;
+  referenceMax?: number | null;
+  referenceText?: string | null;
+  measuredAt: string;
+  timeZone?: string | null;
+  source?: string | null;
+  notes?: string | null;
 };
 
 export type HealthRecord = {
@@ -80,8 +120,21 @@ export type HealthMedication = {
   repeats: boolean;
   runsOutAt?: string | null;
   stoppedAt?: string | null;
+  route?: string | null;
+  instructions?: string | null;
+  courseStartDate?: string | null;
+  courseEndDate?: string | null;
+  prescribingDoctor?: string | null;
   createdAt: string;
   updatedAt?: string;
+};
+
+export type TimelineMedication = Pick<HealthMedication,
+  'name' | 'dose' | 'frequency' | 'duration' | 'quantity' | 'status' |
+  'repeats' | 'runsOutAt' | 'stoppedAt'> & {
+  whenToTake?: MedicationTime[];
+  mealTiming?: MealTiming | null;
+  repeatRunsOut?: string | null;
 };
 
 export type TrackedHealthMetric = {
@@ -120,7 +173,7 @@ export type HealthTimelineEvent = {
   detail?: string | null;
   source: string;
   sourceType: string;
-  medication?: HealthMedication;
+  medication?: TimelineMedication;
 };
 
 export type HealthOverview = {
@@ -197,18 +250,13 @@ export const healthApi = {
     }),
   members: () =>
     request<HealthMember[]>('/api/health/members', { requiresAuth: true }),
-  createMember: (payload: {
-    name: string;
-    relation: string;
-    bloodGroup?: string | null;
-    dateOfBirth?: string | null;
-  }) =>
+  createMember: (payload: HealthMemberCreate) =>
     request<HealthMember>('/api/health/members', {
       method: 'POST',
       body: payload,
       requiresAuth: true,
     }),
-  updateMember: (memberId: string, payload: Partial<HealthMember>) =>
+  updateMember: (memberId: string, payload: HealthMemberUpdate) =>
     request<HealthMember>(
       `/api/health/members/${encodeURIComponent(memberId)}`,
       { method: 'PATCH', body: payload, requiresAuth: true },
@@ -228,6 +276,10 @@ export const healthApi = {
       `/api/health/members/${encodeURIComponent(memberId)}/records`,
       { requiresAuth: true },
     ),
+  pendingRecords: () =>
+    request<HealthMemberResolution[]>('/api/health/records/pending', {
+      requiresAuth: true,
+    }),
   createRecord: (payload: {
     memberId?: string;
     documentId: string;
@@ -260,23 +312,7 @@ export const healthApi = {
       `/api/health/members/${encodeURIComponent(memberId)}/measurements${metric ? `?metric=${encodeURIComponent(metric)}` : ''}`,
       { requiresAuth: true },
     ),
-  createMeasurement: (
-    memberId: string,
-    payload: {
-      metricKey: string;
-      displayName: string;
-      originalName?: string;
-      value: number;
-      secondaryValue?: number | null;
-      unit: string;
-      context?: string | null;
-      bodySite?: string | null;
-      referenceMin?: number | null;
-      referenceMax?: number | null;
-      referenceText?: string | null;
-      measuredAt: string;
-    },
-  ) =>
+  createMeasurement: (memberId: string, payload: MeasurementPayload) =>
     request<HealthMeasurement>(
       `/api/health/members/${encodeURIComponent(memberId)}/measurements`,
       { method: 'POST', body: payload, requiresAuth: true },
@@ -322,6 +358,12 @@ export const healthApi = {
       whenToTake: MedicationTime[];
       mealTiming: MealTiming;
       repeatRunsOut?: string | null;
+      route?: string | null;
+      frequency?: string | null;
+      instructions?: string | null;
+      courseStartDate?: string | null;
+      courseEndDate?: string | null;
+      prescribingDoctor?: string | null;
     },
   ) =>
     request<HealthMedication>(

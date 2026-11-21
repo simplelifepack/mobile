@@ -1,14 +1,7 @@
 import React from 'react';
 import {
-Pressable,
-ScrollView,
 View
 } from 'react-native';
-
-import {
-Search,
-} from 'lucide-react-native';
-
 
 import {
 type HealthMember
@@ -18,34 +11,16 @@ import { useAppTheme } from '../../../design/theme/ThemeProvider';
 
 import { AppText } from '../../../components/primitives/AppText';
 import { Row } from '../../../components/primitives/Row';
-import type { ThemeColors } from '../../../design/tokens/colors';
 import { Stack } from '../../../components/primitives/Stack';
 import { ProfileAvatarButton } from '../../../components/navigation/ProfileAvatarButton';
 import { styles } from '../healthStyles';
 import { humanizeLabel } from '../../../utils/format';
-import { sizes } from '../../../design/tokens/sizes';
-
-// Design System person palette: one colour per member, cycling person-1..5 by position.
-export function memberColor(
-  index: number,
-  palette: ThemeColors['person'],
-) {
-  const slots = [1, 2, 3, 4, 5] as const;
-  return palette[slots[index % slots.length]];
-}
-
 
 // ============================================================================
 // HEADER
 // ============================================================================
 
-export function Header({
-  onSearch,
-}: {
-  onSearch: () => void;
-}) {
-  const { theme } = useAppTheme();
-
+export function Header() {
   return (
     <Row
       align="center"
@@ -53,133 +28,13 @@ export function Header({
       style={styles.header}
     >
       <AppText
-        variant="title"
+        variant="overviewTitle"
       >
         Health
       </AppText>
 
-      <Row gap="xs">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Choose tracked tests"
-          onPress={onSearch}
-          style={[
-            styles.headerButton,
-            {
-              backgroundColor:
-                theme.colors.surface.default,
-              borderColor:
-                theme.colors.border.default,
-            },
-          ]}
-        >
-          <Search
-            size={sizes.icon.md}
-            color={
-              theme.colors.text.secondary
-            }
-            strokeWidth={2}
-          />
-        </Pressable>
-
-        <ProfileAvatarButton />
-      </Row>
+      <ProfileAvatarButton />
     </Row>
-  );
-}
-
-
-// ============================================================================
-// FAMILY MEMBERS
-// ============================================================================
-
-export function MemberSelector({
-  members,
-  selected,
-  onSelect,
-}: {
-  members: HealthMember[];
-  selected: string;
-  onSelect: (id: string) => void;
-}) {
-  const { theme } = useAppTheme();
-
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={
-        styles.membersScroll
-      }
-    >
-      <Row gap="sm">
-        {members.map((member, index) => {
-          const isSelected = selected === member.id;
-          const color = memberColor(index, theme.colors.person);
-          const initials = member.name
-            .trim()
-            .split(/\s+/)
-            .map(part => part[0])
-            .join('')
-            .slice(0, 2)
-            .toUpperCase();
-
-          return (
-            <Pressable
-              key={member.id}
-              onPress={() => onSelect(member.id)}
-              style={
-                styles.memberItem
-              }
-            >
-              <View
-                style={[
-                  styles.memberAvatar,
-                  {
-                    backgroundColor:
-                      isSelected
-                        ? theme.colors.surface.raised
-                        : color +
-                          '18',
-
-                    borderColor:
-                      isSelected
-                        ? theme.colors.border.interactive
-                        : 'transparent',
-                  },
-                ]}
-              >
-                <AppText
-                  style={[
-                    styles.memberInitial,
-                    {
-                      color,
-                    },
-                  ]}
-                >
-                  {initials}
-                </AppText>
-              </View>
-
-              <AppText
-                variant="label"
-                color={
-                  isSelected
-                    ? 'primary'
-                    : 'secondary'
-                }
-                align="center"
-                style={
-                  styles.memberName
-                }
-              >
-                {member.name}
-              </AppText>
-            </Pressable>
-          );
-        })}
-      </Row>
-    </ScrollView>
   );
 }
 

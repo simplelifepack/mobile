@@ -9,6 +9,12 @@ import type {
   PublicDocumentEncryptionKey,
 } from './types';
 
+let previewSequence = 0;
+function previewPath(mimeType: string) {
+  previewSequence += 1;
+  return `${Dirs.CacheDir}/readiness-preview-${Date.now()}-${previewSequence}${extensionForMimeType(mimeType)}`;
+}
+
 function extensionForMimeType(mimeType: string) {
   if (mimeType === 'application/pdf') return '.pdf';
   if (mimeType === 'image/png') return '.png';
@@ -26,6 +32,7 @@ export const documentsApi = {
   analyzeEncrypted: (
     files: Array<{ uri: string; name: string }>,
     envelopes: EncryptedDocumentEnvelope[],
+    signal?: AbortSignal,
   ) =>
     uploadMultipart<DocumentAnalysisResponse>(
       '/documents/analyze',
@@ -41,6 +48,7 @@ export const documentsApi = {
         name: file.name,
         mimeType: 'application/octet-stream',
       })),
+      { signal },
     ),
   save: (payload: DocumentSavePayload) =>
     request<DocumentSaveResponse>('/documents', {
@@ -55,12 +63,12 @@ export const documentsApi = {
   preview: (id: string, mimeType: string) =>
     downloadToFile(
       `/documents/${encodeURIComponent(id)}/preview`,
-      `${Dirs.CacheDir}/readiness-preview-${Date.now()}${extensionForMimeType(mimeType)}`,
+      previewPath(mimeType),
     ),
   previewPage: (id: string, pageId: string, mimeType: string) =>
     downloadToFile(
       `/documents/${encodeURIComponent(id)}/pages/${encodeURIComponent(pageId)}/preview`,
-      `${Dirs.CacheDir}/readiness-preview-${Date.now()}${extensionForMimeType(mimeType)}`,
+      previewPath(mimeType),
     ),
   bulkDownload: (ids: string[]) =>
     downloadToFile(`/documents/bulk-download`, `${Dirs.CacheDir}/readiness-documents-${Date.now()}.zip`, {

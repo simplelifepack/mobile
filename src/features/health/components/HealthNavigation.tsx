@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { CalendarDays, Shield, Siren } from 'lucide-react-native';
 
@@ -111,12 +111,12 @@ export function HealthTabs({
   const { theme } = useAppTheme();
 
   return (
-    <View
-      style={[
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={[
         styles.tabs,
-        {
-          borderBottomColor: theme.colors.border.default,
-        },
+        { borderBottomColor: theme.colors.border.default },
       ]}
     >
       {tabs.map(tab => {
@@ -143,7 +143,7 @@ export function HealthTabs({
           </Pressable>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }
 

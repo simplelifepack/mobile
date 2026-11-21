@@ -1,37 +1,51 @@
-import type { TextStyle } from 'react-native';
+import { Platform, type TextStyle } from 'react-native';
 
-type Role = Pick<TextStyle, 'fontSize' | 'lineHeight' | 'fontWeight' | 'letterSpacing'>;
+const systemFamily = Platform.OS === 'ios' ? 'System' : 'sans-serif';
+export const fontFamilies = {
+  regular: systemFamily,
+  medium: systemFamily,
+  semibold: systemFamily,
+  bold: systemFamily,
+} as const;
+
+type Role = Pick<TextStyle, 'fontFamily' | 'fontSize' | 'lineHeight' | 'fontWeight' | 'letterSpacing'>;
 const role = (
   fontSize: number,
   lineHeight: number,
   fontWeight: TextStyle['fontWeight'],
-  letterSpacing = 0,
-): Role => ({ fontSize, lineHeight, fontWeight, letterSpacing });
+): Role => ({ fontFamily: systemFamily, fontSize, lineHeight, fontWeight });
 
-// Design System 1.0 text roles. Nothing is below the 12px caption floor.
+// Shared roles include the backup typography and additional sizes used by the app.
 export const textRoles = {
-  displayLg: role(34, 40, '500', -0.6),
-  displayMd: role(28, 34, '500', -0.4),
-  headingXl: role(24, 30, '500', -0.3),
-  headingLg: role(22, 28, '500', -0.3),
-  headingMd: role(20, 26, '500', -0.2),
-  headingSm: role(17, 22, '500', -0.2),
-  headingXs: role(15, 20, '500', -0.1),
-  bodyLg: role(17, 24, '400', -0.1),
-  bodyMd: role(15, 22, '400'),
+  displayLg: role(34, 40, '600'),
+  displayMd: role(32, 40, '600'),
+  headingXl: role(28, 36, '600'),
+  headingLg: role(23, 32, '600'),
+  headingMd: role(20, 28, '600'),
+  headingSm: role(18, 26, '600'),
+  headingXs: role(15, 20, '600'),
+  bodyLg: role(17, 24, '400'),
+  bodyMd: role(14, 22, '400'),
   bodySm: role(13, 18, '400'),
-  labelLg: role(17, 22, '400', -0.1),
-  labelMd: role(15, 20, '400'),
-  labelSm: role(13, 16, '400'),
-  captionMd: role(12, 16, '400'),
-  numericLg: role(28, 34, '500', -0.4),
-  numericMd: role(20, 24, '500', -0.2),
+  labelLg: role(16, 24, '400'),
+  labelMd: role(16, 24, '400'),
+  labelSm: role(14, 22, '500'),
+  captionMd: role(12, 18, '400'),
+  numericLg: role(24, 30, '600'),
+  numericMd: role(20, 24, '600'),
 } as const;
 
 export type TextRole = keyof typeof textRoles;
 
 // Component-facing variants follow the Foundations hierarchy recipe.
 export const typography = {
+  moduleTitle: textRoles.headingMd,
+  overviewTitle: textRoles.headingLg,
+  metric: textRoles.numericLg,
+  compactLabel: role(13, 20, '600'),
+  action: role(14, 22, '600'),
+  rowTitle: textRoles.labelLg,
+  navigation: role(10, 16, '400'),
   display: textRoles.displayMd,
   title: textRoles.headingXl, // screen title
   heading: textRoles.headingSm, // sheet, card and empty-state titles
@@ -74,7 +88,7 @@ export const lineHeight = {
 
 export const fontWeights = {
   regular: '400',
-  medium: '400',
-  semibold: '500',
-  bold: '500',
+  medium: '500',
+  semibold: '600',
+  bold: '600',
 } as const;

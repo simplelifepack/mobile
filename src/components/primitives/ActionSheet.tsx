@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Check, type LucideIcon } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,57 +22,54 @@ export function ActionSheet({
   title,
   options,
   onClose,
+  onDismiss,
+  embedded = false,
 }: {
   visible: boolean;
   title: string;
   options: ActionSheetOption[];
   onClose: () => void;
+  onDismiss?: () => void;
+  embedded?: boolean;
 }) {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      statusBarTranslucent
-      navigationBarTranslucent
-      onRequestClose={onClose}
-    >
-      <View style={styles.root}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Close ${title} sheet`}
-          style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}
-          onPress={onClose}
-        />
+  const content = (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Close ${title} sheet`}
+        style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}
+        onPress={onClose}
+      />
+      <View
+        style={[
+          styles.sheet,
+          {
+            backgroundColor: theme.colors.surface.default,
+            borderColor: theme.colors.border.default,
+            paddingBottom: Math.max(theme.spacing.md, insets.bottom + 8),
+          },
+        ]}
+      >
         <View
-          style={[
-            styles.sheet,
-            {
-              backgroundColor: theme.colors.surface.default,
-              borderColor: theme.colors.border.default,
-              paddingBottom: Math.max(theme.spacing.md, insets.bottom + 8),
-            },
-          ]}
-        >
-          <View
-            style={[styles.handle, { backgroundColor: theme.colors.border.default }]}
-          />
-          <View style={styles.header}>
-            <AppText variant="listTitle">{title}</AppText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Done"
-              hitSlop={12}
-              onPress={onClose}
-            >
-              <AppText variant="label" style={{ color: theme.colors.text.interactive }}>
-                Done
-              </AppText>
-            </Pressable>
-          </View>
+          style={[styles.handle, { backgroundColor: theme.colors.border.default }]}
+        />
+        <View style={styles.header}>
+          <AppText variant="listTitle">{title}</AppText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Done"
+            hitSlop={12}
+            onPress={onClose}
+          >
+            <AppText variant="label" style={{ color: theme.colors.text.interactive }}>
+              Done
+            </AppText>
+          </Pressable>
+        </View>
+        <ScrollView keyboardShouldPersistTaps="handled">
           {options.map(({ label, icon: Icon, selected, onPress, accessibilityLabel }, index) => (
             <Pressable
               key={label}
@@ -103,7 +100,38 @@ export function ActionSheet({
               ) : null}
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
+      </View>
+    </>
+  );
+
+  if (embedded) {
+    if (!visible) return null;
+    return (
+      <View
+        style={[
+          styles.root,
+          styles.embeddedRoot,
+          { paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right },
+        ]}
+      >
+        {content}
+      </View>
+    );
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onClose}
+      onDismiss={onDismiss}
+    >
+      <View style={[styles.root, { paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
+        {content}
       </View>
     </Modal>
   );
@@ -111,10 +139,16 @@ export function ActionSheet({
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
+  embeddedRoot: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 1000,
+    elevation: 1000,
+  },
   backdrop: {
     ...StyleSheet.absoluteFill,
   },
   sheet: {
+    maxHeight: '100%',
     borderTopLeftRadius: radius.overlay,
     borderTopRightRadius: radius.overlay,
     borderWidth: 1,

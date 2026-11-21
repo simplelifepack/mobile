@@ -8,6 +8,7 @@ import type { HealthMeasurement } from '../../api/health.api';
 
 export const tabs = [
   'Overview',
+  'Readings',
   'Timeline',
   'Medications',
   'Records',
@@ -24,6 +25,7 @@ export type ReadingView = {
   measurements: HealthMeasurement[];
   color: 'danger' | 'primary';
   sourceName?: string;
+  measuredAt?: string | null;
 };
 
 

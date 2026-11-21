@@ -44,14 +44,22 @@ export function TrendChart({
     fontWeight: theme.typography.caption.fontWeight,
   };
   const day = (value: string | null) => value?.slice(0, 10) || 'Undated';
+  const secondaryStroke = theme.colors.status.info.icon;
+  const hasSecondary = rows.some(row => row.secondaryValue != null && Number.isFinite(row.secondaryValue));
 
   return (
     <View>
+      {hasSecondary ? (
+        <Row gap="md">
+          <AppText variant="caption" style={{ color: stroke }}>Primary value</AppText>
+          <AppText variant="caption" style={{ color: secondaryStroke }}>Secondary value</AppText>
+        </Row>
+      ) : null}
       <Svg
         width="100%"
         height={CHART.height}
         viewBox={`0 0 ${CHART.width} ${CHART.height}`}
-        accessibilityLabel={`Trend: ${rows.map(row => `${day(row.measuredAt)}: ${row.value} ${row.unit}`).join(', ')}`}
+        accessibilityLabel={`Trend: ${rows.map(row => `${day(row.measuredAt)}: ${row.value}${row.secondaryValue != null ? `/${row.secondaryValue}` : ''} ${row.unit}`).join(', ')}`}
       >
         {limits.length ? (
           <Rect
@@ -98,6 +106,15 @@ export function TrendChart({
         {points.map((point, index) => (
           <Circle key={rows[index].id} cx={point.x} cy={point.y} r={index === points.length - 1 ? 5 : 3} fill={stroke} />
         ))}
+        {points.slice(1).map((point, index) => {
+          const previous = points[index];
+          return previous.secondaryY != null && point.secondaryY != null ? (
+            <Line key={`secondary-line-${rows[index + 1].id}`} x1={previous.x} y1={previous.secondaryY} x2={point.x} y2={point.secondaryY} stroke={secondaryStroke} strokeWidth={2} />
+          ) : null;
+        })}
+        {points.map((point, index) => point.secondaryY != null ? (
+          <Circle key={`secondary-${rows[index].id}`} cx={point.x} cy={point.secondaryY} r={3} fill={secondaryStroke} />
+        ) : null)}
       </Svg>
       <AppText variant="caption" color="muted">
         {day(rows[0].measuredAt)} — {day(latest.measuredAt)} · {rows.length} {rows.length === 1 ? 'reading' : 'readings'}
@@ -144,7 +161,7 @@ export function ReadingCard({
         {reading.status !== 'no range on file' ? (
           <StatusBadge
             label={reading.status}
-            status={reading.status === 'outside printed range' ? 'danger' : 'success'}
+            status={reading.status === 'outside printed range' ? 'danger' : reading.status === 'within reference range' ? 'success' : 'info'}
           />
         ) : (
           <AppText

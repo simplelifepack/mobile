@@ -5,6 +5,8 @@ import type { DocumentAnalysisResponse } from '../../api/types';
 import {
   analyzeSelectedDocument,
   captureDocumentPhoto,
+  DocumentImportCancelledError,
+  type DocumentImportStage,
   selectDocumentFile,
   selectImageFromGallery,
   startConsentedImport,
@@ -20,15 +22,26 @@ export type SavedWealthDocument = {
 export async function saveSelectedDocument(
   selected: SelectedDocument,
   aiConsent: boolean,
+  signal?: AbortSignal,
+  onStage?: (stage: DocumentImportStage) => void,
+  onPersisting?: () => void,
 ): Promise<SavedWealthDocument> {
-  const analysis = await analyzeSelectedDocument(selected, aiConsent);
+  const analysis = await analyzeSelectedDocument(
+    selected,
+    aiConsent,
+    signal,
+    onStage,
+  );
+  if (signal?.aborted) throw new DocumentImportCancelledError();
+  onPersisting?.();
   const doc = analysis.document;
   const saved = await documentsApi.save({
     tempFileIds: analysis.files.map(file => file.tempFileId),
     originalName: analysis.files[0]?.originalName,
     mimeType: analysis.files[0]?.mimeType,
     size: analysis.files.reduce((sum, file) => sum + file.size, 0),
-    title: doc.title?.trim() || analysis.files[0]?.originalName || selected.fileName,
+    title:
+      doc.title?.trim() || analysis.files[0]?.originalName || selected.fileName,
     category: doc.category?.trim() || 'Other',
     documentType: doc.documentType?.trim() || 'Unknown',
     confidence: Number(doc.confidence) || 0,
@@ -52,20 +65,44 @@ export async function saveSelectedDocument(
 
 export function pickAndSaveDocument(
   onSaved: (document: SavedWealthDocument) => void,
-  onStart: () => void,
-  onEnd: () => void,
+  onStart: (selected: SelectedDocument, cancel: () => void) => void,
+  onEnd: (cancelled: boolean) => void,
+  onError?: (error: unknown) => void,
+  onStage?: (stage: DocumentImportStage) => void,
+  onPersisting?: () => void,
 ) {
-  const processDocument = async (selected: SelectedDocument, aiConsent: boolean) => {
-    onStart();
+  const processDocument = async (
+    selected: SelectedDocument,
+    aiConsent: boolean,
+  ) => {
+    const controller = new AbortController();
+    onStart(selected, () => controller.abort());
     try {
-      onSaved(await saveSelectedDocument(selected, aiConsent));
-    } catch (error) {
-      Alert.alert(
-        'Unable to add document',
-        error instanceof Error ? error.message : 'Please try again.',
+      onSaved(
+        await saveSelectedDocument(
+          selected,
+          aiConsent,
+          controller.signal,
+          onStage,
+          onPersisting,
+        ),
       );
+    } catch (error) {
+      if (
+        !controller.signal.aborted &&
+        !(error instanceof DocumentImportCancelledError)
+      ) {
+        if (onError) {
+          onError(error);
+        } else {
+          Alert.alert(
+            'Unable to add document',
+            error instanceof Error ? error.message : 'Please try again.',
+          );
+        }
+      }
     } finally {
-      onEnd();
+      onEnd(controller.signal.aborted);
     }
   };
   const run = (select: () => Promise<SelectedDocument | undefined>) =>
@@ -82,7 +119,10 @@ export function documentAmount(analysis: SavedWealthDocument['analysis']) {
   const fields = analysis.fields ?? {};
   for (const key of ['amount', 'totalAmount', 'principalAmount', 'value']) {
     const value = fields[key];
-    if ((typeof value === 'string' && value.trim()) || typeof value === 'number') {
+    if (
+      (typeof value === 'string' && value.trim()) ||
+      typeof value === 'number'
+    ) {
       return String(value).replace(/[^\d.]/g, '');
     }
   }

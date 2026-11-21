@@ -3,6 +3,7 @@ import {
 Modal,
 Pressable,
 ScrollView,
+TextInput,
 View
 } from 'react-native';
 
@@ -10,8 +11,10 @@ import {
 Bell,
 Pill,
 Plus,
+Search,
 Upload,
-Users
+Users,
+X,
 } from 'lucide-react-native';
 
 
@@ -27,7 +30,7 @@ import { useAppTheme } from '../../../design/theme/ThemeProvider';
 import { LoadingState } from '../../../components/feedback/LoadingState';
 import { AppText } from '../../../components/primitives/AppText';
 import { Stack } from '../../../components/primitives/Stack';
-import { ListGroup, ListRow } from '../../../components/primitives/ListRow';
+import { ListGroup, ListRow, SelectionMark } from '../../../components/primitives/ListRow';
 import { sizes } from '../../../design/tokens/sizes';
 import { styles } from '../healthStyles';
 
@@ -39,6 +42,8 @@ export function AddToHealthSheet({
   onReminder,
   onMedicine,
   onFamilyMember,
+  visible = true,
+  onDismiss,
 }: {
   memberName: string;
   onClose: () => void;
@@ -47,18 +52,23 @@ export function AddToHealthSheet({
   onReminder: () => void;
   onMedicine: () => void;
   onFamilyMember: () => void;
+  visible?: boolean;
+  onDismiss?: () => void;
 }) {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
 
   return (
     <Modal
-      visible
+      visible={visible}
       transparent
       animationType="slide"
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
+      onDismiss={onDismiss}
     >
-      <View style={styles.addHealthOverlay}>
+      <View style={[styles.addHealthOverlay, { paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
 
         {/* Background / scrim */}
         <Pressable
@@ -110,7 +120,7 @@ export function AddToHealthSheet({
             </AppText>
           </Stack>
 
-          <View style={styles.addHealthList}>
+          <ScrollView style={styles.addHealthList} keyboardShouldPersistTaps="handled">
           <ListGroup>
           {/* A record */}
 
@@ -187,7 +197,7 @@ export function AddToHealthSheet({
             onPress={onFamilyMember}
           />
           </ListGroup>
-          </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -219,6 +229,7 @@ export function MetricPickerModal({
   onChanged: () => Promise<void>;
 }) {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   const [available, setAvailable] = useState<HealthAvailableMetric[]>([]);
   const [tracked, setTracked] = useState<TrackedHealthMetric[]>([]);
@@ -227,6 +238,7 @@ export function MetricPickerModal({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -268,6 +280,11 @@ export function MetricPickerModal({
       active = false;
     };
   }, [memberId]);
+
+  const needle = query.trim().toLowerCase();
+  const shown = needle
+    ? available.filter(metric => metric.displayName.toLowerCase().includes(needle))
+    : available;
 
   const toggleSelection = (metricKey: string) => {
     setSelectedKeys(current => {
@@ -337,15 +354,17 @@ export function MetricPickerModal({
       transparent
       animationType="slide"
       statusBarTranslucent
-      onRequestClose={onClose}
+      navigationBarTranslucent
+      onRequestClose={() => { if (!saving) onClose(); }}
     >
-      <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
+      <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
         <View
           style={[
             styles.metricPickerSheet,
             {
               backgroundColor: theme.colors.surface.canvas,
               borderColor: theme.colors.border.default,
+              paddingBottom: Math.max(insets.bottom, 16),
             },
           ]}
         >
@@ -356,18 +375,40 @@ export function MetricPickerModal({
             ]}
           />
 
-          <AppText variant="heading" style={styles.metricPickerTitle}>
-            Which tests to chart
+          <View style={styles.metricPickerHeader}>
+            <View style={styles.metricPickerText}>
+              <AppText variant="heading">Choose tests</AppText>
+              <AppText variant="bodySm" color="secondary">
+                {available.filter(metric => selectedKeys.has(metric.metricKey)).length} of {available.length} selected
+              </AppText>
+            </View>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close choose tests"
+              disabled={saving} onPress={onClose} style={styles.metricPickerClose}>
+              <X size={sizes.icon.md} color={theme.colors.text.primary} />
+            </Pressable>
+          </View>
+          <AppText variant="bodySm" color="secondary" style={styles.metricPickerSubtitle}>
+            Choose tests from {memberName}&apos;s reports to show on the overview.
           </AppText>
 
-          <AppText
-            variant="body"
-            color="secondary"
-            style={styles.metricPickerSubtitle}
-          >
-            Every test read from {memberName}&apos;s reports. Nothing is
-            hidden, only unpinned from this screen.
-          </AppText>
+          <View style={[styles.metricPickerSearch, { backgroundColor: theme.colors.surface.inset, borderColor: theme.colors.border.default }]}>
+            <Search size={sizes.icon.sm} color={theme.colors.icon.secondary} />
+            <TextInput
+              accessibilityLabel="Search tests"
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search tests"
+              placeholderTextColor={theme.colors.text.tertiary}
+              autoCorrect={false}
+              returnKeyType="search"
+              style={[styles.metricPickerSearchInput, { color: theme.colors.text.primary }]}
+            />
+            {query ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={8} onPress={() => setQuery('')}>
+                <X size={sizes.icon.sm} color={theme.colors.icon.secondary} />
+              </Pressable>
+            ) : null}
+          </View>
 
           {loading ? (
             <LoadingState label="Loading tests…" size={28} />
@@ -384,13 +425,17 @@ export function MetricPickerModal({
             contentContainerStyle={styles.metricPickerListContent}
             showsVerticalScrollIndicator
           >
-            {!loading && available.length === 0 ? (
+            {!loading && !error && available.length === 0 ? (
               <AppText color="secondary">
                 No tests found in this profile.
               </AppText>
             ) : null}
 
-            {available.map(metric => {
+            {!loading && !error && available.length > 0 && shown.length === 0 ? (
+              <AppText color="secondary">No tests match &ldquo;{query.trim()}&rdquo;.</AppText>
+            ) : null}
+
+            {shown.map(metric => {
               const isSelected = selectedKeys.has(metric.metricKey);
 
               return (
@@ -405,46 +450,26 @@ export function MetricPickerModal({
                     { borderBottomColor: theme.colors.border.default },
                   ]}
                 >
-                  <View
-                    style={[
-                      styles.metricPickerCircle,
-                      {
-                        borderColor: isSelected
-                          ? theme.colors.border.interactive
-                          : theme.colors.border.default,
-                        backgroundColor: isSelected
-                          ? theme.colors.action.primary.default
-                          : 'transparent',
-                      },
-                    ]}
-                  >
-                    {isSelected ? (
-                      <View style={[styles.metricPickerCircleInner, { backgroundColor: theme.colors.text.onBrand }]} />
-                    ) : null}
-                  </View>
+                  <SelectionMark checked={isSelected} />
 
                   <View style={styles.metricPickerText}>
-                    <AppText
-                      variant="label"
-                      style={styles.metricPickerMetricName}
-                    >
+                    <AppText variant="label">
                       {metric.displayName}
                     </AppText>
 
                     <AppText
-                      variant="body"
+                      variant="bodySm"
                       color="secondary"
-                      style={styles.metricPickerMetricDetail}
                     >
                       {metric.historicalReadingCount}{' '}
                       {metric.historicalReadingCount === 1
                         ? 'reading'
                         : 'readings'}
-                      {' · latest '}
-                      {metric.latestValue ?? '—'}
-                      {metric.unit ? ` ${metric.unit}` : ''}
                     </AppText>
                   </View>
+                  <AppText variant="label" style={styles.metricPickerValue}>
+                    {metric.latestValue ?? '—'}{metric.secondaryValue != null ? `/${metric.secondaryValue}` : ''}{metric.unit ? ` ${metric.unit}` : ''}
+                  </AppText>
                 </Pressable>
               );
             })}

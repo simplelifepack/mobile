@@ -73,31 +73,27 @@ const datedValues = (items: VisitItem[]) =>
   items.map(visitDate).filter(date => date !== 'Undated').sort();
 
 export function formatVisitDate(value: string) {
-  return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString('en', {
+  return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
 }
 
-export const visitAppointmentDate = (items: VisitItem[]) => datedValues(items).pop() ?? '';
-
 export function visitSummary(items: VisitItem[]) {
   const dates = [...new Set(datedValues(items))];
-  const visits = dates.length || (items.length ? 1 : 0);
   const noun = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
   const range = dates.length > 1
     ? `${formatVisitDate(dates[0]!)} – ${formatVisitDate(dates[dates.length - 1]!)}`
     : dates.length
       ? formatVisitDate(dates[0]!)
       : 'date unavailable';
-  return `${noun(items.length, 'document')} from ${noun(visits, 'visit')} · ${range}`;
+  return `${noun(items.length, 'document')} · ${range}`;
 }
 
 export function visitItemDetail(item: VisitItem) {
-  const fileName = item.document?.originalName || item.document?.displayName || item.document?.title;
   const date = visitDate(item) === 'Undated' ? 'Date unavailable' : formatVisitDate(visitDate(item));
-  return fileName ? `${fileName} · ${date}` : date;
+  return [recordTypeLabels[item.record.type], date, item.record.provider || item.record.doctor].filter(Boolean).join(' · ');
 }
 
 export function visitChooserGroups(contexts: VisitContext[], selectedId: string, query: string) {
@@ -118,14 +114,39 @@ const safeName = (value: string) =>
   value.replace(/[^\w.\- ]+/g, '').trim().replace(/\s+/g, '_') || 'document';
 
 const extensionOf = (name: string) => (name.includes('.') ? name.slice(name.lastIndexOf('.')) : '');
+let visitPackSequence = 0;
 
 /** Downloads the selected documents, zips them into dated folders and returns the zip's path and name. */
 export async function buildVisitPackZip(
   items: VisitItem[],
   memberName: string,
   contextLabel: string,
+  plannedDate?: string,
+  clinic?: string,
 ) {
+  return buildRecordsZip(items, memberName, {
+    fileLabel: `${safeName(contextLabel)}_Visit-Pack`,
+    detailsName: 'visit-details.txt',
+    details: [
+      `Profile: ${memberName}`,
+      `Selection: ${contextLabel}`,
+      ...(clinic ? [`Clinic: ${clinic}`] : []),
+      ...(plannedDate ? [`Visit date: ${plannedDate}`] : []),
+    ],
+  });
+}
+
+export async function buildMemberRecordsZip(items: VisitItem[], memberName: string) {
+  return buildRecordsZip(items, memberName, {
+    fileLabel: 'Health-Records',
+    detailsName: 'records-details.txt',
+    details: [`Profile: ${memberName}`, 'This archive contains record documents only, not profile details, readings, medicines or reminders.'],
+  });
+}
+
+async function buildRecordsZip(items: VisitItem[], memberName: string, metadata: { fileLabel: string; detailsName: string; details: string[] }) {
   const zip = new JSZip();
+  zip.file(metadata.detailsName, metadata.details.join('\n'));
   const used = new Map<string, number>();
   const ordered = [...items].sort((a, b) => visitDate(b).localeCompare(visitDate(a)));
 
@@ -140,14 +161,15 @@ export async function buildVisitPackZip(
       const count = used.get(base) ?? 0;
       used.set(base, count + 1);
       const ext = extensionOf(base);
-      const path = count ? `${base.slice(0, base.length - ext.length)}_${count + 1}${ext}` : base;
+      const path = count ? `${ext ? base.slice(0, -ext.length) : base}_${count + 1}${ext}` : base;
       zip.file(path, await FileSystem.readFile(file.path, 'base64'), { base64: true });
     } finally {
-      await FileSystem.unlink(file.path).catch(() => undefined);
+      await FileSystem.unlink(file.path).catch(error => console.warn('Unable to remove visit document cache', error));
     }
   }
 
-  const fileName = `${safeName(memberName)}_${safeName(contextLabel)}_Visit-Pack.zip`;
+  visitPackSequence += 1;
+  const fileName = `${safeName(memberName)}_${metadata.fileLabel}-${Date.now()}-${visitPackSequence}.zip`;
   const path = `${Dirs.CacheDir}/${fileName}`;
   await FileSystem.writeFile(path, await zip.generateAsync({ type: 'base64' }), 'base64');
   return { path, fileName };

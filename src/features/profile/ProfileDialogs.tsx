@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View, KeyboardAvoidingView } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View, KeyboardAvoidingView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
@@ -23,11 +24,13 @@ export function CurrencyPickerModal({
   onClose,
 }: CurrencyPickerModalProps) {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
-        <View style={[styles.currencyPanel, { backgroundColor: theme.colors.surface.canvas }]}>
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
+        <ScrollView keyboardShouldPersistTaps="handled" style={[styles.sheet, { backgroundColor: theme.colors.surface.canvas }]}
+          contentContainerStyle={[styles.currencyPanel, { paddingBottom: Math.max(32, insets.bottom + 8) }]}>
           <View style={styles.header}>
             <AppText style={styles.title}>Home currency</AppText>
             <Pressable onPress={onClose} hitSlop={10}>
@@ -65,7 +68,7 @@ export function CurrencyPickerModal({
               </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -89,12 +92,14 @@ export function DeleteAccountModal({
   onSchedule,
 }: DeleteAccountModalProps) {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const valid = phrase === 'delete my account';
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
-        <View style={[styles.deletePanel, { backgroundColor: theme.colors.surface.canvas }]}>
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
+        <ScrollView keyboardShouldPersistTaps="handled" style={[styles.sheet, { backgroundColor: theme.colors.surface.canvas }]}
+          contentContainerStyle={[styles.deletePanel, { paddingBottom: Math.max(32, insets.bottom + 8) }]}>
           <AppText style={styles.title}>Schedule account deletion</AppText>
           <AppText style={styles.description} color="secondary">
             Your account and data will be permanently deleted after 30 days. Sign in again during that period to cancel.
@@ -150,7 +155,7 @@ export function DeleteAccountModal({
               </AppText>
             </Pressable>
           </Row>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -161,6 +166,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
+  sheet: { flexGrow: 0, maxHeight: '100%', borderTopLeftRadius: radius.overlay, borderTopRightRadius: radius.overlay },
   currencyPanel: {
     paddingHorizontal: 24,
     paddingTop: 24,

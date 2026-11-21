@@ -58,8 +58,8 @@ export function EmergencyInfoSheet({
   const generated = new Date().toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
-    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
-      <View style={styles.root}>
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+      <View style={[styles.root, { paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close emergency card"

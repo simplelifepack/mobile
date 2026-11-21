@@ -3,6 +3,8 @@ export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
   Profile: undefined;
+  Subscription: undefined;
+  EmergencyAccess: undefined;
   Integrations: undefined;
   DigiLocker: undefined;
   AppLock: undefined;
@@ -19,7 +21,7 @@ export type AuthStackParamList = {
 };
 export type MainTabParamList = {
   Home: undefined;
-  Documents: undefined;
+  Documents: { documentId?: string } | undefined;
   Packages: undefined;
   Health: undefined;
   Wealth: undefined;

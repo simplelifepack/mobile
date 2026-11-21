@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Search, X } from 'lucide-react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/primitives/AppText';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
@@ -82,7 +83,8 @@ export function GlobalSearchModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={close}>
-      <View style={[styles.root, { backgroundColor: theme.colors.surface.canvas }]}>
+      <SafeAreaProvider>
+      <SafeAreaView style={[styles.root, { backgroundColor: theme.colors.surface.canvas }]}>
         <View
           style={[
             styles.bar,
@@ -154,13 +156,14 @@ export function GlobalSearchModal({
             </View>
           ))}
         </ScrollView>
-      </View>
+      </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, paddingTop: 48, paddingHorizontal: 16 },
+  root: { flex: 1, paddingTop: 16, paddingHorizontal: 16 },
   bar: {
     minHeight: 50,
     borderWidth: 1,

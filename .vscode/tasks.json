@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Android release APK",
+			"type": "shell",
+			"command": "cd android && JAVA_HOME=/opt/homebrew/opt/openjdk@17 ANDROID_HOME=\"$HOME/Library/Android/sdk\" ./gradlew assembleRelease",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

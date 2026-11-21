@@ -186,10 +186,10 @@ export function DocumentDetailSheet({
   const saving = busy === 'notes' || busy === 'expiry' || busy === 'assign';
 
   return (
-    <Modal visible transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
+    <Modal visible transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.root}
+        style={[styles.root, { paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}
       >
         <Pressable
           accessibilityRole="button"

@@ -1,8 +1,11 @@
 import type { HealthMeasurement } from '../../api/health.api';
 
-const compareMeasurements = (a: HealthMeasurement, b: HealthMeasurement) =>
-  String(a.measuredAt ?? '').localeCompare(String(b.measuredAt ?? '')) ||
-  a.id.localeCompare(b.id);
+const compareMeasurements = (a: HealthMeasurement, b: HealthMeasurement) => {
+  const aTime = a.measuredAt ? Date.parse(a.measuredAt) : NaN;
+  const bTime = b.measuredAt ? Date.parse(b.measuredAt) : NaN;
+  return (Number.isFinite(aTime) ? aTime : -Infinity) -
+    (Number.isFinite(bTime) ? bTime : -Infinity) || a.id.localeCompare(b.id);
+};
 
 export const CHART = { width: 360, height: 150, left: 38, right: 338, top: 20, bottom: 122 } as const;
 
@@ -14,7 +17,11 @@ export function trendGeometry(measurements: HealthMeasurement[]) {
   const limits = [latest.referenceMin, latest.referenceMax].filter(
     (value): value is number => value != null && Number.isFinite(value),
   );
-  const values = [...rows.map(row => row.value), ...limits];
+  const values = [
+    ...rows.map(row => row.value),
+    ...rows.flatMap(row => row.secondaryValue != null && Number.isFinite(row.secondaryValue) ? [row.secondaryValue] : []),
+    ...limits,
+  ];
   const low = Math.min(...values);
   const high = Math.max(...values);
   const pad = Math.max((high - low) * 0.25, Math.abs(high) * 0.1, 1);
@@ -35,6 +42,7 @@ export function trendGeometry(measurements: HealthMeasurement[]) {
         ? (CHART.left + CHART.right) / 2
         : CHART.left + (dated ? (times[index] - start) / (end - start) : index / (rows.length - 1)) * plotWidth,
     y: y(row.value),
+    secondaryY: row.secondaryValue != null && Number.isFinite(row.secondaryValue) ? y(row.secondaryValue) : undefined,
   }));
 
   return { rows, points, min, max, limits, y, sequential: rows.length > 1 && !dated };

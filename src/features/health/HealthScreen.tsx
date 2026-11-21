@@ -2,40 +2,46 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation,type CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import React,{ useEffect,useMemo,useState } from 'react';
+import React,{ useEffect,useState } from 'react';
 import {
 Alert,
+BackHandler,
 Modal,
+Platform,
 Pressable,
+ScrollView,
 View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
 Activity,
 CalendarClock,
-Check,
 FlaskConical,
 Pill,
-Plus,
-Upload,
 Image as ImageIcon,
 Camera,
 FileText,
+ChevronLeft,
+ChevronDown,
+UserRound,
 } from 'lucide-react-native';
 
 
 import {
 healthApi,
+isMemberResolution,
 type HealthHomeReminder,
-type HealthMedication,
 type HealthMember,
 type HealthMemberResolution,
+type HealthMeasurement,
 type HealthOverview,
+type HealthRecord,
 type HealthRecordDetail,
 type HealthTimelineEvent
 } from '../../api/health.api';
 import type { MainTabParamList,RootStackParamList } from '../../app/navigation/types';
-import { useBootstrapQuery, useDocumentsQuery } from '../../services/api';
+import { useDocumentsQuery } from '../../services/api';
 import {
 captureDocumentPhoto,
 discardSelectedDocument,
@@ -46,10 +52,18 @@ type SelectedDocument,
 } from '../documents/documentImport';
 import {
 healthDocumentTypeLabels,
+HealthDocumentSavedError,
 importHealthRecord,
 resolutionMessage,
+saveHealthRecordAnalysis,
 type HealthDocumentType,
+type HealthImportResult,
 } from './healthRecordImport';
+import type { DocumentAnalysisResponse } from '../../api/types';
+import type { HealthUploadReview } from '../../api/healthExtraction';
+import { healthRecordProcessingMessage } from './healthRecordStatus';
+import { PrescriptionReviewSheet } from './components/PrescriptionReviewSheet';
+import { DocumentPreview } from '../documents/DocumentPreview';
 
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 
@@ -64,24 +78,36 @@ import { Row } from '../../components/primitives/Row';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { AddToHealthSheet,MetricPickerModal } from './components/AddToHealthSheet';
-import { syncReminderNotifications } from '../../notifications/reminderNotifications';
-import { HealthMemberForm,HealthReadingForm,HealthReminderForm,MedicationForm } from './components/HealthForms';
-import { HealthTabs,PrepareVisit,QuickActions } from './components/HealthNavigation';
+import { saveReminderSchedule, syncReminderNotifications } from '../../notifications/reminderNotifications';
+import { HealthReadingForm } from './components/HealthForms';
+import { HealthReminderForm } from './components/HealthReminderForm';
+import { MedicationForm } from './components/MedicationForm';
+import { HealthTabs } from './components/HealthNavigation';
 import { EmergencyInfoSheet } from './components/EmergencyInfoSheet';
 import { InsuranceCardSheet } from './components/InsuranceCardSheet';
 import { VisitPackSheet } from './components/VisitPackSheet';
-import { MedicalReadiness,Reminders } from './components/HealthPanels';
-import { Header,MemberProfile,MemberSelector } from './components/MemberComponents';
-import { ReadingCard } from './components/ReadingViews';
-import { ListGroup, ListRow } from '../../components/primitives/ListRow';
-import { StatusBadge } from '../../components/feedback/StatusBadge';
+import { MedicalReadiness } from './components/HealthPanels';
+import { EditCareProfileSheet } from './components/EditCareProfileSheet';
+import { Header } from './components/MemberComponents';
+import { HealthDashboard } from './components/HealthDashboard';
+import { HealthRecords } from './components/HealthRecords';
+import { HealthReadings } from './components/HealthReadings';
+import { HealthMedicines } from './components/HealthMedicines';
+import { ReadingDetail } from './components/ReadingDetail';
+import { FamilySwitcherSheet } from './components/FamilySwitcherSheet';
+import { isDefaultProfile, ManageFamily } from './components/ManageFamily';
+import { FamilyMemberForm } from './components/FamilyMemberForm';
+import { RemoveFamilyProfile } from './components/RemoveFamilyProfile';
 import { sizes } from '../../design/tokens/sizes';
 import { styles } from './healthStyles';
 import { ReadingView } from './healthTypes';
+import { filterChosenReadings, readingViews, withMeasurement, withTrackedMeasurement } from './readingData';
+import { deleteMemberWithDocuments } from './memberRemoval';
 import { formatDate } from '../../utils/format';
 
 export function HealthScreen() {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<
     CompositeNavigationProp<
       BottomTabNavigationProp<MainTabParamList, 'Health'>,
@@ -89,42 +115,74 @@ export function HealthScreen() {
     >
   >();
 
-  const bootstrap =
-    useBootstrapQuery();
   const [members, setMembers] = useState<HealthMember[]>([]);
   const [selectedMember, setSelectedMember] = useState('');
   const [overview, setOverview] = useState<HealthOverview>();
-  const { data: documents } = useDocumentsQuery();
+  const [memberRecords, setMemberRecords] = useState<{ memberId: string; records: HealthRecord[] }>();
+  const [allReadings, setAllReadings] = useState<{
+    memberId: string;
+    loading: boolean;
+    measurements: HealthMeasurement[];
+    error?: string;
+  }>();
+  const [readingRefresh, setReadingRefresh] = useState(0);
+  const memberRequest = React.useRef(0);
+  const { data: documents, refetch: refetchDocuments } = useDocumentsQuery();
   const [insuranceVisible, setInsuranceVisible] = useState(false);
   const [timeline, setTimeline] = useState<HealthTimelineEvent[]>([]);
   const [reminders, setReminders] = useState<HealthHomeReminder[]>([]);
+  const remindersRef = React.useRef<HealthHomeReminder[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [loadingOverview, setLoadingOverview] = useState(false);
   const [healthError, setHealthError] = useState<string>();
   const [recordSourceVisible, setRecordSourceVisible] = useState(false);
+  const [memberSelectorVisible, setMemberSelectorVisible] = useState(false);
+  const [familyDetailId, setFamilyDetailId] = useState<string>();
+  const [familyContacts, setFamilyContacts] = useState(false);
+  const [removingMember, setRemovingMember] = useState(false);
+  const [removalTarget, setRemovalTarget] = useState<HealthMember>();
+  const pendingFamilyAction = React.useRef<(() => void) | undefined>(undefined);
   const [memberFormVisible, setMemberFormVisible] = useState(false);
+  const [editingMember, setEditingMember] = useState<HealthMember>();
+  const [editingIdentity, setEditingIdentity] = useState<HealthMember>();
   const [emergencyVisible, setEmergencyVisible] = useState(false);
   const [visitPackVisible, setVisitPackVisible] = useState(false);
   const [reminderFormVisible, setReminderFormVisible] = useState(false);
   const [metricPickerVisible, setMetricPickerVisible] = useState(false);
   const [medicationFormVisible, setMedicationFormVisible] = useState(false);
+  const [updatingMedicationId, setUpdatingMedicationId] = useState<string>();
   const [addHealthVisible, setAddHealthVisible] = useState(false);
   const [readingFormVisible, setReadingFormVisible] = useState(false);
+  const [showAllTests, setShowAllTests] = useState(false);
+  const [selectedReadingId, setSelectedReadingId] = useState<string>();
   const [importing, setImporting] = useState(false);
   const [resolution, setResolution] = useState<HealthMemberResolution>();
+  const [previewDocumentId, setPreviewDocumentId] = useState<string>();
+  const [prescriptionReview, setPrescriptionReview] = useState<{
+    selected: SelectedDocument;
+    analysis: DocumentAnalysisResponse;
+    options: { memberId?: string; type?: HealthDocumentType; aiConsent: boolean };
+  }>();
 
   const [
     activeTab,
     setActiveTab,
   ] = useState('Overview');
+  const selectedMemberRef = React.useRef(selectedMember);
+  selectedMemberRef.current = selectedMember;
 
   const refreshMemberData = async (memberId: string) => {
-    const [nextOverview, nextTimeline] = await Promise.all([
+    const requestId = ++memberRequest.current;
+    const [nextOverview, nextTimeline, records] = await Promise.all([
       healthApi.overview(memberId),
       healthApi.timeline(memberId),
+      healthApi.records(memberId),
     ]);
+    if (memberRequest.current !== requestId) return;
     setOverview(nextOverview);
     setTimeline(nextTimeline);
+    setMemberRecords({ memberId, records });
+    setReadingRefresh(version => version + 1);
   };
 
   const refreshAll = async () => {
@@ -134,8 +192,9 @@ export function HealthScreen() {
         healthApi.reminders(),
       ]);
       setMembers(loadedMembers);
+      remindersRef.current = loadedReminders;
       setReminders(loadedReminders);
-      void syncReminderNotifications(loadedReminders);
+      syncReminderNotifications(loadedReminders).catch(error => console.warn('Unable to schedule reminders', error));
       const memberId = selectedMember || loadedMembers[0]?.id;
       if (memberId && !selectedMember) setSelectedMember(memberId);
       if (memberId) await refreshMemberData(memberId);
@@ -158,6 +217,21 @@ export function HealthScreen() {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedMember]),
   );
+  useFocusEffect(
+    React.useCallback(() => {
+      if (activeTab !== 'Records' && activeTab !== 'Readings' && activeTab !== 'Medications' && activeTab !== 'Family') return;
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (activeTab === 'Family' && (familyDetailId || familyContacts)) {
+          setFamilyDetailId(undefined);
+          setFamilyContacts(false);
+        } else if (activeTab === 'Family') setActiveTab('Overview');
+        else if (activeTab === 'Readings' && selectedReadingId) setSelectedReadingId(undefined);
+        else setActiveTab('Overview');
+        return true;
+      });
+      return () => subscription.remove();
+    }, [activeTab, selectedReadingId, familyDetailId, familyContacts]),
+  );
 
   useEffect(() => {
     let active = true;
@@ -165,6 +239,7 @@ export function HealthScreen() {
       .then(([loadedMembers, loadedReminders]) => {
         if (!active) return;
         setMembers(loadedMembers);
+        remindersRef.current = loadedReminders;
         setReminders(loadedReminders);
         setSelectedMember(current => current || loadedMembers[0]?.id || '');
       })
@@ -188,18 +263,24 @@ export function HealthScreen() {
   useEffect(() => {
     if (!selectedMember) return;
     let active = true;
+    const requestId = ++memberRequest.current;
+    setOverview(undefined);
+    setTimeline([]);
+    setMemberRecords(undefined);
     setLoadingOverview(true);
     Promise.all([
       healthApi.overview(selectedMember),
       healthApi.timeline(selectedMember),
+      healthApi.records(selectedMember),
     ])
-      .then(([loadedOverview, loadedTimeline]) => {
-        if (!active) return;
+      .then(([loadedOverview, loadedTimeline, loadedRecords]) => {
+        if (!active || memberRequest.current !== requestId) return;
         setOverview(loadedOverview);
         setTimeline(loadedTimeline);
+        setMemberRecords({ memberId: selectedMember, records: loadedRecords });
       })
       .catch(loadError => {
-        if (active) {
+        if (active && memberRequest.current === requestId) {
           setHealthError(
             loadError instanceof Error
               ? loadError.message
@@ -215,40 +296,46 @@ export function HealthScreen() {
     };
   }, [selectedMember]);
 
-  const readiness =
-    useMemo(() => {
-      const documents =
-        bootstrap.data
-          ?.documents ?? [];
-
-      if (!documents.length) {
-        return 0;
-      }
-
-      const verified =
-        documents.filter(
-          document =>
-            document.classificationStatus ===
-              'verified' &&
-            document.ownershipStatus ===
-              'verified',
-        ).length;
-
-      return Math.round(
-        (verified /
-          documents.length) *
-          100,
-      );
-    }, [
-      bootstrap.data?.documents,
-    ]);
+  useEffect(() => {
+    if (activeTab !== 'Readings' || !selectedMember) return;
+    let active = true;
+    setAllReadings(current => current?.memberId === selectedMember
+      ? { ...current, loading: true, error: undefined }
+      : { memberId: selectedMember, loading: true, measurements: [] });
+    healthApi.measurements(selectedMember)
+      .then(measurements => {
+        if (active) setAllReadings({ memberId: selectedMember, loading: false, measurements });
+      })
+      .catch(error => {
+        if (active) {
+          setAllReadings(current => ({
+            memberId: selectedMember,
+            loading: false,
+            measurements: current?.memberId === selectedMember ? current.measurements : [],
+            error: error instanceof Error ? error.message : 'Unable to load readings.',
+          }));
+        }
+      });
+    return () => { active = false; };
+  }, [activeTab, selectedMember, readingRefresh]);
 
   const member =
     members.find(
       item => item.id === selectedMember,
     );
 
-  const readings: ReadingView[] = (overview?.trackedMetrics ?? [])
+  const currentOverview = overview?.member.id === selectedMember ? overview : undefined;
+  const fullReadings = React.useMemo(
+    () => allReadings?.memberId === selectedMember ? readingViews(allReadings.measurements) : [],
+    [allReadings, selectedMember],
+  );
+  const chosenTests = React.useMemo(() => currentOverview?.trackedMetrics ?? [], [currentOverview]);
+  const visibleReadings = React.useMemo(
+    () => showAllTests ? fullReadings : filterChosenReadings(fullReadings, chosenTests),
+    [fullReadings, chosenTests, showAllTests],
+  );
+  const selectedReading = fullReadings.find(item => item.id === selectedReadingId);
+  const readings: ReadingView[] = (currentOverview?.trackedMetrics ?? [])
     .filter(metric => metric.latest)
     .map(metric => {
       const latest = metric.latest!;
@@ -265,12 +352,14 @@ export function HealthScreen() {
         unit: latest.unit,
         status: outsideRange
           ? 'outside printed range'
-          : latest.referenceText || latest.referenceMin != null || latest.referenceMax != null
+          : latest.referenceMin != null || latest.referenceMax != null
             ? 'within reference range'
-            : 'no range on file',
+            : latest.referenceText ? 'reference range on file' : 'no range on file',
         range:
           latest.referenceText ??
-          (latest.referenceMax != null
+          (latest.referenceMin != null && latest.referenceMax != null
+            ? `${latest.referenceMin}–${latest.referenceMax}`
+            : latest.referenceMax != null
             ? `under ${latest.referenceMax}`
             : latest.referenceMin != null
               ? `over ${latest.referenceMin}`
@@ -278,18 +367,29 @@ export function HealthScreen() {
         measurements: metric.measurements,
         color: outsideRange ? 'danger' : 'primary',
         sourceName: latest.originalName,
+        measuredAt: latest.measuredAt,
       };
     });
 
-  const toggleMedication = async (medication: HealthMedication) => {
+  const toggleMedication = async (id: string, stopped: boolean) => {
+    const memberId = selectedMember;
+    setUpdatingMedicationId(id);
     try {
-      await healthApi.updateMedication(medication.id, {
-        status: medication.status === 'stopped' ? 'continuing' : 'stopped',
-        stoppedAt: medication.status === 'stopped' ? null : new Date().toISOString(),
+      await healthApi.updateMedication(id, {
+        status: stopped ? 'continuing' : 'stopped',
+        stoppedAt: stopped ? null : new Date().toISOString(),
       });
-      await refreshMemberData(selectedMember);
+      if (selectedMemberRef.current === memberId) {
+        try {
+          await refreshMemberData(memberId);
+        } catch (error) {
+          setHealthError(`The medicine was updated, but Health could not be refreshed: ${error instanceof Error ? error.message : 'Please refresh.'}`);
+        }
+      }
     } catch (error) {
       setHealthError(error instanceof Error ? error.message : 'Unable to update medication.');
+    } finally {
+      setUpdatingMedicationId(undefined);
     }
   };
 
@@ -299,12 +399,20 @@ export function HealthScreen() {
     setActiveTab(record.type === 'prescription' ? 'Medications' : 'Records');
     Alert.alert(
       'Health record added',
-      record.measurements.length
-        ? `${record.measurements.length} measurement(s) were extracted.`
-        : record.processingStatus === 'failed'
-          ? "We couldn't process this health record. Try again."
-          : 'Health record processed.',
+      healthRecordProcessingMessage(record) ??
+        (record.measurements.length
+          ? `${record.measurements.length} measurement(s) were extracted.`
+          : 'Health record saved. Review it for any missing information.'),
     );
+  };
+
+  const handleImportedRecord = async (result: Exclude<HealthImportResult, { kind: 'review' }>) => {
+    if (result.kind === 'resolution') {
+      setResolution(result.resolution);
+      Alert.alert('Choose a profile', resolutionMessage(result.resolution));
+    } else {
+      await showImportedRecord(result.record);
+    }
   };
 
   const runRecordImport = async (
@@ -316,16 +424,12 @@ export function HealthScreen() {
     setImporting(true);
     setHealthError(undefined);
     try {
-      const result = await importHealthRecord(selected, {
-        memberId,
-        type,
-        aiConsent,
-      });
-      if (result.kind === 'resolution') {
-        setResolution(result.resolution);
-        Alert.alert('Choose a profile', resolutionMessage(result.resolution));
+      const options = { memberId, type, aiConsent };
+      const result = await importHealthRecord(selected, options);
+      if (result.kind === 'review') {
+        setPrescriptionReview({ selected, analysis: result.analysis, options });
       } else {
-        await showImportedRecord(result.record);
+        await handleImportedRecord(result);
       }
     } catch (importError) {
       setHealthError(
@@ -335,6 +439,30 @@ export function HealthScreen() {
       );
     } finally {
       setImporting(false);
+    }
+  };
+
+  const saveReviewedPrescription = async (review: HealthUploadReview) => {
+    if (!prescriptionReview) throw new Error('The prescription review is no longer available.');
+    let result: HealthImportResult;
+    try {
+      result = await saveHealthRecordAnalysis(
+        prescriptionReview.selected, prescriptionReview.options, prescriptionReview.analysis, review,
+      );
+    } catch (error) {
+      if (error instanceof HealthDocumentSavedError) {
+        setPrescriptionReview(undefined);
+        setHealthError(error.message);
+        return;
+      }
+      throw error;
+    }
+    if (result.kind === 'review') throw new Error('The prescription could not be saved.');
+    setPrescriptionReview(undefined);
+    try {
+      await handleImportedRecord(result);
+    } catch (error) {
+      setHealthError(`The prescription was saved, but Health could not be refreshed: ${error instanceof Error ? error.message : 'Please refresh.'}`);
     }
   };
 
@@ -388,11 +516,11 @@ export function HealthScreen() {
         documentId: resolution.documentId,
         type: resolution.type,
       });
-      if ('processingStatus' in record && record.processingStatus === 'awaiting_profile_match') {
+      if (isMemberResolution(record)) {
         throw new Error('A health profile still needs to be selected.');
       }
       setResolution(undefined);
-      await showImportedRecord(record as HealthRecordDetail);
+      await showImportedRecord(record);
     } catch (resolveError) {
       setHealthError(
         resolveError instanceof Error
@@ -404,6 +532,21 @@ export function HealthScreen() {
     }
   };
 
+  const runPendingFamilyAction = () => {
+    const action = pendingFamilyAction.current;
+    pendingFamilyAction.current = undefined;
+    action?.();
+  };
+  const switchFamilySheet = (close: () => void, next: () => void) => {
+    if (Platform.OS === 'ios') {
+      pendingFamilyAction.current = next;
+      close();
+    } else {
+      close();
+      next();
+    }
+  };
+
   return (
     <Screen
       scroll
@@ -411,10 +554,10 @@ export function HealthScreen() {
       onRefresh={refreshAll}
 floatingAction={
   <>
-    <FloatingActionButton
+    {activeTab !== 'Medications' && activeTab !== 'Family' ? <FloatingActionButton
       accessibilityLabel="Add to Health"
       onPress={() => setAddHealthVisible(true)}
-    />
+    /> : null}
     <ActionSheet
       visible={recordSourceVisible}
       title="Add health record"
@@ -425,8 +568,25 @@ floatingAction={
         { label: 'Choose file', icon: FileText, onPress: () => importRecord(selectDocumentFile) },
       ]}
     />
-    {addHealthVisible ? (
+    <FamilySwitcherSheet
+      visible={memberSelectorVisible}
+      members={members}
+      selected={selectedMember}
+      onClose={() => setMemberSelectorVisible(false)}
+      onDismiss={runPendingFamilyAction}
+      onSelect={id => {
+        setSelectedReadingId(undefined);
+        setSelectedMember(id);
+        setMemberSelectorVisible(false);
+      }}
+      onManageFamily={() => switchFamilySheet(
+        () => setMemberSelectorVisible(false),
+        () => { setFamilyDetailId(undefined); setFamilyContacts(false); setActiveTab('Family'); },
+      )}
+    />
       <AddToHealthSheet
+        visible={addHealthVisible}
+        onDismiss={runPendingFamilyAction}
         memberName={member?.name ?? 'your profile'}
         onClose={() => setAddHealthVisible(false)}
         onRecord={() => {
@@ -434,23 +594,31 @@ floatingAction={
           setRecordSourceVisible(true);
         }}
         onReading={() => {
-          setAddHealthVisible(false);
-          setReadingFormVisible(true);
+          if (!member) {
+            Alert.alert('Health profile required', 'Add a health profile before logging a reading.');
+            return;
+          }
+          switchFamilySheet(() => setAddHealthVisible(false), () => setReadingFormVisible(true));
         }}
         onReminder={() => {
-          setAddHealthVisible(false);
-          setReminderFormVisible(true);
+          if (!member) {
+            Alert.alert('Health profile required', 'Add a health profile before creating a reminder.');
+            return;
+          }
+          switchFamilySheet(() => setAddHealthVisible(false), () => setReminderFormVisible(true));
         }}
         onMedicine={() => {
-          setAddHealthVisible(false);
-          setMedicationFormVisible(true);
+          if (!member) {
+            Alert.alert('Health profile required', 'Add a health profile before adding a medicine.');
+            return;
+          }
+          switchFamilySheet(() => setAddHealthVisible(false), () => setMedicationFormVisible(true));
         }}
         onFamilyMember={() => {
           setAddHealthVisible(false);
           setMemberFormVisible(true);
         }}
       />
-    ) : null}
   </>
 }    >
       <Stack
@@ -466,9 +634,25 @@ floatingAction={
         <Stack gap="sm">
         {/* HEADER */}
 
-        <Header
-          onSearch={() => setMetricPickerVisible(true)}
-        />
+        {activeTab === 'Records' || activeTab === 'Readings' || activeTab === 'Medications' || activeTab === 'Family' ? (
+          <Row align="center" style={styles.header}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={activeTab === 'Family' && (familyDetailId || familyContacts) ? 'Back to manage family' : activeTab === 'Readings' && selectedReadingId ? 'Back to readings' : 'Back to health overview'}
+              onPress={() => {
+                if (activeTab === 'Family' && (familyDetailId || familyContacts)) { setFamilyDetailId(undefined); setFamilyContacts(false); }
+                else if (activeTab === 'Readings' && selectedReadingId) setSelectedReadingId(undefined);
+                else setActiveTab('Overview');
+              }}
+              style={styles.formClose}
+            >
+              <ChevronLeft size={sizes.icon.md} color={theme.colors.icon.primary} />
+            </Pressable>
+            <AppText variant="overviewTitle" numberOfLines={1}>
+              {activeTab === 'Family' ? familyDetailId ? 'Family profile' : familyContacts ? 'Emergency contacts' : 'Manage family' : activeTab === 'Readings' && selectedReadingId ? selectedReading?.title ?? 'Reading history' : activeTab === 'Medications' ? 'Medicines' : activeTab}
+            </AppText>
+          </Row>
+        ) : <Header />}
         {healthError ? (
           <AppText variant="caption" color="danger">
             {healthError}
@@ -478,26 +662,27 @@ floatingAction={
 
         {/* FAMILY MEMBERS */}
 
-        <MemberSelector
-          members={members}
-          selected={
-            selectedMember
-          }
-          onSelect={
-            setSelectedMember
-          }
-        />
-
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Choose health profile"
+          accessibilityState={{ expanded: memberSelectorVisible }}
+          onPress={() => setMemberSelectorVisible(true)}
+          style={styles.memberContext}
+        >
+          <UserRound size={sizes.icon.sm} color={theme.colors.icon.interactive} />
+          <AppText variant="caption" numberOfLines={1} style={[styles.memberContextName, { color: theme.colors.text.interactive }]}>
+            {member ? `${member.name} · ${member.relation}` : 'Choose profile'}
+          </AppText>
+          <ChevronDown size={sizes.icon.sm} color={theme.colors.icon.interactive} />
+          <AppText variant="caption" color="muted" style={styles.memberContextHint}>
+            Private health vault
+          </AppText>
+        </Pressable>
         </Stack>
 
-        {loadingMembers || loadingOverview ? <SkeletonList label="Loading health…" /> : null}
+        {loadingMembers || (loadingOverview && activeTab !== 'Family') ? <SkeletonList label="Loading health…" /> : null}
 
-        <Stack gap="sm" style={loadingMembers || loadingOverview ? styles.hidden : undefined}>
-        {/* MEMBER PROFILE */}
-
-        {member ? (
-          <MemberProfile member={member} />
-        ) : (
+        {!member && !loadingMembers ? (
           <Card>
             <Stack gap="sm">
               <AppText variant="heading">No health profiles yet</AppText>
@@ -509,115 +694,89 @@ floatingAction={
               </Pressable>
             </Stack>
           </Card>
-        )}
+        ) : null}
 
-        {/* PREPARE */}
-
-        <PrepareVisit onPress={() => setVisitPackVisible(true)} />
-
-        {/* QUICK ACTIONS */}
-
-        <QuickActions
-  onInsurance={() => setInsuranceVisible(true)}
-  onEmergency={() => setEmergencyVisible(true)}
-/>
-
-        </Stack>
-
-        <Stack gap="md">
+        <Stack gap="md" style={loadingMembers || (loadingOverview && activeTab !== 'Family') || (!member && activeTab !== 'Family') ? styles.hidden : undefined}>
         {/* TABS */}
 
-        <HealthTabs
+        {activeTab !== 'Overview' && activeTab !== 'Records' && activeTab !== 'Readings' && activeTab !== 'Medications' && activeTab !== 'Family' ? <HealthTabs
           activeTab={
             activeTab
           }
           onChange={
             setActiveTab
           }
-        />
+        /> : null}
 
         {activeTab ===
         'Overview' ? (
-          <Stack gap="md">
-            {/* RESULTS HEADER */}
-
-           <Row
-  align="center"
-  gap="sm"
-  style={styles.resultsHeader}
->
-  <AppText
-    variant="body"
-    color="secondary"
-    style={styles.resultsCount}
-    numberOfLines={1}
-  >
-    Showing {readings.length} of{' '}
-    {overview?.trackedMetrics?.length ?? readings.length}{' '}
-    tracked tests
-  </AppText>
-
-  <Pressable
-    onPress={() => setMetricPickerVisible(true)}
-  >
-    <AppText
-      variant="label"
-      color="primary"
-      numberOfLines={1}
-    >
-      Choose tests
-    </AppText>
-  </Pressable>
-
-  <Pressable>
-    <AppText
-      variant="label"
-      color="primary"
-      numberOfLines={1}
-    >
-      Show all
-    </AppText>
-  </Pressable>
-</Row>
-            {/* READINGS */}
-
-            <Stack gap="sm">
-              {readings.length ? readings.map(
-                reading => (
-                  <ReadingCard
-                    key={
-                      reading.id
-                    }
-                    reading={
-                      reading
-                    }
-                  />
-                ),
-              ) : (
-                <Card>
-                  <AppText variant="body" color="secondary">
-                    No tracked measurements yet.
-                  </AppText>
-                </Card>
-              )}
-            </Stack>
-
-            {/* REMINDERS */}
-
-            <Reminders
-              reminders={reminders}
-              onAdd={() => setReminderFormVisible(true)}
-            />
-
-            {/* MEDICAL READINESS */}
-
-            <MedicalReadiness
-              readiness={
-                readiness
-              }
-              member={member}
-            />
-          </Stack>
+          member ? <HealthDashboard
+            member={member}
+            overview={currentOverview}
+            records={memberRecords?.memberId === member.id ? memberRecords.records : undefined}
+            documents={documents}
+            readings={readings}
+            onNavigate={setActiveTab}
+            onEditProfile={() => setEditingMember(member)}
+            onEditIdentity={() => setEditingIdentity(member)}
+            onManageFamily={() => { setFamilyDetailId(undefined); setFamilyContacts(false); setActiveTab('Family'); }}
+            onPreview={setPreviewDocumentId}
+            onVisit={() => setVisitPackVisible(true)}
+            onInsurance={() => setInsuranceVisible(true)}
+            onEmergency={() => setEmergencyVisible(true)}
+            onAddReminder={() => setReminderFormVisible(true)}
+          /> : null
+        ) : activeTab === 'Family' ? (
+          <ManageFamily members={members} selectedId={selectedMember} detailId={familyDetailId} contacts={familyContacts}
+            busy={removingMember} onView={setFamilyDetailId} onContacts={() => setFamilyContacts(true)}
+            onEdit={setEditingMember} onEditIdentity={setEditingIdentity} onAdd={() => setMemberFormVisible(true)}
+            onRemove={setRemovalTarget}
+          />
+        ) : activeTab === 'Readings' ? (
+          <>
+          <HealthReadings
+            key={selectedMember}
+            readings={visibleReadings}
+            scope={chosenTests.length ? { total: fullReadings.length, showingAll: showAllTests, onToggle: () => setShowAllTests(value => !value) } : undefined}
+            visible={!selectedReadingId}
+            loading={allReadings?.memberId !== selectedMember || allReadings.loading}
+            error={allReadings?.memberId === selectedMember ? allReadings.error : undefined}
+            onRetry={() => setReadingRefresh(version => version + 1)}
+            onChooseTests={() => setMetricPickerVisible(true)}
+            onAddReading={() => setReadingFormVisible(true)}
+            onSelectReading={setSelectedReadingId}
+            readiness={
+              <MedicalReadiness
+                member={member}
+                records={memberRecords && member && memberRecords.memberId === member.id ? memberRecords.records : undefined}
+                onEdit={() => setEditingMember(member)}
+              />
+            }
+          />
+          {selectedReadingId && selectedReading ? (
+            <>
+              {allReadings?.error ? (
+                <Pressable accessibilityRole="button" onPress={() => setReadingRefresh(version => version + 1)}>
+                  <AppText color="danger">{allReadings.error} Tap to retry.</AppText>
+                </Pressable>
+              ) : null}
+              <ReadingDetail
+                key={selectedReading.id}
+                reading={selectedReading}
+                onPreview={setPreviewDocumentId}
+                onAddReading={() => setReadingFormVisible(true)}
+              />
+            </>
+          ) : selectedReadingId && allReadings?.loading ? (
+            <SkeletonList label="Loading reading history…" />
+          ) : selectedReadingId && allReadings?.error ? (
+            <Pressable accessibilityRole="button" onPress={() => setReadingRefresh(version => version + 1)}>
+              <AppText color="danger">{allReadings.error} Tap to retry.</AppText>
+            </Pressable>
+          ) : selectedReadingId ? (
+            <AppText color="secondary">This reading is no longer available. Go back to the readings list.</AppText>
+          ) : null}
+          </>
         ) : activeTab === 'Timeline' ? (
           <Stack gap="sm" style={styles.healthTabContent}>
             {/* COMING UP */}
@@ -814,169 +973,32 @@ floatingAction={
             </View>
           </Stack>
         ) : activeTab === 'Medications' ? (
-          <Stack gap="sm" style={styles.healthTabContent}>
-            <View
-              style={[
-                styles.healthTabCard,
-                {
-                  backgroundColor: theme.colors.surface.default,
-                  borderColor: theme.colors.border.default,
-                },
-              ]}
-            >
-              <View style={styles.healthSectionHeader}>
-                <View style={styles.healthSectionTitleRow}>
-                  <Pill size={sizes.icon.md} color={theme.colors.text.secondary} />
-                  <AppText variant="label">Current medications</AppText>
-                </View>
-
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setMedicationFormVisible(true)}
-                  style={[
-                    styles.healthAddButton,
-                    {
-                      borderColor: theme.colors.border.default,
-                      backgroundColor: theme.colors.surface.raised,
-                    },
-                  ]}
-                >
-                  <Plus size={sizes.icon.md} color={theme.colors.text.interactive} />
-                  <AppText variant="label" color="primary">
-                    Add
-                  </AppText>
-                </Pressable>
-              </View>
-
-              {timeline.filter(event => event.medication).length ? (
-                <ListGroup>
-                  {timeline
-                    .filter(event => event.medication)
-                    .map(event => {
-                      const medication = event.medication!;
-                      const stopped = medication.status === 'stopped';
-
-                      return (
-                        <ListRow
-                          key={event.id}
-                          icon={<Pill size={sizes.icon.md} color={theme.colors.icon.interactive} />}
-                          title={`${medication.name}${medication.dose ? ` ${medication.dose}` : ''}`}
-                          subtitle={medication.frequency || 'Schedule not set'}
-                          trailing={
-                            <StatusBadge
-                              label={stopped ? 'Stopped' : 'Not confirmed'}
-                              status={stopped ? 'info' : 'warning'}
-                            />
-                          }
-                        >
-                          <Pressable
-                            accessibilityRole="button"
-                            onPress={() => {
-                              void toggleMedication(medication);
-                            }}
-                            style={[
-                              styles.healthMedicationStatusButton,
-                              { borderColor: theme.colors.border.default },
-                            ]}
-                          >
-                            <Check size={sizes.icon.sm} color={theme.colors.text.primary} />
-                            <AppText variant="caption">
-                              {stopped ? 'Resume' : 'Still taking'}
-                            </AppText>
-                          </Pressable>
-                        </ListRow>
-                      );
-                    })}
-                </ListGroup>
-              ) : (
-                <AppText color="secondary" style={styles.healthEmptyText}>
-                  No medication records yet.
-                </AppText>
-              )}
-            </View>
-          </Stack>
+          <HealthMedicines
+            key={selectedMember}
+            timeline={currentOverview ? timeline : undefined}
+            records={memberRecords?.memberId === selectedMember ? memberRecords.records : undefined}
+            updatingId={updatingMedicationId}
+            onAdd={() => setMedicationFormVisible(true)}
+            onPreview={setPreviewDocumentId}
+            onToggle={(id, stopped) => {
+              if (stopped) {
+                toggleMedication(id, true);
+              } else {
+                Alert.alert('Mark medicine as stopped?', 'This changes the recorded status only. Follow your doctor’s instructions.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Mark stopped', onPress: () => { toggleMedication(id, false); } },
+                ]);
+              }
+            }}
+          />
         ) : (
-          <Stack gap="sm" style={styles.healthTabContent}>
-            <View
-              style={[
-                styles.healthTabCard,
-                {
-                  backgroundColor: theme.colors.surface.default,
-                  borderColor: theme.colors.border.default,
-                },
-              ]}
-            >
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setRecordSourceVisible(true)}
-                style={[
-                  styles.healthUploadButton,
-                  {
-                    backgroundColor: theme.colors.surface.raised,
-                    borderColor: theme.colors.border.default,
-                  },
-                ]}
-              >
-                <Upload size={sizes.icon.md} color={theme.colors.text.interactive} />
-                <AppText variant="label">Upload medical record</AppText>
-              </Pressable>
-
-              {overview?.recentRecords.length ? (
-                overview.recentRecords.map(record => {
-                  return (
-                    <View
-                      key={record.id}
-                      style={[
-                        styles.healthRecordRow,
-                        { borderTopColor: theme.colors.border.default },
-                      ]}
-                    >
-                      <View style={styles.healthTimelineRail}>
-                        <View
-                          style={[
-                            styles.healthTimelineDot,
-                            { backgroundColor: theme.colors.icon.interactive },
-                          ]}
-                        />
-                      </View>
-
-                      <View
-                        style={[
-                          styles.healthRecordIcon,
-                          { backgroundColor: theme.colors.surface.raised },
-                        ]}
-                      >
-                        {record.type.toLowerCase().includes('prescription') ? (
-                          <Pill size={sizes.icon.md} color={theme.colors.text.interactive} />
-                        ) : (
-                          <FlaskConical
-                            size={sizes.icon.md}
-                            color={theme.colors.text.interactive}
-                          />
-                        )}
-                      </View>
-
-                      <View style={styles.healthRecordCopy}>
-                        <AppText variant="label">
-                          {record.type.replaceAll('_', ' ')}
-                        </AppText>
-                        <AppText variant="caption" color="secondary">
-                          {record.provider ?? record.doctor ?? 'Provider not recorded'}
-                          {' · '}
-                          {record.processingStatus}
-                        </AppText>
-                      </View>
-                    </View>
-                  );
-                })
-              ) : (
-                <AppText color="secondary" style={styles.healthEmptyText}>
-                  No health records yet. Upload a lab report or prescription to
-                  get started.
-                </AppText>
-              )}
-            </View>
-          </Stack>
+          <HealthRecords
+            key={selectedMember}
+            records={memberRecords?.memberId === selectedMember ? memberRecords.records : undefined}
+            documents={documents}
+            onUpload={() => setRecordSourceVisible(true)}
+            onPreview={setPreviewDocumentId}
+          />
         )}
         </Stack>
         <VisitPackSheet
@@ -1001,8 +1023,69 @@ floatingAction={
           visible={emergencyVisible}
           onClose={() => setEmergencyVisible(false)}
         />
+        {previewDocumentId ? (
+         <DocumentPreview documentId={previewDocumentId} onClose={() => setPreviewDocumentId(undefined)} />
+        ) : null}
+        {editingMember ? (
+          <EditCareProfileSheet
+            member={editingMember}
+            members={members}
+            onClose={() => setEditingMember(undefined)}
+            onSave={async payload => {
+              const updated = await healthApi.updateMember(editingMember.id, payload);
+              setMembers(current => current.map(item => item.id === updated.id ? updated : item));
+              setEditingMember(undefined);
+            }}
+          />
+        ) : null}
+        {editingIdentity ? (
+          <FamilyMemberForm member={editingIdentity} onClose={() => setEditingIdentity(undefined)}
+            onSave={async payload => {
+              const updated = await healthApi.updateMember(editingIdentity.id, payload);
+              setMembers(current => current.map(item => item.id === updated.id ? updated : item));
+              setEditingIdentity(undefined);
+            }} />
+        ) : null}
+        {removalTarget ? (
+          <RemoveFamilyProfile member={removalTarget} onClose={() => setRemovalTarget(undefined)}
+            onRemove={async () => {
+              if (isDefaultProfile(removalTarget)) throw new Error('The default health profile cannot be removed.');
+              setRemovingMember(true);
+              try {
+                const documentError = await deleteMemberWithDocuments(removalTarget.id);
+                refetchDocuments();
+                setMembers(current => current.filter(item => item.id !== removalTarget.id));
+                setFamilyDetailId(undefined);
+                if (selectedMember === removalTarget.id) {
+                  setSelectedReadingId(undefined);
+                  setSelectedMember(members.find(item => item.id !== removalTarget.id)?.id ?? '');
+                }
+                const remaining = remindersRef.current.filter(item => item.memberId !== removalTarget.id);
+                remindersRef.current = remaining;
+                setReminders(remaining);
+                setRemovalTarget(undefined);
+                try {
+                  await syncReminderNotifications(remaining);
+                } catch (reason) {
+                  console.warn('Unable to update reminders after profile removal', reason);
+                  setHealthError('Profile removed, but local reminder notifications could not be updated. Check notification settings and refresh Health.');
+                }
+                if (documentError) setHealthError(`Profile removed, but its documents could not be deleted: ${documentError} Delete them from Documents.`);
+              } finally {
+                setRemovingMember(false);
+              }
+            }} />
+        ) : null}
+        {prescriptionReview?.analysis.document.healthExtraction ? (
+          <PrescriptionReviewSheet
+            extraction={prescriptionReview.analysis.document.healthExtraction}
+            onClose={() => setPrescriptionReview(undefined)}
+            onSave={saveReviewedPrescription}
+          />
+        ) : null}
         {memberFormVisible ? (
-          <HealthMemberForm
+          <FamilyMemberForm
+            managerName={member?.name}
             onClose={() => setMemberFormVisible(false)}
             onSave={async payload => {
               const created = await healthApi.createMember(payload);
@@ -1014,9 +1097,10 @@ floatingAction={
           />
         ) : null}
         {resolution && !memberFormVisible ? (
-          <Modal visible transparent animationType="slide" onRequestClose={() => setResolution(undefined)}>
-            <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
-              <View style={[styles.modalPanel, { backgroundColor: theme.colors.surface.canvas }]}>
+          <Modal visible transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={() => setResolution(undefined)}>
+            <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
+              <ScrollView style={[styles.modalPanel, styles.resolutionScroll, { backgroundColor: theme.colors.surface.canvas }]}
+                contentContainerStyle={[styles.resolutionContent, { paddingBottom: Math.max(8, insets.bottom) }]}>
                 <AppText variant="heading">Choose a profile</AppText>
                 <AppText variant="caption" color="secondary">
                   {resolutionMessage(resolution)}
@@ -1043,31 +1127,37 @@ floatingAction={
                   onPress={() => setMemberFormVisible(true)}
                 />
                 <Button title="Cancel" variant="ghost" onPress={() => setResolution(undefined)} />
-              </View>
+              </ScrollView>
             </View>
           </Modal>
         ) : null}
-        {reminderFormVisible && selectedMember ? (
+        {reminderFormVisible && member ? (
           <HealthReminderForm
+            memberName={member.name}
             onClose={() => setReminderFormVisible(false)}
             onSave={async payload => {
+              const { time, ...serverPayload } = payload;
               const created = await healthApi.createReminder({
-                memberId: selectedMember,
-                ...payload,
+                memberId: member.id,
+                ...serverPayload,
               });
-              setReminders(current => {
-                const next = [created, ...current];
-                void syncReminderNotifications(next);
-                return next;
-              });
-              setReminderFormVisible(false);
+              const next = [{ ...created, memberId: member.id, memberName: member.name }, ...remindersRef.current];
+              remindersRef.current = next;
+              setReminders(next);
+              try {
+                await saveReminderSchedule({ id: created.id, startDate: payload.dueDate, time, frequency: payload.frequency });
+                await syncReminderNotifications(next, created.id);
+                return undefined;
+              } catch (reason) {
+                return `Reminder saved, but its notification could not be scheduled: ${reason instanceof Error ? reason.message : 'Please check device settings.'}`;
+              }
             }}
           />
         ) : null}
         {metricPickerVisible && member ? (
-          <MetricPickerModal
-            memberName={member.name}
-            memberId={member.id}
+                  <MetricPickerModal
+                    memberName={member.name}
+                    memberId={member.id}
             onClose={() => setMetricPickerVisible(false)}
             onChanged={() => refreshMemberData(member.id)}
           />
@@ -1075,10 +1165,15 @@ floatingAction={
         {medicationFormVisible && member ? (
           <MedicationForm
             memberId={member.id}
+            memberName={member.name}
             onClose={() => setMedicationFormVisible(false)}
             onCreated={async () => {
               setMedicationFormVisible(false);
-              await refreshMemberData(member.id);
+              try {
+                await refreshMemberData(member.id);
+              } catch (error) {
+                setHealthError(`The medicine was saved, but Health could not be refreshed: ${error instanceof Error ? error.message : 'Please refresh.'}`);
+              }
             }}
           />
         ) : null}
@@ -1086,10 +1181,19 @@ floatingAction={
   <HealthReadingForm
     memberId={member.id}
     memberName={member.name}
+    initialMeasurement={activeTab === 'Readings' && selectedReadingId ? selectedReading?.measurements[0] : undefined}
     onClose={() => setReadingFormVisible(false)}
-    onCreated={async () => {
+    onCreated={async created => {
       setReadingFormVisible(false);
-      await refreshMemberData(member.id);
+      setAllReadings(current => current?.memberId === member.id
+        ? { ...current, measurements: withMeasurement(current.measurements, created) }
+        : current);
+      setOverview(current => current?.member.id === member.id ? withTrackedMeasurement(current, created) : current);
+      try {
+        await refreshMemberData(member.id);
+      } catch (error) {
+        setHealthError(`The reading was saved, but Health could not be refreshed: ${error instanceof Error ? error.message : 'Please refresh.'}`);
+      }
     }}
   />
 ) : null}

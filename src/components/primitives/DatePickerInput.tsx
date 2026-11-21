@@ -14,6 +14,7 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { CalendarDays, X } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { AppText } from './AppText';
 import { radius } from '../../design/tokens/radius';
@@ -50,6 +51,7 @@ function formatDate(date: Date, format: DateFormat) {
 export function DatePickerInput({
   value,
   onChangeText,
+  displayValue,
   placeholder = 'Select date',
   style,
   dateFormat = 'iso',
@@ -60,6 +62,7 @@ export function DatePickerInput({
 }: {
   value: string;
   onChangeText: (value: string) => void;
+  displayValue?: string;
   placeholder?: string;
   style?: StyleProp<TextStyle>;
   dateFormat?: DateFormat;
@@ -69,6 +72,7 @@ export function DatePickerInput({
   clearable?: boolean;
 }) {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [iosOpen, setIosOpen] = useState(false);
   const [draft, setDraft] = useState<Date>(new Date());
   const current = parseDate(value);
@@ -98,7 +102,7 @@ export function DatePickerInput({
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={value ? `Date ${value}. Change date` : placeholder}
+        accessibilityLabel={value ? `Date ${displayValue ?? value}. Change date` : placeholder}
         disabled={disabled}
         onPress={open}
         style={[
@@ -117,11 +121,13 @@ export function DatePickerInput({
             },
           ]}
         >
-          {value || placeholder}
+          {value ? displayValue ?? value : placeholder}
         </Text>
         {value && clearable ? (
           <Pressable
             accessibilityLabel="Clear date"
+            disabled={disabled}
+            accessibilityState={{ disabled: Boolean(disabled) }}
             hitSlop={10}
             onPress={() => onChangeText('')}
           >
@@ -134,9 +140,9 @@ export function DatePickerInput({
 
       {Platform.OS === 'ios' ? (
         <Modal visible={iosOpen} transparent animationType="slide" onRequestClose={() => setIosOpen(false)}>
-          <View style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
+          <View style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
             <Pressable style={StyleSheet.absoluteFill} onPress={() => setIosOpen(false)} />
-            <View style={[styles.sheet, { backgroundColor: theme.colors.surface.default }]}>
+            <View style={[styles.sheet, { backgroundColor: theme.colors.surface.default, paddingBottom: Math.max(24, insets.bottom + 8) }]}>
               <View style={styles.sheetHeader}>
                 <Pressable onPress={() => setIosOpen(false)} hitSlop={10}>
                   <AppText color="secondary">Cancel</AppText>

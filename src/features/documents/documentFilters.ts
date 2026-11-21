@@ -41,9 +41,12 @@ const EXPIRING_SOON_DAYS = 30;
 export const documentCategory = (document: DocumentRecord) =>
   document.category?.trim() || 'Other';
 
-export function documentPersonName(document: DocumentRecord) {
+/** Maps a document id to the health profile it belongs to. */
+export type DocumentProfileNames = ReadonlyMap<string, string>;
+
+export function documentPersonName(document: DocumentRecord, profiles?: DocumentProfileNames) {
   const assigned = document.fields?.assignedPerson as { name?: string } | undefined;
-  return assigned?.name?.trim() || 'You';
+  return assigned?.name?.trim() || profiles?.get(document.id) || 'You';
 }
 
 const documentName = (document: DocumentRecord) =>
@@ -78,12 +81,16 @@ export function activeFilterCount(filters: DocumentFilters) {
   );
 }
 
-export function applyDocumentFilters(documents: DocumentRecord[], filters: DocumentFilters) {
+export function applyDocumentFilters(
+  documents: DocumentRecord[],
+  filters: DocumentFilters,
+  profiles?: DocumentProfileNames,
+) {
   return documents
     .filter(
       document =>
         (filters.category === ALL || documentCategory(document) === filters.category) &&
-        (filters.person === ALL || documentPersonName(document) === filters.person) &&
+        (filters.person === ALL || documentPersonName(document, profiles) === filters.person) &&
         matchesQuickFilter(document, filters.quick),
     )
     .sort((a, b) => {

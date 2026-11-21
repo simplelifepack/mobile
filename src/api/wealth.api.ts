@@ -68,6 +68,7 @@ export type WealthHandoffRecipient = {
   id: string;
   name: string;
   email: string;
+  hasPhone?: boolean;
   relationship: string;
   accessType: 'VIEW_ONLY' | 'FAMILY_MEMBER' | 'EMERGENCY_ACCESS';
   accessTypeLabel: string;
@@ -78,6 +79,8 @@ export type WealthHandoffRecipient = {
 
 export type WealthHandoffSummary = {
   generatedAt: string;
+  smsSupported?: boolean;
+  smsConfigured?: boolean;
   recipients: {
     family: WealthHandoffRecipient[];
     emergency: WealthHandoffRecipient[];
@@ -109,6 +112,7 @@ export type WealthHandoffSendResponse = {
     messageId?: string | null;
     reason?: 'email_disabled' | 'invalid_recipient' | 'delivery_failed';
     errorCode?: string;
+    sms?: { status: 'accepted' | 'not_sent' | 'unknown'; reason?: 'missing_phone' | 'not_configured' | 'provider_rejected' | 'delivery_unknown' };
   }>;
 };
 
@@ -163,10 +167,12 @@ export const wealthApi = {
   sendHandoff: (payload: {
     familyRecipientIds: string[];
     emergencyRecipientIds: string[];
+    sendSms?: boolean;
   }) =>
     request<WealthHandoffSendResponse>('/api/wealth/handoff/send', {
       method: 'POST',
       body: payload,
       requiresAuth: true,
+      timeoutMs: 180000,
     }),
 };

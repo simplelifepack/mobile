@@ -1,3 +1,6 @@
+import type { HealthMemberResolution, HealthRecordDetail } from './health.api';
+import type { HealthExtraction, HealthUploadReview } from './healthExtraction';
+
 export type AuthUser = {
   id: string;
   name: string;
@@ -88,6 +91,7 @@ export type DocumentAnalysisResponse = {
     extractedText?: string;
     evidence?: Array<Record<string, unknown>>;
     ownership?: 'mine' | 'other' | 'unknown';
+    healthExtraction?: HealthExtraction | null;
   };
   files: Array<{
     tempFileId: string;
@@ -99,6 +103,7 @@ export type DocumentAnalysisResponse = {
 };
 
 export type DocumentSavePayload = {
+  healthReview?: HealthUploadReview;
   tempFileIds: string[];
   originalName?: string;
   mimeType?: string;
@@ -121,6 +126,8 @@ export type DocumentSavePayload = {
 
 export type DocumentSaveResponse = {
   document: DocumentRecord;
+  healthRecord?: HealthRecordDetail | HealthMemberResolution | null;
+  replayed?: boolean;
   validation?: {
     canSave: boolean;
     requiresUserConfirmation: boolean;

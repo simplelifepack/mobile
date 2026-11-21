@@ -5,9 +5,14 @@ This is a new [**React Native**](https://reactnative.dev) project, bootstrapped 
 Copy `.env.example` to `.env` and set the API URL plus the OAuth client IDs from
 the same Google Cloud project:
 
+- `READINESS_API_URL` is the backend origin, not the `/api-docs/` page. The
+  example and app fallback point to `https://api.staging.readines.com`; change
+  `.env` if you need a local or another environment. Rebuild the app after
+  changing `.env`.
 - `GOOGLE_WEB_CLIENT_ID` must be the Web application client ID. The backend uses
 	it to validate the ID token, and Android uses it as the server client ID.
-- `GOOGLE_IOS_CLIENT_ID` must be the iOS application client ID.
+- `GOOGLE_IOS_CLIENT_ID` must be the iOS application client ID configured for
+	the iOS bundle ID `com.readinestechnologies.readines`.
 - `GOOGLE_IOS_REVERSED_CLIENT_ID` must be the reversed iOS client ID used by the
 	iOS callback URL scheme.
 

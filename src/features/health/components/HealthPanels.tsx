@@ -1,20 +1,26 @@
 import React from 'react';
 import {
 Pressable,
+StyleSheet,
 View
 } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 
 import {
 Bell,
 CalendarClock,
+Check,
+Pencil,
 Plus,
-Shield
+Shield,
+X,
 } from 'lucide-react-native';
 
 
 import {
 type HealthHomeReminder,
-type HealthMember
+type HealthMember,
+type HealthRecord,
 } from '../../../api/health.api';
 
 import { useAppTheme } from '../../../design/theme/ThemeProvider';
@@ -26,6 +32,7 @@ import { ListGroup, ListRow } from '../../../components/primitives/ListRow';
 import { sizes } from '../../../design/tokens/sizes';
 import { styles } from '../healthStyles';
 import { formatDate } from '../../../utils/format';
+import { calculateMedicalReadiness } from '../medicalReadiness';
 
 export function Reminders({
   reminders: reminderItems,
@@ -123,18 +130,17 @@ export function Reminders({
 // ============================================================================
 
 export function MedicalReadiness({
-  readiness,
   member,
+  records,
+  onEdit,
 }: {
-  readiness: number;
   member?: HealthMember;
+  records?: HealthRecord[];
+  onEdit: () => void;
 }) {
   const { theme } = useAppTheme();
-  const missing = [
-    !member?.conditions ? 'Conditions' : undefined,
-    !member?.allergies ? 'Allergies' : undefined,
-    !member?.emergencyContactName ? 'Emergency contact' : undefined,
-  ].filter(Boolean);
+  const readiness = member && records ? calculateMedicalReadiness(member, records) : undefined;
+  const missing = readiness?.items.filter(item => !item.ready).map(item => item.label) ?? [];
 
   return (
     <Card
@@ -167,9 +173,22 @@ export function MedicalReadiness({
           </AppText>
         </Row>
 
-        <AppText variant="caption" color="secondary">
-          {member?.name ?? 'Profile'}
-        </AppText>
+        <Row align="center" gap="xs">
+          <AppText variant="caption" color="secondary">
+            {member?.name ?? 'Profile'}
+          </AppText>
+          {member ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Edit ${member.name}'s medical profile`}
+              onPress={onEdit}
+              hitSlop={12}
+              style={styles.healthSmallAction}
+            >
+              <Pencil size={sizes.icon.md} color={theme.colors.text.interactive} />
+            </Pressable>
+          ) : null}
+        </Row>
       </Row>
 
       <Row
@@ -179,17 +198,31 @@ export function MedicalReadiness({
           styles.medicalSummary
         }
       >
-        <AppText
-          style={[
-            styles.medicalPercentage,
-            {
-              color:
-                theme.colors.status.warning.text,
-            },
-          ]}
-        >
-          {readiness}%
-        </AppText>
+        <View style={readinessStyles.ring}>
+          <Svg width={64} height={64}>
+            <Circle cx={32} cy={32} r={29} stroke={theme.colors.border.emphasis} strokeWidth={6} fill="none" />
+            {readiness && readiness.percentage > 0 ? (
+              <Circle
+                cx={32}
+                cy={32}
+                r={29}
+                stroke={theme.colors.status.warning.icon}
+                strokeWidth={6}
+                fill="none"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 29} ${2 * Math.PI * 29}`}
+                strokeDashoffset={2 * Math.PI * 29 * (1 - readiness.percentage / 100)}
+                rotation="-90"
+                origin="32, 32"
+              />
+            ) : null}
+          </Svg>
+          <View style={readinessStyles.ringLabel}>
+            <AppText variant="label" align="center">
+              {readiness ? `${readiness.percentage}%` : '—'}
+            </AppText>
+          </View>
+        </View>
 
         <AppText
           variant="body"
@@ -202,12 +235,12 @@ export function MedicalReadiness({
           not a health score
         </AppText>
 
-        <AppText variant="caption" color="muted">
-          Vault verification
-        </AppText>
       </Row>
 
       <View
+        accessibilityRole="progressbar"
+        accessibilityLabel={readiness ? `${readiness.percentage}% medical readiness` : 'Medical readiness unavailable'}
+        accessibilityValue={readiness ? { min: 0, max: 100, now: readiness.percentage } : undefined}
         style={[
           styles.readinessTrack,
           {
@@ -220,7 +253,7 @@ export function MedicalReadiness({
           style={[
             styles.readinessFill,
             {
-              width: `${readiness}%`,
+              width: `${readiness?.percentage ?? 0}%`,
               backgroundColor:
                 theme.colors.status.warning.icon,
             },
@@ -235,9 +268,17 @@ export function MedicalReadiness({
           styles.stillNeeded
         }
       >
-        Still needed: {missing.length ? missing.join(', ') : 'None'}
+        {readiness ? `Still needed: ${missing.length ? missing.join(', ') : 'None'}` : 'Readiness unavailable until records are loaded.'}
       </AppText>
 
+      {readiness?.items.map(item => (
+        <Row key={item.label} align="center" gap="xs">
+          {item.ready
+            ? <Check size={sizes.icon.sm} color={theme.colors.status.success.icon} />
+            : <X size={sizes.icon.sm} color={theme.colors.status.danger.icon} />}
+          <AppText variant="bodySm" color="secondary">{item.label}: {item.ready ? 'Ready' : 'Missing'}</AppText>
+        </Row>
+      ))}
       <View
         style={[
           styles.divider,
@@ -320,12 +361,17 @@ export function MedicalReadiness({
             styles.medicalValue
           }
         >
-          {member?.emergencyContactName ?? 'Not added'}
+          {[member?.emergencyContactName, member?.emergencyContactPhone].filter(Boolean).join(' · ') || 'Not added'}
         </AppText>
       </Row>
     </Card>
   );
 }
+
+const readinessStyles = StyleSheet.create({
+  ring: { width: 64, height: 64 },
+  ringLabel: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
+});
 
 
 // ============================================================================

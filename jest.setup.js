@@ -1,4 +1,7 @@
 /* global jest */
+jest.mock('react-native-safe-area-context', () =>
+  require('react-native-safe-area-context/jest/mock').default,
+);
 jest.mock('react-native-nitro-sqlite', () => ({
   open: () => ({
     executeAsync: jest
@@ -23,6 +26,7 @@ jest.mock('react-native-file-access', () => ({
     fetch: jest.fn(),
     mkdir: jest.fn().mockResolvedValue(undefined),
     readFile: jest.fn().mockResolvedValue(''),
+    writeFile: jest.fn().mockResolvedValue(undefined),
     unlink: jest.fn().mockResolvedValue(undefined),
   },
 }));
@@ -70,12 +74,15 @@ jest.mock('react-native-blob-util', () => ({
 jest.mock('@notifee/react-native', () => ({
   __esModule: true,
   default: {
-    requestPermission: jest.fn(async () => ({ authorizationStatus: 1 })),
+    requestPermission: jest.fn(async () => ({ authorizationStatus: 1, android: { alarm: 1 }, ios: { alert: 1 } })),
     createChannel: jest.fn(),
     getTriggerNotificationIds: jest.fn(async () => []),
     cancelTriggerNotification: jest.fn(),
     createTriggerNotification: jest.fn(),
   },
-  AuthorizationStatus: { AUTHORIZED: 1 },
+  AuthorizationStatus: { AUTHORIZED: 1, PROVISIONAL: 2 },
+  AndroidNotificationSetting: { ENABLED: 1 },
+  IOSNotificationSetting: { DISABLED: 0 },
+  AlarmType: { SET_EXACT_AND_ALLOW_WHILE_IDLE: 3 },
   TriggerType: { TIMESTAMP: 0 },
 }));

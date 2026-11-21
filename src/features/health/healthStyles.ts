@@ -12,8 +12,16 @@ export const styles = StyleSheet.create({
   // --------------------------------------------------------------------------
 
   container: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
   },
+  memberContext: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  memberContextHint: { flex: 1, textAlign: 'right' },
+  memberContextName: { flexShrink: 1 },
 
   modalBackdrop: {
     flex: 1,
@@ -27,6 +35,8 @@ export const styles = StyleSheet.create({
     borderTopLeftRadius: radius.overlay,
     borderTopRightRadius: radius.overlay,
   },
+  resolutionScroll: { flexGrow: 0 },
+  resolutionContent: { gap: 12 },
 
   sheetGrabber: {
     alignSelf: 'center',
@@ -106,33 +116,52 @@ export const styles = StyleSheet.create({
   },
 
   metricPickerSheet: {
-    height: '94%',
-    maxHeight: '94%',
-    paddingTop: 24,
+    height: '85%',
+    maxHeight: '85%',
+    paddingTop: 12,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    borderTopLeftRadius: radius.pill,
-    borderTopRightRadius: radius.pill,
+    borderTopLeftRadius: radius.overlay,
+    borderTopRightRadius: radius.overlay,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
   metricPickerGrabber: {
-    width: 76,
-    height: 8,
+    width: 48,
+    height: 4,
     borderRadius: radius.control,
     alignSelf: 'center',
-    marginBottom: 36,
-  },
-  metricPickerTitle: {
-    fontSize: fontSize.headingMd,
-    lineHeight: lineHeight.headingMd,
-    fontWeight: fontWeights.bold,
     marginBottom: 16,
   },
+  metricPickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  metricPickerClose: {
+    width: sizes.minimumTouchTarget,
+    height: sizes.minimumTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   metricPickerSubtitle: {
-    fontSize: fontSize.body,
-    lineHeight: lineHeight.body,
     marginBottom: 12,
+  },
+  metricPickerSearch: {
+    minHeight: sizes.minimumTouchTarget,
+    borderWidth: 1,
+    borderRadius: radius.control,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  metricPickerSearchInput: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 8,
   },
   metricPickerList: {
     flex: 1,
@@ -142,40 +171,22 @@ export const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   metricPickerRow: {
-    minHeight: 94,
+    minHeight: sizes.listRow,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 12,
     paddingHorizontal: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 24,
-  },
-  metricPickerCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.overlay,
-    borderWidth: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  metricPickerCircleInner: {
-    width: 12,
-    height: 12,
-    borderRadius: radius.control,
+    gap: 12,
   },
   metricPickerText: {
     flex: 1,
     minWidth: 0,
-    gap: 8,
+    gap: 4,
   },
-  metricPickerMetricName: {
-    fontSize: fontSize.body,
-    lineHeight: lineHeight.body,
-    fontWeight: fontWeights.medium,
-  },
-  metricPickerMetricDetail: {
-    fontSize: fontSize.bodySm,
-    lineHeight: lineHeight.bodySm,
+  metricPickerValue: {
+    flexShrink: 1,
+    textAlign: 'right',
   },
   metricPickerFooter: {
     flexDirection: 'row',
@@ -184,7 +195,7 @@ export const styles = StyleSheet.create({
   },
   metricPickerButton: {
     flex: 1,
-    minHeight: 58,
+    minHeight: sizes.minimumTouchTarget,
     borderRadius: radius.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -347,6 +358,12 @@ export const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 6,
+  },
+  healthPreviewButton: {
+    width: sizes.minimumTouchTarget,
+    height: sizes.minimumTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   formInput: {
@@ -552,12 +569,13 @@ prepareText: {
     minHeight: 48,
     flexDirection: 'row',
     borderBottomWidth: 1,
+    flexGrow: 1,
   },
 
   tab: {
     flex: 1,
     minHeight: 48,
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

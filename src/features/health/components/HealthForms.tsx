@@ -2,22 +2,25 @@ import React,{ useState } from 'react';
 import {
 KeyboardAvoidingView,
 Modal,
+Platform,
 Pressable,
 ScrollView,
+StyleSheet,
 TextInput,
 View
 } from 'react-native';
 
 import {
+ChevronDown,
+ChevronLeft,
+Info,
+UserRound,
 X
 } from 'lucide-react-native';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
-import {
-healthApi,
-type MealTiming,
-type MedicationTime,
-} from '../../../api/health.api';
+import { healthApi } from '../../../api/health.api';
 
 import { useAppTheme } from '../../../design/theme/ThemeProvider';
 
@@ -28,6 +31,8 @@ import { Row } from '../../../components/primitives/Row';
 import { Stack } from '../../../components/primitives/Stack';
 import { styles } from '../healthStyles';
 import { sizes } from '../../../design/tokens/sizes';
+import { radius } from '../../../design/tokens/radius';
+import { textRoles } from '../../../design/tokens/typography';
 
 export const COMMON_TESTS = [
   { label: 'HbA1c', unit: '%' },
@@ -43,6 +48,11 @@ export const COMMON_TESTS = [
   { label: 'Weight', unit: 'kg' },
 ];
 
+function currentTime() {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+
 export function formatUsDate(date: Date) {
   return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}/${date.getFullYear()}`;
 }
@@ -50,24 +60,40 @@ export function formatUsDate(date: Date) {
 export function HealthReadingForm({
   memberId,
   memberName,
+  initialMeasurement,
   onClose,
   onCreated,
 }: {
   memberId: string;
   memberName: string;
+  initialMeasurement?: import('../../../api/health.api').HealthMeasurement;
   onClose: () => void;
-  onCreated: () => Promise<void>;
+  onCreated: (created: import('../../../api/health.api').HealthMeasurement) => Promise<void>;
 }) {
   const { theme } = useAppTheme();
-  const [name, setName] = useState('HbA1c');
-  const [value, setValue] = useState('');
-  const [unit, setUnit] = useState('%');
+  const [name, setName] = useState(initialMeasurement?.displayName ?? 'HbA1c');
+  const [value, setValue] = useState(initialMeasurement ? String(initialMeasurement.value) : '');
+  const [secondaryValue, setSecondaryValue] = useState(initialMeasurement?.secondaryValue != null ? String(initialMeasurement.secondaryValue) : '');
+  const [unit, setUnit] = useState(initialMeasurement?.unit ?? '%');
   const [measuredAt, setMeasuredAt] = useState(formatUsDate(new Date()));
+  const [time, setTime] = useState(currentTime());
+  const [source, setSource] = useState('');
+  const [notes, setNotes] = useState('');
   const [rangeLow, setRangeLow] = useState('');
   const [rangeHigh, setRangeHigh] = useState('');
+  const [showRange, setShowRange] = useState(false);
   const [customTest, setCustomTest] = useState(false);
+  const [choosingTest, setChoosingTest] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const isPressure = initialMeasurement
+    ? initialMeasurement.metricKey === 'blood_pressure' || initialMeasurement.displayName.toLowerCase() === 'blood pressure'
+    : name.toLowerCase() === 'blood pressure';
+  const hasSecondary = isPressure || initialMeasurement?.secondaryValue != null;
+  const measuredDate = toIsoDate(measuredAt);
+  const displayDate = measuredDate
+    ? new Date(`${measuredDate}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    : measuredAt;
 
   const save = async () => {
     const numericValue = Number(value);
@@ -79,29 +105,48 @@ export function HealthReadingForm({
       setError('Enter the unit shown on your report.');
       return;
     }
+    if (secondaryValue.trim() && !Number.isFinite(Number(secondaryValue))) {
+      setError('Enter a valid secondary value.');
+      return;
+    }
     const measuredIso = toIsoDate(measuredAt);
     if (!measuredIso) {
       setError('Enter the date as MM/DD/YYYY.');
+      return;
+    }
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time.trim())) {
+      setError('Enter the time as HH:MM, for example 08:30.');
       return;
     }
 
     setSaving(true);
     setError(undefined);
     try {
-      const rangeContext =
-        rangeLow.trim() || rangeHigh.trim()
-          ? `Reference range: ${rangeLow.trim() || '—'} to ${rangeHigh.trim() || '—'}`
-          : null;
-      await healthApi.createMeasurement(memberId, {
-        metricKey: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+      const low = rangeLow.trim() ? Number(rangeLow) : undefined;
+      const high = rangeHigh.trim() ? Number(rangeHigh) : undefined;
+      if ((low !== undefined && !Number.isFinite(low)) || (high !== undefined && !Number.isFinite(high)) ||
+        (low !== undefined && high !== undefined && low > high)) {
+        setShowRange(true);
+        setError('Enter a valid reference range.');
+        return;
+      }
+      const created = await healthApi.createMeasurement(memberId, {
+        metricKey: initialMeasurement?.metricKey ?? name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_'),
         displayName: name.trim(),
         originalName: name.trim(),
         value: numericValue,
+        secondaryValue: secondaryValue.trim() ? Number(secondaryValue) : undefined,
         unit: unit.trim(),
-        context: rangeContext,
-        measuredAt: new Date(measuredIso).toISOString(),
+        context: initialMeasurement?.context,
+        bodySite: initialMeasurement?.bodySite,
+        referenceMin: low,
+        referenceMax: high,
+        measuredAt: new Date(`${measuredIso}T${time.trim()}:00`).toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        source: source.trim() || undefined,
+        notes: notes.trim() || undefined,
       });
-      await onCreated();
+      await onCreated(created);
       onClose();
     } catch (saveError) {
       setError(
@@ -113,10 +158,39 @@ export function HealthReadingForm({
   };
 
   return (
-    <FormSheet title={`Log a reading for ${memberName}`} onClose={onClose}>
-      <Stack gap="xs">
-        <AppText variant="label" color="secondary" style={styles.formSectionLabel}>Test</AppText>
-        <View style={styles.chipRow}>
+    <Modal visible animationType="slide" onRequestClose={() => { if (!saving) onClose(); }}>
+      <SafeAreaProvider>
+      <SafeAreaView style={[readingFormStyles.screen, { backgroundColor: theme.colors.surface.canvas }]}>
+        <KeyboardAvoidingView style={readingFormStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={readingFormStyles.header}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Back" disabled={saving} onPress={onClose} style={readingFormStyles.back}>
+              <ChevronLeft size={sizes.icon.md} color={theme.colors.icon.primary} />
+            </Pressable>
+            <AppText variant="overviewTitle">Log a reading</AppText>
+          </View>
+          <View style={readingFormStyles.member}>
+            <UserRound size={sizes.icon.sm} color={theme.colors.icon.interactive} />
+            <AppText variant="caption" numberOfLines={1} style={[readingFormStyles.memberName, { color: theme.colors.text.interactive }]}>{memberName}</AppText>
+            <AppText variant="caption" color="muted" style={readingFormStyles.vault}>Private health vault</AppText>
+          </View>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={readingFormStyles.content}>
+            <AppText variant="bodySm" color="secondary">Add a value from your home device or report.</AppText>
+            <View style={readingFormStyles.field}>
+              <AppText variant="caption" color="secondary">Reading type</AppText>
+              {initialMeasurement ? (
+                <View style={[readingFormStyles.input, readingFormStyles.selectedTest, { backgroundColor: theme.colors.surface.inset, borderColor: theme.colors.border.default }]}>
+                  <AppText variant="bodySm">{name}</AppText>
+                </View>
+              ) : (
+                <Pressable accessibilityRole="button" accessibilityLabel="Choose reading type" accessibilityState={{ expanded: choosingTest }}
+                  onPress={() => setChoosingTest(!choosingTest)}
+                  style={[readingFormStyles.input, readingFormStyles.selectedTest, { backgroundColor: theme.colors.surface.inset, borderColor: theme.colors.border.default }]}>
+                  <AppText variant="bodySm" style={readingFormStyles.flex}>{customTest ? 'Custom test' : name}</AppText>
+                  <ChevronDown size={sizes.icon.sm} color={theme.colors.icon.secondary} />
+                </Pressable>
+              )}
+            </View>
+            {!initialMeasurement && choosingTest ? <View style={readingFormStyles.choices}>
           {COMMON_TESTS.map(test => {
             const active = !customTest && name === test.label;
             return (
@@ -128,6 +202,8 @@ export function HealthReadingForm({
                   setName(test.label);
                   setUnit(test.unit);
                   setCustomTest(false);
+                  setSecondaryValue('');
+                  setChoosingTest(false);
                 }}
                 style={[
                   styles.chip,
@@ -141,128 +217,119 @@ export function HealthReadingForm({
               </Pressable>
             );
           })}
-        </View>
-      </Stack>
-      <Pressable
+          <Pressable
         accessibilityRole="button"
         onPress={() => {
           setCustomTest(true);
           setName('');
           setUnit('');
+          setSecondaryValue('');
+          setChoosingTest(false);
         }}
-      >
-        <AppText variant="body" color="secondary">Add a test not listed</AppText>
-      </Pressable>
+        style={[styles.chip, { borderColor: theme.colors.border.default }]}
+      ><AppText variant="label">Custom test</AppText></Pressable>
+            </View> : null}
       {customTest ? (
-        <HealthField label="Test name" value={name} onChangeText={setName} placeholder="Enter test name" />
+        <ReadingField label="Test name" value={name} onChangeText={setName} placeholder="Enter test name" />
       ) : null}
-      <Row gap="sm">
-        <View style={styles.readingValueField}>
-          <HealthField
-            label={unit ? `Value (${unit})` : 'Value'}
+      <View style={readingFormStyles.row}>
+        <View style={readingFormStyles.flex}>
+          <ReadingField
+            label={isPressure ? `Systolic · ${unit}` : unit ? `Value · ${unit}` : 'Value'}
             value={value}
             onChangeText={setValue}
             placeholder="0"
             keyboardType="decimal-pad"
           />
         </View>
-        <View style={styles.readingValueField}>
-          <HealthDateField label="Date" value={measuredAt} onChangeText={setMeasuredAt} maximumDate={new Date()} />
+        {hasSecondary ? <View style={readingFormStyles.flex}>
+          <ReadingField label={`${isPressure ? 'Diastolic' : 'Secondary value'} · ${unit}`} value={secondaryValue} onChangeText={setSecondaryValue} placeholder="Optional" keyboardType="decimal-pad" />
+        </View> : null}
+      </View>
+      <View style={readingFormStyles.row}>
+        <View style={[readingFormStyles.field, readingFormStyles.flex]}>
+          <AppText variant="caption" color="secondary">Date</AppText>
+          <DatePickerInput value={measuredAt} displayValue={displayDate} onChangeText={setMeasuredAt} dateFormat="us" clearable={false} maximumDate={new Date()}
+            style={[readingFormStyles.input, { backgroundColor: theme.colors.surface.inset, borderColor: theme.colors.border.default }]} />
         </View>
-      </Row>
+        <View style={readingFormStyles.flex}>
+          <ReadingField label="Time (24h)" value={time} onChangeText={setTime} placeholder="HH:MM" keyboardType="numbers-and-punctuation" maxLength={5} />
+        </View>
+      </View>
       {customTest ? (
-        <HealthField label="Unit" value={unit} onChangeText={setUnit} placeholder="e.g. mg/dL" />
+        <ReadingField label="Unit" value={unit} onChangeText={setUnit} placeholder="e.g. mg/dL" />
       ) : null}
-      <Row gap="sm">
-        <View style={styles.readingValueField}>
-          <HealthField label="Range low (optional)" value={rangeLow} onChangeText={setRangeLow} placeholder="as printed" keyboardType="decimal-pad" />
+      <ReadingField label="Source (optional)" value={source} onChangeText={setSource} placeholder="e.g. Home monitor, Apollo Lab" maxLength={120} />
+      <ReadingField label="Notes (optional)" value={notes} onChangeText={setNotes} placeholder="Anything worth remembering" multiline textAlignVertical="top" style={readingFormStyles.notes} />
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: showRange }}
+        onPress={() => setShowRange(!showRange)} style={readingFormStyles.rangeToggle}>
+        <AppText variant="caption" style={{ color: theme.colors.text.interactive }}>
+          {showRange ? 'Hide reference range' : 'Add reference range (optional)'}
+        </AppText>
+      </Pressable>
+      {showRange ? (
+      <View style={readingFormStyles.row}>
+        <View style={readingFormStyles.flex}>
+          <ReadingField label="Range low (optional)" value={rangeLow} onChangeText={setRangeLow} placeholder="As printed" keyboardType="decimal-pad" />
         </View>
-        <View style={styles.readingValueField}>
-          <HealthField label="Range high (optional)" value={rangeHigh} onChangeText={setRangeHigh} placeholder="as printed" keyboardType="decimal-pad" />
+        <View style={readingFormStyles.flex}>
+          <ReadingField label="Range high (optional)" value={rangeHigh} onChangeText={setRangeHigh} placeholder="As printed" keyboardType="decimal-pad" />
         </View>
-      </Row>
-      <AppText variant="caption" color="secondary">
-        Copy the test name, value, unit, and reference range from your report. A reading without a range can be recorded without a status.
-      </AppText>
-      {error ? <AppText variant="caption" color="danger">{error}</AppText> : null}
-      <Button title={saving ? 'Saving…' : 'Save reading'} disabled={saving} onPress={() => { save(); }} />
-    </FormSheet>
+      </View>
+      ) : null}
+      <View style={[readingFormStyles.notice, { backgroundColor: theme.colors.surface.secondary }]}>
+        <Info size={sizes.icon.sm} color={theme.colors.icon.secondary} />
+        <AppText variant="caption" color="secondary" style={readingFormStyles.flex}>
+          Check the units{hasSecondary ? ' and both values' : ''} before saving. This entry will be added to {memberName}&apos;s reading history.
+        </AppText>
+      </View>
+          </ScrollView>
+          <View style={readingFormStyles.footer}>
+            {error ? <AppText variant="caption" color="danger" accessibilityRole="alert">{error}</AppText> : null}
+            <Button title={saving ? 'Saving…' : 'Save'} disabled={saving} onPress={() => { save(); }} />
+            <Button title="Cancel" variant="secondary" disabled={saving} onPress={onClose} />
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+      </SafeAreaProvider>
+    </Modal>
   );
 }
+
+export function ReadingField({ label, style, ...props }: React.ComponentProps<typeof TextInput> & { label: string }) {
+  const { theme } = useAppTheme();
+  return (
+    <View style={readingFormStyles.field}>
+      <AppText variant="caption" color="secondary">{label}</AppText>
+      <TextInput {...props} accessibilityLabel={label} placeholderTextColor={theme.colors.text.tertiary}
+        style={[readingFormStyles.input, { backgroundColor: theme.colors.surface.inset, borderColor: theme.colors.border.default, color: theme.colors.text.primary }, style]} />
+    </View>
+  );
+}
+
+const readingFormStyles = StyleSheet.create({
+  screen: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, minHeight: 48 },
+  back: { width: sizes.minimumTouchTarget, height: sizes.minimumTouchTarget, alignItems: 'center', justifyContent: 'center' },
+  member: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, minHeight: 40 },
+  memberName: { flexShrink: 1 },
+  vault: { flex: 1, textAlign: 'right' },
+  content: { padding: 16, gap: 16 },
+  field: { gap: 4 },
+  input: { ...textRoles.bodySm, minHeight: 44, borderWidth: 1, borderRadius: radius.control, paddingHorizontal: 12, paddingVertical: 8 },
+  notes: { minHeight: 64 },
+  selectedTest: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  flex: { flex: 1, minWidth: 0 },
+  choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  row: { flexDirection: 'row', gap: 12 },
+  rangeToggle: { minHeight: 44, justifyContent: 'center' },
+  notice: { flexDirection: 'row', alignItems: 'flex-start', borderRadius: radius.control, padding: 12, gap: 8 },
+  footer: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, gap: 8 },
+});
 
 // ============================================================================
 // ADD TO HEALTH SHEET
 // ============================================================================
-
-export function MedicationForm({
-  memberId,
-  onClose,
-  onCreated,
-}: {
-  memberId: string;
-  onClose: () => void;
-  onCreated: () => Promise<void>;
-}) {
-  const [name, setName] = useState('');
-  const [dose, setDose] = useState('');
-  const [timeOfDay, setTimeOfDay] = useState('Morning');
-  const [mealTiming, setMealTiming] = useState('After Food');
-  const [runsOutAt, setRunsOutAt] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string>();
-
-  const save = async () => {
-    if (!name.trim() || !dose.trim()) {
-      setError('Medication name and dose are required.');
-      return;
-    }
-    const runsOutIso = runsOutAt.trim() ? toIsoDate(runsOutAt) : null;
-    if (runsOutAt.trim() && !runsOutIso) {
-      setError('Enter the repeat date as MM/DD/YYYY.');
-      return;
-    }
-    setSaving(true);
-    setError(undefined);
-    try {
-      await healthApi.createMedication(memberId, {
-        name: name.trim(),
-        dose: dose.trim(),
-        whenToTake: [timeOfDay.toLowerCase() as MedicationTime],
-        mealTiming: mealTiming.toLowerCase().replace(' ', '_') as MealTiming,
-        repeatRunsOut: runsOutIso,
-      });
-      await onCreated();
-      onClose();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to add medication.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <FormSheet title="Add medication" onClose={onClose}>
-      <Row gap="sm">
-        <View style={styles.medicationNameField}>
-          <HealthField label="Name" value={name} onChangeText={setName} placeholder="e.g. Metformin" />
-        </View>
-        <View style={styles.medicationDoseField}>
-          <HealthField label="Dose" value={dose} onChangeText={setDose} placeholder="500 mg" />
-        </View>
-      </Row>
-      <ChoiceChips label="When to take it" options={TIMES_OF_DAY} value={timeOfDay} onChange={setTimeOfDay} />
-      <ChoiceChips label="With meals" options={MEAL_TIMINGS} value={mealTiming} onChange={setMealTiming} />
-      <HealthDateField label="Repeat runs out (optional)" value={runsOutAt} onChangeText={setRunsOutAt} />
-      {error ? <AppText variant="caption" color="danger">{error}</AppText> : null}
-      <Button title={saving ? 'Saving…' : 'Add medication'} disabled={saving} onPress={() => { save(); }} />
-    </FormSheet>
-  );
-}
-
-export const TIMES_OF_DAY = ['Morning', 'Afternoon', 'Night'].map(value => ({ value, label: value }));
-export const MEAL_TIMINGS = ['Before Food', 'After Food', 'With Food', 'Any Time'].map(
-  value => ({ value, label: value }),
-);
 
 export function FormSheet({
   title,
@@ -270,18 +337,19 @@ export function FormSheet({
   children,
 }: React.PropsWithChildren<{ title: string; onClose: () => void }>) {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   return (
-    <Modal visible transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
+    <Modal visible transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
       <KeyboardAvoidingView
         behavior="padding"
-        style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim }]}
+        style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}
       >
         <Pressable style={styles.formDismiss} onPress={onClose} accessibilityLabel="Dismiss" />
         <View
           style={[
             styles.modalPanel,
             styles.formSheet,
-            { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default },
+            { backgroundColor: theme.colors.surface.default, borderColor: theme.colors.border.default, paddingBottom: Math.max(20, insets.bottom + 8) },
           ]}
         >
           <View style={[styles.formGrabber, { backgroundColor: theme.colors.border.default }]} />
@@ -378,120 +446,6 @@ export function toIsoDate(value: string): string | null {
   const date = new Date(y, m - 1, d);
   if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) return null;
   return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-}
-
-export function HealthMemberForm({
-  onClose,
-  onSave,
-  initialName = '',
-}: {
-  onClose: () => void;
-  initialName?: string;
-  onSave: (payload: {
-    name: string;
-    relation: string;
-    bloodGroup: string | null;
-    dateOfBirth: string | null;
-  }) => Promise<void>;
-}) {
-  const [name, setName] = useState(initialName);
-  const [relation, setRelation] = useState('');
-  const [customRelation, setCustomRelation] = useState('');
-  const [bloodGroup, setBloodGroup] = useState('Unknown');
-  const [dateOfBirth, setDateOfBirth] = useState('');
-  const [error, setError] = useState<string>();
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    const resolvedRelation = relation === 'Other' ? customRelation.trim() : relation;
-    if (!name.trim()) return setError('Name is required.');
-    if (!resolvedRelation) return setError('Relation is required.');
-    const dobIso = dateOfBirth.trim() ? toIsoDate(dateOfBirth) : null;
-    if (dateOfBirth.trim() && !dobIso) {
-      return setError('Enter a valid date of birth (MM/DD/YYYY).');
-    }
-    if (dobIso && Date.parse(dobIso) > Date.now()) {
-      return setError('Date of birth cannot be in the future.');
-    }
-    setSaving(true);
-    setError(undefined);
-    try {
-      await onSave({
-        name: name.trim(),
-        relation: resolvedRelation,
-        bloodGroup: bloodGroup === 'Unknown' ? null : bloodGroup,
-        dateOfBirth: dobIso,
-      });
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to add profile.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <FormSheet title="Add a family member" onClose={onClose}>
-      <HealthField label="Name" value={name} onChangeText={setName} placeholder="e.g. Lakshmi Iyer" />
-      <ChoiceChips label="Relation" options={RELATIONS} value={relation} onChange={setRelation} />
-      {relation === 'Other' ? (
-        <HealthField label="Custom relation" value={customRelation} onChangeText={setCustomRelation} placeholder="e.g. Uncle" />
-      ) : null}
-      <ChoiceChips label="Blood group" options={BLOOD_GROUPS} value={bloodGroup} onChange={setBloodGroup} />
-      <HealthDateField label="Date of birth" value={dateOfBirth} onChangeText={setDateOfBirth} maximumDate={new Date()} />
-      {error ? <AppText variant="caption" color="danger">{error}</AppText> : null}
-      <Button title={saving ? 'Saving…' : 'Create profile'} disabled={saving} onPress={() => { save(); }} />
-    </FormSheet>
-  );
-}
-
-export function HealthReminderForm({
-  onClose,
-  onSave,
-}: {
-  onClose: () => void;
-  onSave: (payload: {
-    title: string;
-    type: string;
-    dueDate: string;
-    frequency: string;
-  }) => Promise<void>;
-}) {
-  const [title, setTitle] = useState('');
-  const [type, setType] = useState<(typeof REMINDER_TYPES)[number]['value'] | ''>('');
-  const [dueDate, setDueDate] = useState('');
-  const [frequency, setFrequency] = useState<(typeof REMINDER_FREQUENCIES)[number]['value'] | ''>('');
-  const [error, setError] = useState<string>();
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    if (!title.trim() || !type || !dueDate.trim() || !frequency) {
-      return setError('Title, what for, due date, and how often are required.');
-    }
-    const dueIso = toIsoDate(dueDate);
-    if (!dueIso) {
-      return setError('Enter the due date as MM/DD/YYYY.');
-    }
-    setSaving(true);
-    setError(undefined);
-    try {
-      await onSave({ title: title.trim(), type, dueDate: dueIso, frequency });
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to add reminder.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <FormSheet title="Add reminder" onClose={onClose}>
-      <HealthField label="Title" value={title} onChangeText={setTitle} placeholder="e.g. Cardiology follow-up" maxLength={180} />
-      <ChoiceChips label="What for" options={REMINDER_TYPES} value={type} onChange={setType} />
-      <HealthDateField label="Due" value={dueDate} onChangeText={setDueDate} />
-      <ChoiceChips label="How often" options={REMINDER_FREQUENCIES} value={frequency} onChange={setFrequency} />
-      {error ? <AppText variant="caption" color="danger">{error}</AppText> : null}
-      <Button title={saving ? 'Saving…' : 'Add reminder'} disabled={saving} onPress={() => { save(); }} />
-    </FormSheet>
-  );
 }
 
 export function HealthDateField({

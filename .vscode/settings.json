@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd /Users/harshamaddireddy/Desktop/frontend-web; ls src src/\\*/ \\| head -150; echo ----; cd \\.\\./mobile; find src -type f \\| sed 's\\|/\\[\\^/\\]\\*\\$\\|\\|' \\| sort \\| uniq -c; ls docs$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

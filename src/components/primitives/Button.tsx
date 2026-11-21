@@ -33,7 +33,7 @@ export function Button({
     variant === 'primary' || variant === 'danger' ? 'onPrimary' : 'primary';
   return (
     <Pressable accessibilityRole="button" variant={variant} {...props}>
-      <AppText variant="label" color={textColor}>
+      <AppText variant="action" color={textColor}>
         {title}
       </AppText>
     </Pressable>

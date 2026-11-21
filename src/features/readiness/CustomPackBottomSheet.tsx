@@ -648,6 +648,7 @@ export function CustomPackBottomSheet({
       animationType="none"
       onRequestClose={() => close()}
       statusBarTranslucent
+      navigationBarTranslucent
     >
       <View style={styles.modalRoot}>
         {/* BACKDROP */}
@@ -667,7 +668,7 @@ export function CustomPackBottomSheet({
         <KeyboardAvoidingView
           style={[
             styles.keyboardContainer,
-            { paddingBottom: Math.max(insets.bottom, 12) + 32 },
+            { paddingBottom: Math.max(insets.bottom, 12) + 32, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right },
           ]}
           behavior="padding"
           pointerEvents="box-none"

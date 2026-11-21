@@ -1,6 +1,7 @@
 import { sizes } from '../../design/tokens/sizes';
 import { ProfileAvatarButton } from '../../components/navigation/ProfileAvatarButton';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   useFocusEffect,
   useNavigation,
@@ -366,6 +367,7 @@ function PackageDetailBottomSheet({
   const { theme } = useAppTheme();
 
   const [editingRequirementId, setEditingRequirementId] = useState<string>();
+  const insets = useSafeAreaInsets();
 
   const [savingRequirementId, setSavingRequirementId] = useState<string>();
 
@@ -481,9 +483,11 @@ function PackageDetailBottomSheet({
       visible={visible}
       transparent
       animationType="slide"
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={[styles.sheetOverlay, { backgroundColor: theme.colors.overlay.scrim }]}>
+      <View style={[styles.sheetOverlay, { backgroundColor: theme.colors.overlay.scrim, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
         {/* Close when tapping outside */}
         <Pressable style={styles.sheetBackdrop} onPress={onClose} />
 
@@ -493,6 +497,7 @@ function PackageDetailBottomSheet({
             {
               backgroundColor: theme.colors.surface.canvas,
               borderColor: theme.colors.border.default,
+              paddingBottom: insets.bottom,
             },
           ]}
         >

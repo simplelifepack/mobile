@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   ChevronRight,
   CircleHelp,
+  CreditCard,
   Info,
   LockKeyhole,
   Mail,
@@ -263,8 +264,24 @@ export function ProfileScreen() {
             onPress={() => setPinVisible(true)}
           />
 
+          <SettingsRow
+            icon={<CreditCard size={sizes.icon.lg} color={theme.colors.text.interactive} strokeWidth={1.8} />}
+            title="Subscription"
+            subtitle="View mobile subscription plans"
+            onPress={() => navigation.navigate('Subscription')}
+          />
+
         </SettingsCard>
 
+        <SectionTitle title="EMERGENCY" />
+        <SettingsCard>
+          <SettingsRow
+            icon={<ShieldCheck size={sizes.icon.lg} color={theme.colors.text.interactive} strokeWidth={1.8} />}
+            title="Emergency access"
+            subtitle="Manage people who can step in"
+            onPress={() => navigation.navigate('EmergencyAccess')}
+          />
+        </SettingsCard>
 
         <PreferencesSection />
 

@@ -1,15 +1,20 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ProfileAvatarButton } from '../../components/navigation/ProfileAvatarButton';
-import { useNavigation } from '@react-navigation/native';
+import {
+  useNavigation,
+  useFocusEffect,
+  useRoute,
+  type RouteProp,
+} from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { MainTabParamList } from '../../app/navigation/types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../app/navigation/types';
 import { ApiError } from '../../api/client';
-import styled from 'styled-components/native';
+import { wealthApi } from '../../api/wealth.api';
 import {
   Alert,
-  Image,
   Linking,
-  Modal,
   Pressable,
   StyleSheet,
   TextInput,
@@ -19,16 +24,10 @@ import {
   Check,
   Camera,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   FileCheck2,
-  FileText,
-  Fingerprint,
   HeartPulse,
-  House,
   Image as ImageIcon,
-  Landmark,
-  Plane,
   Search,
   SlidersHorizontal,
   Trash2,
@@ -36,17 +35,27 @@ import {
   X,
 } from 'lucide-react-native';
 
-import Pdf from 'react-native-pdf';
-import { FileSystem } from 'react-native-file-access';
 import type {
   DocumentAnalysisResponse,
   DocumentRecord,
   DocumentSavePayload,
 } from '../../api/types';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentDetailSheet } from './DocumentDetailSheet';
+import { documentIcon } from './documentIcon';
+import { DocumentPreview } from './DocumentPreview';
 import { DocumentFilterSheet } from './DocumentFilterSheet';
+import { DocumentImportProgress } from './DocumentImportProgress';
+import { recordRecentlyViewedDocument } from './recentlyViewedDocuments';
+import { useHealthProfileNames } from './useHealthProfileNames';
+import { DocumentBatch } from './documentImport/documentBatch';
+import {
+  DuplicateCancelledError,
+  saveDocumentWithDuplicatePrompt,
+} from './documentImport/duplicatePrompt';
+import { combineSelectedDocuments } from './documentImport/analysis';
+import { suggestDocumentTitle } from './documentImport/documentNaming';
+import { askToCombine } from './documentImport/combinePrompt';
 import {
   ALL,
   activeFilterCount,
@@ -60,15 +69,34 @@ import {
 } from './documentFilters';
 import { useDocumentsQuery } from '../../services/api';
 import { documentsApi } from '../../api/documents.api';
-import { healthApi, isMemberResolution, type HealthMemberResolution, type HealthMember, type HealthRecordDetail } from '../../api/health.api';
-import { HealthMemberForm } from '../health/components/HealthForms';
-import { documentContextLabel, healthRecordType, isHealthDocument } from './documentDetails';
+import {
+  healthApi,
+  isMemberResolution,
+  type HealthMemberResolution,
+  type HealthMember,
+  type HealthRecordDetail,
+} from '../../api/health.api';
+import { FamilyMemberForm } from '../health/components/FamilyMemberForm';
+import { healthRecordProcessingMessage } from '../health/healthRecordStatus';
+import { wealthRecordPayloadFromDocument } from '../wealth/wealthDocumentRecord';
+import { PrescriptionReviewSheet } from '../health/components/PrescriptionReviewSheet';
+import {
+  needsPrescriptionReview,
+  type HealthUploadReview,
+} from '../../api/healthExtraction';
+import {
+  documentContextLabel,
+  healthRecordType,
+  isHealthDocument,
+} from './documentDetails';
 import {
   analyzeSelectedDocument,
   captureDocumentPhoto,
+  discardSelectedDocument,
   startConsentedImport,
-  selectDocumentFile,
-  selectImageFromGallery,
+  selectDocumentFiles,
+  selectImagesFromGallery,
+  type DocumentImportStage,
   type SelectedDocument,
 } from './documentImport';
 import { ActionSheet } from '../../components/primitives/ActionSheet';
@@ -78,7 +106,11 @@ import { FloatingActionButton } from '../../components/primitives/FloatingAction
 import { Card } from '../../components/primitives/Card';
 import { Row } from '../../components/primitives/Row';
 import { sizes } from '../../design/tokens/sizes';
-import { ListGroup, ListRow, SelectionMark } from '../../components/primitives/ListRow';
+import {
+  ListGroup,
+  ListRow,
+  SelectionMark,
+} from '../../components/primitives/ListRow';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { EmptyState } from '../../components/feedback/EmptyState';
@@ -88,17 +120,6 @@ import { LoadingState } from '../../components/feedback/LoadingState';
 import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { fontSize, lineHeight } from '../../design/tokens/typography';
 import { radius } from '../../design/tokens/radius';
-
-const PreviewModalSurface = styled.View(({ theme }) => ({
-  flex: 1,
-  paddingTop: 12,
-  paddingHorizontal: 12,
-  paddingBottom: 12,
-  backgroundColor: theme.colors.surface.canvas,
-}));
-const PreviewSafeArea = styled(SafeAreaView)(() => ({
-  flex: 1,
-}));
 
 function categoryFor(type: string) {
   const value = type.toLowerCase();
@@ -112,9 +133,7 @@ function categoryFor(type: string) {
   }
 
   if (
-    /(health|medical|insurance|prescription|hospital|vaccination)/.test(
-      value,
-    )
+    /(health|medical|insurance|prescription|hospital|vaccination)/.test(value)
   ) {
     return 'Health';
   }
@@ -127,15 +146,11 @@ function categoryFor(type: string) {
     return 'Finance';
   }
 
-  if (
-    /(property|home|lease|utility|rent|mortgage)/.test(value)
-  ) {
+  if (/(property|home|lease|utility|rent|mortgage)/.test(value)) {
     return 'Home';
   }
 
-  if (
-    /(travel|flight|hotel|passport|visa)/.test(value)
-  ) {
+  if (/(travel|flight|hotel|passport|visa)/.test(value)) {
     return 'Travel';
   }
 
@@ -147,103 +162,105 @@ function getDocumentTitle(document: {
   title?: string | null;
   originalName: string;
 }) {
-  return (
-    document.displayName ??
-    document.title ??
-    document.originalName
-  );
-}
-
-function getDocumentIcon(type: string) {
-  const category = categoryFor(type);
-
-  switch (category) {
-    case 'Identity':
-      return Fingerprint;
-
-    case 'Health':
-      return HeartPulse;
-
-    case 'Finance':
-      return Landmark;
-
-    case 'Home':
-      return House;
-
-    case 'Travel':
-      return Plane;
-
-    default:
-      return FileText;
-  }
+  return document.displayName ?? document.title ?? document.originalName;
 }
 
 export function DocumentsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const tabNavigation =
+    useNavigation<BottomTabNavigationProp<MainTabParamList, 'Documents'>>();
+  const route = useRoute<RouteProp<MainTabParamList, 'Documents'>>();
   const { theme } = useAppTheme();
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<React.ElementRef<typeof TextInput>>(null);
-  const previewRequestId = useRef(0);
 
-  const {
-    data,
-    error,
-    isLoading,
-    refetch,
-  } = useDocumentsQuery();
+  const { data, error, isLoading, refetch } = useDocumentsQuery();
 
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<DocumentFilters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
   const [picker, setPicker] = useState<'category' | 'person'>();
-  const [selectionMode, setSelectionMode] =
-    useState(false);
-  const [selectedIds, setSelectedIds] = useState<
-    string[]
-  >([]);
-  const [detailId, setDetailId] =
-    useState<string>();
-  const [previewDocument, setPreviewDocument] =
-    useState<DocumentRecord>();
-  const [previewPath, setPreviewPath] = useState<string>();
-  const [previewMimeType, setPreviewMimeType] = useState('');
-  const [previewPageIndex, setPreviewPageIndex] = useState(0);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [detailId, setDetailId] = useState<string>();
+  const [previewDocument, setPreviewDocument] = useState<DocumentRecord>();
   const [showAddDocumentsSheet, setShowAddDocumentsSheet] = useState(false);
   const [healthPrompt, setHealthPrompt] = useState<{
     document: DocumentRecord;
     name: string;
     members: HealthMember[];
+    onDone?: () => void;
   }>();
   const [isImporting, setIsImporting] = useState(false);
+  const [importStage, setImportStage] =
+    useState<DocumentImportStage>('encrypting');
   const [healthSyncing, setHealthSyncing] = useState(false);
+  const [prescriptionReview, setPrescriptionReview] = useState<{
+    analysis: DocumentAnalysisResponse;
+    aiConsent: boolean;
+    onDone?: () => void;
+  }>();
   const [profilePrompt, setProfilePrompt] = useState<{
     document: DocumentRecord;
     name: string;
     patientName?: string | null;
     candidates: Array<{ id: string; name: string }>;
+    onDone?: () => void;
   }>();
+  const [batchActive, setBatchActive] = useState(false);
+  const batchRef = useRef<DocumentBatch | undefined>(undefined);
+  const [batchProgress, setBatchProgress] =
+    useState<ReturnType<DocumentBatch['snapshot']>>();
+  const batchTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const mountedRef = useRef(true);
   const [profileFormVisible, setProfileFormVisible] = useState(false);
-  const [previewError, setPreviewError] = useState<string>();
-  const previewPages = previewDocument?.pages ?? [];
 
   useEffect(() => {
-    if (!previewPath) return;
-    const path = previewPath;
+    const documentId = route.params?.documentId;
+    if (!documentId || !data) return;
+    setQuery('');
+    setFilters(defaultFilters);
+    const document = data.find(item => item.id === documentId);
+    if (document) {
+      recordRecentlyViewedDocument(document);
+      setDetailId(document.id);
+    } else {
+      Alert.alert(
+        'Document unavailable',
+        'This document could not be found. It may have been removed.',
+      );
+    }
+    tabNavigation.setParams({ documentId: undefined });
+  }, [data, route.params?.documentId, tabNavigation]);
+
+  useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      FileSystem.unlink(path).catch(() => undefined);
+      mountedRef.current = false;
+      if (batchTimerRef.current) clearTimeout(batchTimerRef.current);
+      const remaining = batchRef.current?.cancel() ?? [];
+      batchRef.current = undefined;
+      remaining.forEach(file => {
+        discardSelectedDocument(file).catch(cleanupError =>
+          console.warn(
+            '[documents] unable to remove temporary file',
+            cleanupError,
+          ),
+        );
+      });
     };
-  }, [previewPath]);
+  }, []);
 
   const toggleSearch = () => {
     if (searchOpen) setQuery('');
     setSearchOpen(open => !open);
   };
 
-  const openPreview = async (
-    document: DocumentRecord,
-    pageIndex = 0,
-  ) => {
+  const openPreview = async (document: DocumentRecord) => {
+    recordRecentlyViewedDocument(document);
     if (document.source === 'GOOGLE_DRIVE' && document.openUrl) {
       try {
         await Linking.openURL(document.openUrl);
@@ -256,96 +273,152 @@ export function DocumentsScreen() {
       return;
     }
 
-    const page = document.pages?.[pageIndex];
-    const mimeType = page?.mimeType ?? document.mimeType ?? '';
-    const requestId = ++previewRequestId.current;
     setPreviewDocument(document);
-    setPreviewPageIndex(pageIndex);
-    setPreviewMimeType(mimeType);
-    setPreviewError(undefined);
-    setPreviewLoading(true);
-    setPreviewPath(undefined);
-
-    try {
-      const file = page
-        ? await documentsApi.previewPage(document.id, page.id, mimeType)
-        : await documentsApi.preview(document.id, mimeType);
-      if (previewRequestId.current !== requestId) {
-        FileSystem.unlink(file.path).catch(() => undefined);
-        return;
-      }
-      setPreviewPath(file.path);
-    } catch (previewLoadError) {
-      if (previewRequestId.current === requestId) {
-        setPreviewError(
-          previewLoadError instanceof Error
-            ? previewLoadError.message
-            : 'Preview unavailable.',
-        );
-      }
-    } finally {
-      if (previewRequestId.current === requestId) setPreviewLoading(false);
-    }
   };
 
   const closePreview = () => {
-    previewRequestId.current += 1;
     setPreviewDocument(undefined);
-    setPreviewPath(undefined);
-    setPreviewError(undefined);
+  };
+
+  const syncToWealth = async (
+    saved: DocumentRecord,
+    analysis: DocumentAnalysisResponse['document'],
+  ) => {
+    const payload = wealthRecordPayloadFromDocument(saved, analysis);
+    if (!payload) return;
+    try {
+      await wealthApi.createRecord(payload);
+    } catch (syncError) {
+      Alert.alert(
+        'Document saved',
+        `${saved.displayName ?? saved.title ?? saved.originalName} was saved, but was not added to Wealth: ${
+          syncError instanceof Error
+            ? syncError.message
+            : 'Please try again from Wealth.'
+        }`,
+      );
+    }
   };
 
   const saveAnalyzedDocument = async (
     analysis: DocumentAnalysisResponse,
     aiAnalysisConsent: boolean,
+    onDone?: () => void,
+    healthReview?: HealthUploadReview,
   ) => {
     const document = analysis.document;
     const tempFileIds = analysis.files.map(file => file.tempFileId);
     if (!tempFileIds.length) {
-      Alert.alert('Unable to save document', 'The upload did not return a temporary file.');
+      if (healthReview)
+        throw new Error(
+          'The upload did not return a temporary file. Please select it again.',
+        );
+      Alert.alert(
+        'Unable to save document',
+        'The upload did not return a temporary file.',
+        [{ text: 'OK', onPress: onDone }],
+      );
       return;
     }
 
     const payload: DocumentSavePayload = {
+      ...(healthReview ? { healthReview } : {}),
       tempFileIds,
       originalName: analysis.files[0]?.originalName,
       mimeType: analysis.files[0]?.mimeType,
       size: analysis.files.reduce((sum, file) => sum + file.size, 0),
-      title: document.title?.trim() || analysis.files[0]?.originalName || 'Document',
+      title: suggestDocumentTitle(analysis),
       category: document.category?.trim() || 'Other',
       documentType: document.documentType?.trim() || 'Unknown',
       confidence: Number(document.confidence) || 0,
       fields: document.fields ?? {},
       reviewFields: document.reviewFields ?? [],
-      rawExtractedText: document.rawExtractedText ?? document.extractedText ?? '',
+      rawExtractedText:
+        document.rawExtractedText ?? document.extractedText ?? '',
       warnings: analysis.warnings ?? [],
       evidence: document.evidence ?? [],
       analysisSource: aiAnalysisConsent ? 'ai' : 'rules',
       duplicateAction: 'fail',
       owner: 'self',
-      userConfirmedUnknown: (document.documentType ?? 'unknown').toLowerCase() === 'unknown',
+      userConfirmedUnknown:
+        (document.documentType ?? 'unknown').toLowerCase() === 'unknown',
       verified: false,
     };
 
     setIsImporting(true);
+    let wasSaved = false;
     try {
-      const result = await documentsApi.save(payload);
+      const result = await saveDocumentWithDuplicatePrompt(payload);
+      wasSaved = true;
+      if (batchRef.current) {
+        batchRef.current.markSaved();
+        setBatchProgress(batchRef.current.snapshot());
+      }
+      if (healthReview) setPrescriptionReview(undefined);
       setShowAddDocumentsSheet(false);
       setDetailId(undefined);
       setQuery('');
       setFilters(defaultFilters);
-      const savedName = result.document.displayName ?? result.document.title ?? document.title;
-      const members = isHealthDocument(result.document)
-        ? await healthApi.members().catch(() => [])
-        : [];
+      const savedName =
+        result.document.displayName ?? result.document.title ?? document.title;
       await refetch();
-      if (members.length) {
-        setHealthPrompt({ document: result.document, name: savedName, members });
+      await syncToWealth(result.document, document);
+      if (result.healthRecord !== undefined) {
+        if (result.healthRecord) {
+          await completeHealthSync(
+            result.document,
+            savedName,
+            undefined,
+            onDone,
+            result.healthRecord,
+          );
+        } else if (document.category?.toLowerCase() === 'medical') {
+          Alert.alert(
+            'Document saved',
+            `${savedName} was saved, but was not added to Health.`,
+            [{ text: 'OK', onPress: onDone }],
+          );
+        } else {
+          onDone?.();
+        }
         return;
       }
-      await completeHealthSync(result.document, savedName);
+      if (healthReview) {
+        Alert.alert(
+          'Document saved',
+          'This server did not confirm the reviewed prescription. Check the document and contact support before trying again.',
+          [{ text: 'OK', onPress: onDone }],
+        );
+        return;
+      }
+      const members = isHealthDocument(result.document)
+        ? await healthApi.members()
+        : [];
+      if (members.length) {
+        setHealthPrompt({
+          document: result.document,
+          name: savedName,
+          members,
+          onDone,
+        });
+        return;
+      }
+      await completeHealthSync(result.document, savedName, undefined, onDone);
     } catch (saveError) {
-      if (__DEV__) console.warn('[save payload]', JSON.stringify(payload).slice(0, 1500));
+      if (wasSaved) {
+        Alert.alert(
+          'Document saved',
+          `The document was saved, but the next step failed: ${saveError instanceof Error ? saveError.message : 'Please try again.'}`,
+          [{ text: 'OK', onPress: onDone }],
+        );
+        return;
+      }
+      if (saveError instanceof DuplicateCancelledError) {
+        if (healthReview) setPrescriptionReview(undefined);
+        onDone?.();
+        return;
+      }
+      if (healthReview) throw saveError;
       Alert.alert(
         'Unable to save document',
         saveError instanceof Error
@@ -355,6 +428,17 @@ export function DocumentsScreen() {
                 : ''
             }`
           : 'Please try again.',
+        onDone
+          ? [
+              { text: 'Skip', onPress: onDone },
+              {
+                text: 'Retry',
+                onPress: () => {
+                  saveAnalyzedDocument(analysis, aiAnalysisConsent, onDone);
+                },
+              },
+            ]
+          : undefined,
       );
     } finally {
       setIsImporting(false);
@@ -367,45 +451,77 @@ export function DocumentsScreen() {
     healthNoteRef.current = note;
   };
 
-  const syncToHealth = async (saved: DocumentRecord, memberId?: string): Promise<HealthRecordDetail | HealthMemberResolution | undefined> => {
+  const syncToHealth = async (
+    saved: DocumentRecord,
+    memberId?: string,
+  ): Promise<HealthRecordDetail | HealthMemberResolution | undefined> => {
     setHealthNote('');
     if (!isHealthDocument(saved)) return undefined;
     try {
-      return await healthApi.createRecord({ documentId: saved.id, memberId, type: healthRecordType(saved) });
+      return await healthApi.createRecord({
+        documentId: saved.id,
+        memberId,
+        type: healthRecordType(saved),
+      });
     } catch (syncError) {
-      setHealthNote(` It was not added to Health: ${syncError instanceof Error ? syncError.message : 'please try again.'}`);
+      setHealthNote(
+        ` It was not added to Health: ${syncError instanceof Error ? syncError.message : 'please try again.'}`,
+      );
       return undefined;
     }
   };
 
-  const healthSummary = (record?: HealthRecordDetail | HealthMemberResolution) => {
-    if (record && isMemberResolution(record)) return '.';
-    if (!record) return `.${healthNoteRef.current}`;
-    if (record.measurements.length) {
-      return ` and Health, with ${record.measurements.length} value(s) read from it.`;
-    }
-    return record.processingStatus === 'failed' || record.processingStatus === 'ai_processing_disabled'
-      ? ' and Health, but its values could not be read automatically.'
-      : ' and Health.';
-  };
-
   // Adds the document to Health; when no profile matches the patient, asks which profile to use.
-  const completeHealthSync = async (saved: DocumentRecord, name: string, memberId?: string) => {
+  const completeHealthSync = async (
+    saved: DocumentRecord,
+    name: string,
+    memberId?: string,
+    onDone?: () => void,
+    savedRecord?: HealthRecordDetail | HealthMemberResolution,
+  ) => {
     setHealthSyncing(true);
-    let result: HealthRecordDetail | HealthMemberResolution | undefined;
+    setHealthNote('');
     try {
-      result = memberId || isHealthDocument(saved) ? await syncToHealth(saved, memberId) : undefined;
+      const result =
+        savedRecord ??
+        (memberId || isHealthDocument(saved)
+          ? await syncToHealth(saved, memberId)
+          : undefined);
+      if (result && isMemberResolution(result)) {
+        const candidates = result.memberMatch.candidates.length
+          ? result.memberMatch.candidates
+          : await healthApi.members();
+        setProfilePrompt({
+          document: saved,
+          name,
+          patientName: result.patient?.name,
+          candidates,
+          onDone,
+        });
+        return;
+      }
+      if (healthNoteRef.current) {
+        Alert.alert('Document saved', `${name}.${healthNoteRef.current}`, [
+          { text: 'OK', onPress: onDone },
+        ]);
+      } else if (result && healthRecordProcessingMessage(result)) {
+        Alert.alert(
+          'Document added to Health',
+          `${name}: ${healthRecordProcessingMessage(result)}`,
+          [{ text: 'OK', onPress: onDone }],
+        );
+      } else {
+        onDone?.();
+      }
+    } catch (memberError) {
+      Alert.alert(
+        'Document saved',
+        `Unable to load Health profiles: ${memberError instanceof Error ? memberError.message : 'Please try again from Health.'}`,
+        [{ text: 'OK', onPress: onDone }],
+      );
     } finally {
       setHealthSyncing(false);
     }
-    if (result && isMemberResolution(result)) {
-      const candidates = result.memberMatch.candidates.length
-        ? result.memberMatch.candidates
-        : await healthApi.members().catch(() => []);
-      setProfilePrompt({ document: saved, name, patientName: result.patient?.name, candidates });
-      return;
-    }
-    Alert.alert('Document added', `${name} is now in your vault${healthSummary(result)}`);
   };
 
   const finishHealthPrompt = async (memberId?: string) => {
@@ -413,10 +529,15 @@ export function DocumentsScreen() {
     if (!prompt) return;
     setHealthPrompt(undefined);
     if (!memberId) {
-      Alert.alert('Document added', `${prompt.name} is now in your vault.`);
+      prompt.onDone?.();
       return;
     }
-    await completeHealthSync(prompt.document, prompt.name, memberId);
+    await completeHealthSync(
+      prompt.document,
+      prompt.name,
+      memberId,
+      prompt.onDone,
+    );
   };
 
   const finishProfilePrompt = async (memberId?: string) => {
@@ -424,54 +545,152 @@ export function DocumentsScreen() {
     if (!prompt) return;
     setProfilePrompt(undefined);
     if (!memberId) {
-      Alert.alert(
-        'Document added',
-        `${prompt.name} is now in your vault. It was not added to Health: choose a profile for the patient from Health.`,
-      );
+      prompt.onDone?.();
       return;
     }
-    await completeHealthSync(prompt.document, prompt.name, memberId);
+    await completeHealthSync(
+      prompt.document,
+      prompt.name,
+      memberId,
+      prompt.onDone,
+    );
   };
 
   const processSelectedDocument = async (
     selected: SelectedDocument,
     aiAnalysisConsent: boolean,
+    onDone?: () => void,
   ) => {
     setIsImporting(true);
+    setImportStage('encrypting');
     try {
-      const analysis = await analyzeSelectedDocument(selected, aiAnalysisConsent);
-      const document = analysis.document;
-      const details = [
-        `Title: ${document.title}`,
-        `Category: ${document.category}`,
-        `Type: ${document.documentType}`,
-        `Confidence: ${Math.round(document.confidence)}%`,
-      ].join('\n');
-
-      Alert.alert('Review document', details, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Save document',
-          onPress: () => saveAnalyzedDocument(analysis, aiAnalysisConsent),
-        },
-      ]);
+      const analysis = await analyzeSelectedDocument(
+        selected,
+        aiAnalysisConsent,
+        undefined,
+        setImportStage,
+      );
+      if (needsPrescriptionReview(analysis.document.healthExtraction)) {
+        setPrescriptionReview({
+          analysis,
+          aiConsent: aiAnalysisConsent,
+          onDone,
+        });
+        return;
+      }
+      await saveAnalyzedDocument(analysis, aiAnalysisConsent, onDone);
     } catch (importError) {
+      if (importError instanceof DuplicateCancelledError) {
+        onDone?.();
+        return;
+      }
       console.warn('[documents] import failed', importError);
       Alert.alert(
         'Unable to add document',
-        importError instanceof Error ? importError.message : 'Please try again.',
+        importError instanceof Error
+          ? `${selected.fileName}: ${importError.message}`
+          : 'Please try again.',
+        [{ text: 'OK', onPress: onDone }],
       );
     } finally {
       setIsImporting(false);
     }
   };
 
+  const advanceBatch = () => {
+    if (batchTimerRef.current) return;
+    batchTimerRef.current = setTimeout(() => {
+      batchTimerRef.current = undefined;
+      const batch = batchRef.current;
+      if (!batch) return;
+      const next = batch.next();
+      if (!next) {
+        batchRef.current = undefined;
+        setBatchActive(false);
+        setBatchProgress(undefined);
+        return;
+      }
+      setBatchProgress(batch.snapshot());
+      let completed = false;
+      processSelectedDocument(next, batch.consent, () => {
+        if (completed || batchRef.current !== batch) return;
+        completed = true;
+        batch.completeCurrent();
+        setBatchProgress(batch.snapshot());
+        advanceBatch();
+      });
+    }, 450);
+  };
+
+  const cancelBatch = () => {
+    const batch = batchRef.current;
+    if (!batch || batch.snapshot().cancelled) return;
+    const remaining = batch.cancel();
+    setBatchProgress(batch.snapshot());
+    remaining.forEach(file => {
+      discardSelectedDocument(file).catch(cleanupError =>
+        console.warn(
+          '[documents] unable to remove temporary file',
+          cleanupError,
+        ),
+      );
+    });
+    if (!batch.snapshot().currentName && !batchTimerRef.current) advanceBatch();
+  };
+
+  const startMultipleDocumentImport = (
+    select: () => Promise<SelectedDocument[] | undefined>,
+  ) => {
+    setShowAddDocumentsSheet(false);
+    return startConsentedImport({
+      select,
+      onConsent: async (picked, consent) => {
+        if (!picked.length) return;
+        const choice =
+          picked.length > 1 ? await askToCombine(picked.length) : 'separate';
+        const files =
+          choice === 'combine' ? [combineSelectedDocuments(picked)] : picked;
+        if (choice === 'cancel' || !mountedRef.current) {
+          files.forEach(file => {
+            discardSelectedDocument(file).catch(cleanupError =>
+              console.warn(
+                '[documents] unable to remove temporary file',
+                cleanupError,
+              ),
+            );
+          });
+          return;
+        }
+        batchRef.current = new DocumentBatch(files, consent);
+        setBatchProgress(batchRef.current.snapshot());
+        setBatchActive(true);
+        advanceBatch();
+      },
+    });
+  };
+
   const startDocumentImport = (
     select: () => Promise<SelectedDocument | undefined>,
   ) => {
-    setShowAddDocumentsSheet(false);
-    return startConsentedImport({ select, onConsent: processSelectedDocument });
+    return startMultipleDocumentImport(async () => {
+      const selected = await select();
+      return selected ? [selected] : undefined;
+    });
   };
+
+  const {
+    profileNames,
+    profileMembers,
+    refreshProfileNames,
+    cancelProfileNamesRefresh,
+  } = useHealthProfileNames();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfileNames();
+      return cancelProfileNamesRefresh;
+    }, [cancelProfileNamesRefresh, refreshProfileNames]),
+  );
 
   const documents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -482,31 +701,42 @@ export function DocumentsScreen() {
         document.originalName,
         document.documentType,
         documentCategory(document),
-        documentPersonName(document),
+        documentPersonName(document, profileNames),
       ]
         .join(' ')
         .toLowerCase()
         .includes(normalizedQuery);
     });
-    return applyDocumentFilters(searched, filters);
-  }, [data, filters, query]);
+    return applyDocumentFilters(searched, filters, profileNames);
+  }, [data, filters, profileNames, query]);
 
   const filterOptions = useMemo(() => {
     const all = data ?? [];
     return {
       categories: [...new Set(all.map(documentCategory))].sort(),
-      people: [...new Set(all.map(documentPersonName))].sort(),
+      people: [
+        ...new Set([
+          ...all.map(document => documentPersonName(document, profileNames)),
+          ...profileMembers,
+        ]),
+      ].sort(),
       quickCounts: Object.fromEntries(
-        quickFilterLabels.map(([key]) => [key, all.filter(document => matchesQuickFilter(document, key)).length]),
+        quickFilterLabels.map(([key]) => [
+          key,
+          all.filter(document => matchesQuickFilter(document, key)).length,
+        ]),
       ),
     };
-  }, [data]);
+  }, [data, profileMembers, profileNames]);
 
   const toggleSelection = (id: string) => {
     setSelectedIds(current => {
       if (current.includes(id)) return current.filter(item => item !== id);
       if (current.length >= 100) {
-        Alert.alert('Selection limit reached', 'You can delete up to 100 documents at a time.');
+        Alert.alert(
+          'Selection limit reached',
+          'You can delete up to 100 documents at a time.',
+        );
         return current;
       }
       return [...current, id];
@@ -519,7 +749,7 @@ export function DocumentsScreen() {
     setDetailId(undefined);
   };
 
-  const detailDocument = documents.find(document => document.id === detailId);
+  const detailDocument = data?.find(document => document.id === detailId);
 
   const deleteSelectedDocuments = async () => {
     if (!selectedIds.length) return;
@@ -535,7 +765,9 @@ export function DocumentsScreen() {
     } catch (deleteError) {
       Alert.alert(
         'Unable to delete documents',
-        deleteError instanceof Error ? deleteError.message : 'Please try again.',
+        deleteError instanceof Error
+          ? deleteError.message
+          : 'Please try again.',
       );
     }
   };
@@ -554,10 +786,7 @@ export function DocumentsScreen() {
         <Stack gap="md">
           <ErrorState message="Unable to load your documents." />
 
-          <Button
-            title="Retry"
-            onPress={refetch}
-          />
+          <Button title="Retry" onPress={refetch} />
         </Stack>
       </Screen>
     );
@@ -569,8 +798,26 @@ export function DocumentsScreen() {
       padded={false}
       onRefresh={refetch}
       contentContainerStyle={styles.screenContent}
+      overlay={
+        batchProgress &&
+        (!batchProgress.currentName || isImporting || healthSyncing) ? (
+          <DocumentImportProgress {...batchProgress} onCancel={cancelBatch} />
+        ) : isImporting || healthSyncing ? (
+          <LoadingState
+            overlay
+            size={48}
+            label={
+              healthSyncing
+                ? 'Adding to Health'
+                : importStage === 'extracting'
+                  ? 'Uploading and analyzing document'
+                  : 'Encrypting document securely'
+            }
+          />
+        ) : null
+      }
       floatingAction={
-        showAddDocumentsSheet || isImporting ? null : (
+        showAddDocumentsSheet || isImporting || batchActive ? null : (
           <FloatingActionButton
             accessibilityLabel="Add document"
             onPress={() => setShowAddDocumentsSheet(true)}
@@ -589,33 +836,44 @@ export function DocumentsScreen() {
         ]}
       >
         <Stack gap="sm">
-        {/* Header */}
-        <Row
-          align="center"
-          justify="space-between"
-        >
-          <AppText
-            variant="title"
-          >
-            Documents
-          </AppText>
+          {/* Header */}
+          <Row align="center" justify="space-between">
+            <AppText variant="title">Documents</AppText>
 
-          <Row
-            gap="sm"
-            align="center"
-          >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Search documents"
-              onPress={toggleSearch}
-              style={({ pressed }) => [
-                styles.headerButton,
+            <Row gap="sm" align="center">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Search documents"
+                onPress={toggleSearch}
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  {
+                    backgroundColor: theme.colors.surface.default,
+                    borderColor: theme.colors.border.default,
+                  },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Search
+                  size={sizes.icon.lg}
+                  color={theme.colors.text.secondary}
+                  strokeWidth={2}
+                />
+              </Pressable>
+
+              <ProfileAvatarButton />
+            </Row>
+          </Row>
+
+          {/* Search (opened from the header icon) */}
+          {searchOpen ? (
+            <View
+              style={[
+                styles.searchContainer,
                 {
-                  backgroundColor:
-                    theme.colors.surface.default,
+                  backgroundColor: theme.colors.surface.default,
                   borderColor: theme.colors.border.default,
                 },
-                pressed && styles.pressed,
               ]}
             >
               <Search
@@ -623,193 +881,204 @@ export function DocumentsScreen() {
                 color={theme.colors.text.secondary}
                 strokeWidth={2}
               />
-            </Pressable>
+              <SearchInput
+                inputRef={searchInputRef}
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search documents..."
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close search"
+                hitSlop={10}
+                onPress={toggleSearch}
+              >
+                <X size={sizes.icon.md} color={theme.colors.text.secondary} />
+              </Pressable>
+            </View>
+          ) : null}
 
-            <ProfileAvatarButton />
-          </Row>
-        </Row>
-
-        {/* Search (opened from the header icon) */}
-        {searchOpen ? (
-          <View
-            style={[
-              styles.searchContainer,
+          {/* DigiLocker import */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Import issued documents from DigiLocker"
+            onPress={() => navigation.navigate('DigiLocker')}
+            style={({ pressed }) => [
+              styles.digiLockerButton,
               {
-                backgroundColor: theme.colors.surface.default,
-                borderColor: theme.colors.border.default,
+                backgroundColor: theme.colors.action.primary.default,
+                borderColor: theme.colors.action.primary.default,
               },
+              pressed && styles.pressed,
             ]}
           >
-            <Search size={sizes.icon.lg} color={theme.colors.text.secondary} strokeWidth={2} />
-            <SearchInput
-              inputRef={searchInputRef}
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search documents..."
+            <FileCheck2
+              size={sizes.icon.md}
+              color={theme.colors.text.onBrand}
+              strokeWidth={2}
             />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close search"
-              hitSlop={10}
-              onPress={toggleSearch}
+            <AppText variant="labelMd" color="onPrimary">
+              Import from DigiLocker
+            </AppText>
+          </Pressable>
+
+          {/* Count / Select / Filter */}
+          <Row align="center" justify="space-between" style={styles.toolbar}>
+            <AppText
+              variant="body"
+              color="secondary"
+              style={styles.documentCount}
             >
-              <X size={sizes.icon.md} color={theme.colors.text.secondary} />
-            </Pressable>
-          </View>
-        ) : null}
+              {documents.length} documents
+            </AppText>
 
-        {/* DigiLocker import */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Import issued documents from DigiLocker"
-          onPress={() => navigation.navigate('DigiLocker')}
-          style={({ pressed }) => [
-            styles.digiLockerButton,
-            {
-              backgroundColor: theme.colors.action.primary.default,
-              borderColor: theme.colors.action.primary.default,
-            },
-            pressed && styles.pressed,
-          ]}
-        >
-          <FileCheck2 size={sizes.icon.md} color={theme.colors.text.onBrand} strokeWidth={2} />
-          <AppText variant="labelMd" color="onPrimary">
-            Import from DigiLocker
-          </AppText>
-        </Pressable>
-
-        {/* Count / Select / Filter */}
-        <Row
-          align="center"
-          justify="space-between"
-          style={styles.toolbar}
-        >
-          <AppText
-            variant="body"
-            color="secondary"
-            style={styles.documentCount}
-          >
-            {documents.length} documents
-          </AppText>
-
-          <Row
-            gap="md"
-            align="center"
-          >
-            <Pressable
-              hitSlop={10}
-              onPress={toggleSelectionMode}
-              style={({ pressed }) => [
-                styles.toolbarButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              {selectionMode ? (
-                <Check
-                  size={sizes.icon.md}
-                  color={theme.colors.text.interactive}
-                  strokeWidth={2.5}
-                />
-              ) : null}
-
-              <AppText
-                variant="label"
-                style={[
-                  styles.toolbarText,
-                  {
-                    color: theme.colors.text.interactive,
-                  },
-                ]}
-              >
-                {selectionMode ? 'Done' : 'Select'}
-              </AppText>
-            </Pressable>
-
-            <Pressable
-              hitSlop={10}
-              onPress={() =>
-                setShowFilters(true)
-              }
-              style={({ pressed }) => [
-                styles.toolbarButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              <SlidersHorizontal
-                size={sizes.icon.md}
-                color={theme.colors.text.interactive}
-                strokeWidth={2}
-              />
-
-              <AppText
-                variant="label"
-                style={[
-                  styles.toolbarText,
-                  {
-                    color: theme.colors.text.interactive,
-                  },
-                ]}
-              >
-                {activeFilterCount(filters) ? `Filter · ${activeFilterCount(filters)}` : 'Filter'}
-              </AppText>
-            </Pressable>
-            {selectionMode && selectedIds.length ? (
+            <Row gap="md" align="center">
               <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Delete ${selectedIds.length} selected documents`}
-                onPress={() => Alert.alert(
-                  'Delete selected documents?',
-                  `${selectedIds.length} document${selectedIds.length === 1 ? '' : 's'} will be permanently removed.`,
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Delete',
-                      style: 'destructive',
-                      onPress: () => { deleteSelectedDocuments(); },
-                    },
-                  ],
-                )}
                 hitSlop={10}
-                style={styles.toolbarButton}
-              >
-                <Trash2 size={sizes.icon.md} color={theme.colors.status.danger.text} />
-                <AppText variant="label" color="danger">
-                  Delete ({selectedIds.length})
-                </AppText>
-              </Pressable>
-            ) : null}
-          </Row>
-        </Row>
-
-        <Row gap="sm">
-          {([
-            ['category', 'Category', filters.category === ALL ? 'All' : filters.category],
-            ['person', 'Person', filters.person === ALL ? 'Everyone' : filters.person],
-          ] as const).map(([key, title, value]) => {
-            const active = value !== 'All' && value !== 'Everyone';
-            return (
-              <Pressable
-                key={key}
-                accessibilityRole="button"
-                accessibilityLabel={`${title}: ${value}`}
-                onPress={() => setPicker(key)}
+                onPress={toggleSelectionMode}
                 style={({ pressed }) => [
-                  styles.selectorChip,
-                  {
-                    backgroundColor: active ? theme.colors.selection.surface : theme.colors.surface.default,
-                    borderColor: active ? theme.colors.selection.border : theme.colors.border.default,
-                  },
+                  styles.toolbarButton,
                   pressed && styles.pressed,
                 ]}
               >
-                <AppText variant="label" color="secondary">{title}:</AppText>
-                <AppText variant="label" color="heading" numberOfLines={1} style={styles.selectorValue}>{value}</AppText>
-                <ChevronDown size={sizes.icon.sm} color={theme.colors.icon.secondary} />
-              </Pressable>
-            );
-          })}
-        </Row>
+                {selectionMode ? (
+                  <Check
+                    size={sizes.icon.md}
+                    color={theme.colors.text.interactive}
+                    strokeWidth={2.5}
+                  />
+                ) : null}
 
+                <AppText
+                  variant="label"
+                  style={[
+                    styles.toolbarText,
+                    {
+                      color: theme.colors.text.interactive,
+                    },
+                  ]}
+                >
+                  {selectionMode ? 'Done' : 'Select'}
+                </AppText>
+              </Pressable>
+
+              <Pressable
+                hitSlop={10}
+                onPress={() => setShowFilters(true)}
+                style={({ pressed }) => [
+                  styles.toolbarButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <SlidersHorizontal
+                  size={sizes.icon.md}
+                  color={theme.colors.text.interactive}
+                  strokeWidth={2}
+                />
+
+                <AppText
+                  variant="label"
+                  style={[
+                    styles.toolbarText,
+                    {
+                      color: theme.colors.text.interactive,
+                    },
+                  ]}
+                >
+                  {activeFilterCount(filters)
+                    ? `Filter · ${activeFilterCount(filters)}`
+                    : 'Filter'}
+                </AppText>
+              </Pressable>
+              {selectionMode && selectedIds.length ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete ${selectedIds.length} selected documents`}
+                  onPress={() =>
+                    Alert.alert(
+                      'Delete selected documents?',
+                      `${selectedIds.length} document${selectedIds.length === 1 ? '' : 's'} will be permanently removed.`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: () => {
+                            deleteSelectedDocuments();
+                          },
+                        },
+                      ],
+                    )
+                  }
+                  hitSlop={10}
+                  style={styles.toolbarButton}
+                >
+                  <Trash2
+                    size={sizes.icon.md}
+                    color={theme.colors.status.danger.text}
+                  />
+                  <AppText variant="label" color="danger">
+                    Delete ({selectedIds.length})
+                  </AppText>
+                </Pressable>
+              ) : null}
+            </Row>
+          </Row>
+
+          <Row gap="sm">
+            {(
+              [
+                [
+                  'category',
+                  'Category',
+                  filters.category === ALL ? 'All' : filters.category,
+                ],
+                [
+                  'person',
+                  'Person',
+                  filters.person === ALL ? 'Everyone' : filters.person,
+                ],
+              ] as const
+            ).map(([key, title, value]) => {
+              const active = value !== 'All' && value !== 'Everyone';
+              return (
+                <Pressable
+                  key={key}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${title}: ${value}`}
+                  onPress={() => setPicker(key)}
+                  style={({ pressed }) => [
+                    styles.selectorChip,
+                    {
+                      backgroundColor: active
+                        ? theme.colors.selection.surface
+                        : theme.colors.surface.default,
+                      borderColor: active
+                        ? theme.colors.selection.border
+                        : theme.colors.border.default,
+                    },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <AppText variant="label" color="secondary">
+                    {title}:
+                  </AppText>
+                  <AppText
+                    variant="label"
+                    color="heading"
+                    numberOfLines={1}
+                    style={styles.selectorValue}
+                  >
+                    {value}
+                  </AppText>
+                  <ChevronDown
+                    size={sizes.icon.sm}
+                    color={theme.colors.icon.secondary}
+                  />
+                </Pressable>
+              );
+            })}
+          </Row>
         </Stack>
 
         {/* Document list */}
@@ -817,7 +1086,7 @@ export function DocumentsScreen() {
           <ListGroup strongDividers>
             {documents.map(document => {
               const isSelected = selectedIds.includes(document.id);
-              const Icon = getDocumentIcon(document.documentType);
+              const Icon = documentIcon(document);
               const fromDigiLocker = document.sourceProvider === 'DIGILOCKER';
 
               return (
@@ -825,14 +1094,32 @@ export function DocumentsScreen() {
                   roomy
                   compact
                   key={document.id}
-                  icon={<Icon size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
+                  icon={
+                    <Icon
+                      size={sizes.icon.md}
+                      color={theme.colors.icon.interactive}
+                      strokeWidth={2}
+                    />
+                  }
                   title={getDocumentTitle(document)}
-                  subtitle={`${fromDigiLocker ? 'DigiLocker · ' : ''}${documentPersonName(document)} · ${documentContextLabel(document)}`}
+                  subtitle={`${fromDigiLocker ? 'DigiLocker · ' : ''}${documentPersonName(document, profileNames)} · ${documentContextLabel(document)}`}
                   selected={selectionMode ? isSelected : undefined}
-                  trailing={selectionMode ? <SelectionMark checked={isSelected} /> : <ChevronRight size={sizes.icon.md} color={theme.colors.icon.secondary} />}
+                  trailing={
+                    selectionMode ? (
+                      <SelectionMark checked={isSelected} />
+                    ) : (
+                      <ChevronRight
+                        size={sizes.icon.md}
+                        color={theme.colors.icon.secondary}
+                      />
+                    )
+                  }
                   onPress={() => {
                     if (selectionMode) toggleSelection(document.id);
-                    else setDetailId(document.id);
+                    else {
+                      recordRecentlyViewedDocument(document);
+                      setDetailId(document.id);
+                    }
                   }}
                 />
               );
@@ -848,14 +1135,47 @@ export function DocumentsScreen() {
         )}
       </Stack>
 
+      {prescriptionReview?.analysis.document.healthExtraction ? (
+        <PrescriptionReviewSheet
+          extraction={prescriptionReview.analysis.document.healthExtraction}
+          onClose={() => {
+            const onDone = prescriptionReview.onDone;
+            setPrescriptionReview(undefined);
+            onDone?.();
+          }}
+          onSave={review =>
+            saveAnalyzedDocument(
+              prescriptionReview.analysis,
+              prescriptionReview.aiConsent,
+              prescriptionReview.onDone,
+              review,
+            )
+          }
+        />
+      ) : null}
       <ActionSheet
         visible={showAddDocumentsSheet}
         title="Add documents"
         onClose={() => setShowAddDocumentsSheet(false)}
         options={[
-          { label: 'Upload files', icon: Upload, accessibilityLabel: 'Upload a PDF or image file', onPress: () => startDocumentImport(selectDocumentFile) },
-          { label: 'From gallery', icon: ImageIcon, accessibilityLabel: 'Choose an image from the gallery', onPress: () => startDocumentImport(selectImageFromGallery) },
-          { label: 'Scan with camera', icon: Camera, accessibilityLabel: 'Capture a document with the camera', onPress: () => startDocumentImport(captureDocumentPhoto) },
+          {
+            label: 'Upload files',
+            icon: Upload,
+            accessibilityLabel: 'Upload PDF or image files',
+            onPress: () => startMultipleDocumentImport(selectDocumentFiles),
+          },
+          {
+            label: 'From gallery',
+            icon: ImageIcon,
+            accessibilityLabel: 'Choose images from the gallery',
+            onPress: () => startMultipleDocumentImport(selectImagesFromGallery),
+          },
+          {
+            label: 'Scan with camera',
+            icon: Camera,
+            accessibilityLabel: 'Capture a document with the camera',
+            onPress: () => startDocumentImport(captureDocumentPhoto),
+          },
           {
             label: 'Import from DigiLocker',
             icon: FileCheck2,
@@ -884,7 +1204,11 @@ export function DocumentsScreen() {
 
       <ActionSheet
         visible={Boolean(profilePrompt) && !profileFormVisible}
-        title={profilePrompt?.patientName ? `Whose report is this? (${profilePrompt.patientName})` : 'Whose report is this?'}
+        title={
+          profilePrompt?.patientName
+            ? `Whose report is this? (${profilePrompt.patientName})`
+            : 'Whose report is this?'
+        }
         onClose={() => finishProfilePrompt()}
         options={[
           ...(profilePrompt?.candidates ?? []).map(member => ({
@@ -893,7 +1217,9 @@ export function DocumentsScreen() {
             onPress: () => finishProfilePrompt(member.id),
           })),
           {
-            label: profilePrompt?.patientName ? `Create profile for ${profilePrompt.patientName}` : 'Create new profile',
+            label: profilePrompt?.patientName
+              ? `Create profile for ${profilePrompt.patientName}`
+              : 'Create new profile',
             icon: HeartPulse,
             onPress: () => setProfileFormVisible(true),
           },
@@ -902,12 +1228,13 @@ export function DocumentsScreen() {
       />
 
       {profileFormVisible ? (
-        <HealthMemberForm
+        <FamilyMemberForm
           initialName={profilePrompt?.patientName ?? ''}
           onClose={() => setProfileFormVisible(false)}
           onSave={async payload => {
             const created = await healthApi.createMember(payload);
             setProfileFormVisible(false);
+            await refreshProfileNames(created);
             await finishProfilePrompt(created.id);
           }}
         />
@@ -921,7 +1248,10 @@ export function DocumentsScreen() {
           label: name,
           selected: (name === 'All' ? ALL : name) === filters.category,
           onPress: () => {
-            setFilters(current => ({ ...current, category: name === 'All' ? ALL : name }));
+            setFilters(current => ({
+              ...current,
+              category: name === 'All' ? ALL : name,
+            }));
             setPicker(undefined);
           },
         }))}
@@ -935,7 +1265,10 @@ export function DocumentsScreen() {
           label: name,
           selected: (name === 'Everyone' ? ALL : name) === filters.person,
           onPress: () => {
-            setFilters(current => ({ ...current, person: name === 'Everyone' ? ALL : name }));
+            setFilters(current => ({
+              ...current,
+              person: name === 'Everyone' ? ALL : name,
+            }));
             setPicker(undefined);
           },
         }))}
@@ -954,7 +1287,7 @@ export function DocumentsScreen() {
           document={detailDocument}
           title={getDocumentTitle(detailDocument)}
           category={categoryFor(detailDocument.documentType)}
-          icon={getDocumentIcon(detailDocument.documentType)}
+          icon={documentIcon(detailDocument)}
           onClose={() => setDetailId(undefined)}
           onPreview={() => {
             setDetailId(undefined);
@@ -964,114 +1297,13 @@ export function DocumentsScreen() {
         />
       ) : null}
 
-      <Modal visible={isImporting || healthSyncing} transparent animationType="fade" statusBarTranslucent>
-        <LoadingState overlay size={48} label={healthSyncing ? 'Adding to Health' : 'Preparing document'} />
-      </Modal>
-
-      <Modal
-        visible={Boolean(previewDocument)}
-        animationType="slide"
-        onRequestClose={closePreview}
-      >
-        <PreviewSafeArea>
-          <PreviewModalSurface>
-            {previewDocument ? (
-              <>
-                <View style={styles.previewHeader}>
-                  {previewPages.length > 1 ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Previous document page"
-                      disabled={previewPageIndex === 0}
-                      onPress={() => openPreview(previewDocument, previewPageIndex - 1)}
-                      style={styles.previewPageButton}
-                    >
-                      <ChevronLeft
-                        size={sizes.icon.md}
-                        color={
-                          previewPageIndex === 0
-                            ? theme.colors.text.tertiary
-                            : theme.colors.text.primary
-                        }
-                      />
-                    </Pressable>
-                  ) : null}
-                  <AppText
-                    variant="heading"
-                    numberOfLines={1}
-                    style={styles.previewTitle}
-                  >
-                    {getDocumentTitle(previewDocument)}
-                  </AppText>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Close document preview"
-                    onPress={closePreview}
-                    style={styles.previewClose}
-                  >
-                    <X size={sizes.icon.md} color={theme.colors.text.primary} />
-                  </Pressable>
-                </View>
-
-                <View style={styles.previewContent}>
-                  {previewLoading ? (
-                    <LoadingState label="Loading preview…" />
-                  ) : previewError ? (
-                    <ErrorState message={previewError} />
-                  ) : previewPath && previewMimeType === 'application/pdf' ? (
-                    <Pdf
-                      source={{
-                        uri: previewPath.startsWith('file://')
-                          ? previewPath
-                          : `file://${previewPath}`,
-                      }}
-                      style={styles.previewFile}
-                      onError={pdfError => setPreviewError(String(pdfError))}
-                    />
-                  ) : previewPath && previewMimeType.startsWith('image/') ? (
-                    <Image
-                      source={{
-                        uri: previewPath.startsWith('file://')
-                          ? previewPath
-                          : `file://${previewPath}`,
-                      }}
-                      style={styles.previewFile}
-                      resizeMode="contain"
-                      onError={() => setPreviewError('Unable to display this image.')}
-                    />
-                  ) : previewPath ? (
-                    <ErrorState message="Preview is unavailable for this file type." />
-                  ) : null}
-                </View>
-
-                {previewPages.length > 1 ? (
-                  <View style={styles.previewPaging}>
-                    <AppText variant="caption" color="secondary">
-                      Page {previewPageIndex + 1} of {previewPages.length}
-                    </AppText>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Next document page"
-                      disabled={previewPageIndex >= previewPages.length - 1}
-                      onPress={() => openPreview(previewDocument, previewPageIndex + 1)}
-                      style={styles.previewPageButton}
-                    >
-                      <ChevronRight
-                        size={sizes.icon.md}
-                        color={
-                          previewPageIndex >= previewPages.length - 1
-                            ? theme.colors.text.tertiary
-                            : theme.colors.text.primary
-                        }
-                      />
-                    </Pressable>
-                  </View>
-                ) : null}
-              </>
-            ) : null}
-          </PreviewModalSurface>
-        </PreviewSafeArea>
-      </Modal>
+      {previewDocument ? (
+        <DocumentPreview
+          documentId={previewDocument.id}
+          initialDocument={previewDocument}
+          onClose={closePreview}
+        />
+      ) : null}
     </Screen>
   );
 }
@@ -1103,9 +1335,7 @@ function SearchInput({
         onChangeText={onChangeText}
         placeholder={placeholder}
         autoFocus
-        placeholderTextColor={
-          theme.colors.text.secondary
-        }
+        placeholderTextColor={theme.colors.text.secondary}
         selectionColor={theme.colors.text.interactive}
       />
     </View>
@@ -1219,78 +1449,11 @@ const styles = StyleSheet.create({
 
   /* Filters */
 
-
   /* Document list */
-
-
-
-
-
-
-
-
-
 
   /* Empty */
 
   emptyCard: {
     padding: 16,
   },
-
-  previewHeader: {
-    minHeight: 58,
-    gap: 12,
-    paddingBottom: 12,
-  },
-
-  previewTitle: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  previewClose: {
-    width: sizes.minimumTouchTarget,
-    height: sizes.minimumTouchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  previewContent: {
-    flex: 1,
-    minHeight: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  previewFile: {
-    flex: 1,
-    width: '100%',
-  },
-
-  previewTextScroll: {
-    width: '100%',
-    flex: 1,
-  },
-
-  previewPaging: {
-    minHeight: 44,
-    paddingTop: 6,
-  },
-
-  previewPageButton: {
-    width: 44,
-    height: sizes.minimumTouchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-
-
-
-
-
-
-
-
-
 });

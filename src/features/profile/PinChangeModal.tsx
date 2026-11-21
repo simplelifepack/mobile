@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View, KeyboardAvoidingView } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View, KeyboardAvoidingView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '../../components/primitives/AppText';
 import { Row } from '../../components/primitives/Row';
@@ -21,6 +22,7 @@ export function PinChangeModal({
   onChanged: () => void;
 }) {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<Mode>('change');
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -89,9 +91,10 @@ export function PinChangeModal({
   const showFields = mode === 'change' || codeSent;
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim }]}>
-        <View style={[styles.panel, { backgroundColor: theme.colors.surface.canvas }]}>
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={close}>
+      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim, paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
+        <ScrollView keyboardShouldPersistTaps="handled" style={[styles.sheet, { backgroundColor: theme.colors.surface.canvas }]}
+          contentContainerStyle={[styles.panel, { paddingBottom: Math.max(32, insets.bottom + 8) }]}>
           <AppText style={styles.title}>
             {mode === 'change' ? 'Change R-pin' : 'Reset R-pin'}
           </AppText>
@@ -155,7 +158,7 @@ export function PinChangeModal({
               </AppText>
             </Pressable>
           </Row>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -200,6 +203,7 @@ function PinField({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'flex-end', },
+  sheet: { flexGrow: 0, maxHeight: '100%', borderTopLeftRadius: radius.overlay, borderTopRightRadius: radius.overlay },
   panel: {
     paddingHorizontal: 24,
     paddingTop: 24,

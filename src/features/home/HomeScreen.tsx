@@ -1,13 +1,24 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ProfileAvatarButton } from '../../components/navigation/ProfileAvatarButton';
-import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useAppSelector } from '../../app/store/hooks';
-import { AttentionPanel, MetricTile, type AttentionItem } from './HomeSections';
 import {
-  AlertCircle,
+  AttentionBanner,
+  AttentionPanel,
+  HomeEssentialsBanner,
+  HomeQuickAction,
+  MetricTile,
+  RecentDocuments,
+  type AttentionItem,
+} from './HomeSections';
+import {
+  getRecentlyViewedDocuments,
+  subscribeToRecentlyViewedDocuments,
+} from '../documents/recentlyViewedDocuments';
+import {
   Folder,
   FileText,
   HeartPulse,
@@ -16,7 +27,6 @@ import {
   Search,
   TrendingUp,
   WalletCards,
-  ChevronRight,
 } from 'lucide-react-native';
 
 import { useBootstrapQuery, usePackagesQuery } from '../../services/api';
@@ -34,13 +44,10 @@ import { useAppTheme } from '../../design/theme/ThemeProvider';
 import { Screen } from '../../components/primitives/Screen';
 import { Stack } from '../../components/primitives/Stack';
 import { Row } from '../../components/primitives/Row';
-import { ListGroup, ListRow } from '../../components/primitives/ListRow';
-import { SectionHeader } from '../../components/primitives/SectionHeader';
-import { Tile, type StatusTone } from '../../components/primitives/Tile';
 import { AppText } from '../../components/primitives/AppText';
 import { radius } from '../../design/tokens/radius';
 import { sizes } from '../../design/tokens/sizes';
-import { fontSize, lineHeight, fontWeights} from '../../design/tokens/typography';
+import { documentAttention } from './documentAttention';
 
 import { SkeletonList } from '../../components/feedback/SkeletonList';
 import { ErrorState } from '../../components/feedback/ErrorState';
@@ -74,6 +81,12 @@ export function HomeScreen() {
   >();
   const user = useAppSelector(state => state.auth.user);
   const [expanded, setExpanded] = useState(false);
+  const [attentionDetailsVisible, setAttentionDetailsVisible] = useState(false);
+  const recentlyViewedDocuments = useSyncExternalStore(
+    subscribeToRecentlyViewedDocuments,
+    getRecentlyViewedDocuments,
+    getRecentlyViewedDocuments,
+  );
   const [searchOpen, setSearchOpen] = useState(false);
   const openSearchResult = (result: GlobalSearchResult) => {
     const segment = result.navigation.path.split(/[/?#]/).find(Boolean);
@@ -90,7 +103,7 @@ export function HomeScreen() {
     healthApi.reminders()
       .then(items => {
         if (active) setHealthReminders(items);
-        void syncReminderNotifications(items);
+        syncReminderNotifications(items).catch(error => console.warn('Unable to schedule reminders', error));
       })
       .catch(error => {
         if (active) setReminderError(error instanceof Error ? error.message : 'Unable to load reminders.');
@@ -113,6 +126,14 @@ export function HomeScreen() {
   // --------------------------------------------------------------------------
 
   const bootstrap = useBootstrapQuery();
+  const refetchBootstrap = bootstrap.refetch;
+  const focusedOnce = useRef(false);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (focusedOnce.current) refetchBootstrap();
+      focusedOnce.current = true;
+    }, [refetchBootstrap]),
+  );
   const [packagePage, setPackagePage] = useState(1);
   const packages = usePackagesQuery({ page: packagePage, limit: 20 });
 
@@ -200,22 +221,30 @@ export function HomeScreen() {
 
   const documents = bootstrap.data.documents ?? [];
   const now = Date.now();
-  const recentDocuments = [...documents]
-    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
-    .slice(0, 5);
-  const expiringDocuments = documents.filter(document => {
-    const days = daysUntil(document.expiryDate, now);
-    return days !== undefined && days <= 60;
+  const documentById = new Map(documents.map(document => [document.id, document]));
+  const recentDocuments = [
+    ...recentlyViewedDocuments.map(
+      document => documentById.get(document.id) ?? document,
+    ),
+    ...[...documents]
+      .filter(
+        document =>
+          !recentlyViewedDocuments.some(
+            recentlyViewed => recentlyViewed.id === document.id,
+          ),
+      )
+      .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt)),
+  ].slice(0, 5);
+  const expiringDocuments = documents.flatMap(document => {
+    const attention = documentAttention(document, new Date(now));
+    return attention ? [{ document, attention }] : [];
   });
-  const expiredDocuments = expiringDocuments.filter(document => (daysUntil(document.expiryDate, now) ?? 0) < 0);
+  const expiredDocuments = expiringDocuments.filter(item => item.attention.overdue);
   const overdueReminders = healthReminders.filter(reminder => (daysUntil(reminder.dueDate, now) ?? 0) < 0);
   const renewalsDue = wealthRecords.filter(record => {
     const days = daysUntil(String(record.details.renewalDate ?? record.details.maturityDate ?? ''), now);
     return days !== undefined && days <= 30;
   });
-  const attentionCount = expiringDocuments.length + healthReminders.length + renewalsDue.length;
-  const overdueCount = expiredDocuments.length + overdueReminders.length;
-  const bannerTone: StatusTone = overdueCount ? 'danger' : 'warning';
   const readyPercent = situationStats.total
     ? Math.round((situationStats.ready / situationStats.total) * 100)
     : 0;
@@ -223,17 +252,19 @@ export function HomeScreen() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = user?.name?.trim().split(' ')[0] || 'there';
   const attentionItems: Array<AttentionItem & { sort: number }> = [
-    ...expiringDocuments.map(document => ({
+    ...expiringDocuments.map(({ document, attention }) => ({
       id: `document-${document.id}`,
+      kind: 'document' as const,
       Icon: FileText,
       title: documentTitle(document),
-      label: dueLabel(document.expiryDate, now),
-      overdue: (daysUntil(document.expiryDate, now) ?? 0) < 0,
-      sort: daysUntil(document.expiryDate, now) ?? 0,
-      onPress: () => navigation.navigate('Documents'),
+      label: attention.label,
+      overdue: attention.overdue,
+      sort: attention.days,
+      onPress: () => navigation.navigate('Documents', { documentId: document.id }),
     })),
     ...healthReminders.map(reminder => ({
       id: `reminder-${reminder.id}`,
+      kind: 'other' as const,
       Icon: HeartPulse,
       title: `${reminder.memberName} · ${reminder.title}`,
       label: dueLabel(reminder.dueDate, now),
@@ -245,6 +276,7 @@ export function HomeScreen() {
       const date = String(record.details.renewalDate ?? record.details.maturityDate ?? '');
       return {
         id: `wealth-${record.id}`,
+        kind: 'other' as const,
         Icon: TrendingUp,
         title: record.title,
         label: dueLabel(date, now),
@@ -285,11 +317,12 @@ export function HomeScreen() {
           </Row>
         </Row>
 
-        <AttentionPanel
-          items={attentionItems}
-          emptyMessage="No tasks need your attention."
-          expanded={expanded}
-          onToggle={() => setExpanded(value => !value)}
+        <RecentDocuments
+          documents={recentDocuments}
+          onOpen={document =>
+            navigation.navigate('Documents', { documentId: document.id })
+          }
+          onViewAll={() => navigation.navigate('Documents')}
         />
 
         <View style={styles.grid}>
@@ -330,75 +363,56 @@ export function HomeScreen() {
           />
         </View>
 
+        <View style={styles.attentionGroup}>
+          <AttentionBanner
+            count={attentionItems.length}
+            overdueCount={attentionItems.filter(item => item.overdue).length}
+            expanded={attentionDetailsVisible}
+            onPress={() =>
+              setAttentionDetailsVisible(value => !value)
+            }
+          />
+          {attentionDetailsVisible ? (
+            <AttentionPanel
+              items={attentionItems}
+              emptyMessage="No tasks need your attention."
+              expanded={expanded}
+              onToggle={() => setExpanded(value => !value)}
+            />
+          ) : null}
+        </View>
+
         {reminderError ? (
           <AppText variant="caption" color="secondary">Reminders are temporarily unavailable.</AppText>
         ) : null}
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${attentionCount} items need your attention`}
-          onPress={() => navigation.navigate(healthReminders.length ? 'Health' : 'Documents')}
-          style={({ pressed }) => [
-            styles.needsBanner,
-            {
-              borderColor: theme.colors.status[bannerTone].border,
-              backgroundColor: theme.colors.status[bannerTone].surface,
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}
-        >
-          <View style={styles.needsIcon}>
-            <AlertCircle size={sizes.icon.md} color={theme.colors.status[bannerTone].icon} strokeWidth={2} />
-          </View>
-          <View style={styles.needsCopy}>
-            <AppText style={[styles.needsTitle, { color: theme.colors.status[bannerTone].text }]}>
-              {attentionCount} {attentionCount === 1 ? 'item needs' : 'items need'} your attention
-            </AppText>
-            <AppText style={[styles.needsSubtitle, { color: theme.colors.status[bannerTone].text }]}>
-              {overdueCount} overdue · View all
-            </AppText>
-          </View>
-          <ChevronRight size={sizes.icon.sm} color={theme.colors.status[bannerTone].icon} strokeWidth={2} />
-        </Pressable>
-
         <View style={styles.section}>
-          <SectionHeader title="Quick actions" />
+          <Row align="center" justify="space-between" style={styles.quickHeader}>
+            <AppText variant="eyebrow">Quick actions</AppText>
+            <AppText
+              variant="caption"
+              style={{ color: theme.colors.text.interactive }}
+            >
+              Add or create
+            </AppText>
+          </Row>
           <View style={styles.grid}>
-            <Tile
+            <HomeQuickAction
               icon={Plus}
               title="Add document"
               status="Upload a new file"
               onPress={() => navigation.navigate('Documents')}
             />
-            <Tile
+            <HomeQuickAction
               icon={ListChecks}
               title="Create package"
-              status="Organise what you need"
+              status="Organize items"
               onPress={() => navigation.navigate('Packages')}
             />
           </View>
         </View>
 
-        {recentDocuments.length ? (
-          <View style={styles.section}>
-            <SectionHeader
-              title="Recently added"
-              actionLabel="See all"
-              onAction={() => navigation.navigate('Documents')}
-            />
-            <ListGroup>
-              {recentDocuments.slice(0, 3).map(document => (
-                <ListRow
-                  key={document.id}
-                  icon={<FileText size={sizes.icon.md} color={theme.colors.icon.interactive} strokeWidth={2} />}
-                  title={documentTitle(document)}
-                  subtitle={document.category ?? document.documentType}
-                  onPress={() => navigation.navigate('Documents')}
-                />
-              ))}
-            </ListGroup>
-          </View>
-        ) : null}
+        <HomeEssentialsBanner />
       </Stack>
     </Screen>
   );
@@ -412,21 +426,9 @@ const styles = StyleSheet.create({
   retryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
 
   section: { gap: 8 },
+  attentionGroup: { gap: 12 },
+  quickHeader: { paddingHorizontal: 4, minHeight: 16 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
 
-  needsBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    minHeight: 56,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderRadius: radius.surface,
-  },
-  needsIcon: { width: 32, height: 32, borderRadius: radius.control, alignItems: 'center', justifyContent: 'center' },
-  needsCopy: { flex: 1, gap: 2 },
-  needsTitle: { fontSize: fontSize.bodySm, lineHeight: lineHeight.bodySm, fontWeight: fontWeights.semibold },
-  needsSubtitle: { fontSize: fontSize.caption, lineHeight: lineHeight.caption },
 });

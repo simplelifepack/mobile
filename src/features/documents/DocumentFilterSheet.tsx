@@ -80,8 +80,8 @@ export function DocumentFilterSheet({
     onChange({ ...filters, [key]: value });
 
   return (
-    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
-      <View style={styles.root}>
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+      <View style={[styles.root, { paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close filters"
